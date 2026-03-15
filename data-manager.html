@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>PSOTS — Data Import & Resident Directory</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <style>
+  :root{--or:#e85c00;--gold:#ffc200;--ink:#1a0800;--warm:#fff8f0;--bg:#f5f0e8;--white:#fff;--br:#6b3010;--lbr:#a05828;--green:#2e7d32;--red:#c0392b;--shadow:0 4px 24px rgba(26,8,0,.1)}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--ink);min-height:100vh}
+
+  /* ── LOGIN ─── */
+  #loginScreen{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a0800,#3d1200)}
+  .login-box{background:var(--white);border-radius:24px;padding:2.5rem 2rem;width:min(400px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.4);text-align:center}
+  .login-input{width:100%;padding:.82rem 1rem;border:2px solid #f0d5b8;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;color:var(--ink);background:var(--warm);outline:none;margin-bottom:1rem;text-align:center;letter-spacing:.2em}
+  .login-input:focus{border-color:var(--or)}
+  .btn-login{width:100%;background:linear-gradient(135deg,var(--or),#c93800);color:#fff;font-family:'Playfair Display',serif;font-weight:700;font-style:italic;font-size:1.1rem;padding:.9rem;border-radius:12px;border:none;cursor:pointer;box-shadow:0 4px 18px rgba(232,92,0,.4)}
+  .login-err{color:var(--red);font-size:.82rem;margin-top:.6rem;display:none}
+
+  /* ── APP ─── */
+  #app{display:none}
+  header{background:linear-gradient(135deg,#1a0800,#3d1200);padding:0 1.5rem;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.3)}
+  .h-brand{font-family:'Playfair Display',serif;font-size:.95rem;color:var(--gold)}
+  .h-sub{font-size:.55rem;color:rgba(255,198,0,.4);letter-spacing:.12em;text-transform:uppercase}
+  .h-actions{display:flex;gap:.7rem;align-items:center}
+  .btn-sm{background:rgba(255,255,255,.1);color:rgba(255,220,120,.7);border:1px solid rgba(255,255,255,.15);border-radius:50px;padding:.3rem .85rem;font-size:.68rem;cursor:pointer;font-family:'DM Sans',sans-serif}
+  .btn-sm:hover{background:rgba(255,255,255,.18)}
+  .btn-admin-link{background:rgba(255,194,0,.15);color:var(--gold);border:1px solid rgba(255,194,0,.3);border-radius:50px;padding:.3rem .85rem;font-size:.68rem;cursor:pointer;font-family:'DM Sans',sans-serif;text-decoration:none}
+
+  /* ── TABS ─── */
+  .tabs{display:flex;background:var(--white);border-bottom:1px solid #f0d5b8;overflow-x:auto;position:sticky;top:56px;z-index:99}
+  .tabs::-webkit-scrollbar{display:none}
+  .tab{padding:.9rem 1.3rem;font-size:.76rem;font-weight:600;color:var(--lbr);background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;transition:all .2s}
+  .tab.on{color:var(--or);border-bottom-color:var(--or)}
+
+  /* ── PANEL ─── */
+  .panel{display:none;max-width:900px;margin:0 auto;padding:2rem 1.2rem}
+  .panel.on{display:block}
+
+  /* ── CARDS ─── */
+  .card{background:var(--white);border-radius:16px;padding:1.5rem;box-shadow:var(--shadow);border:1px solid rgba(200,100,0,.08);margin-bottom:1.3rem}
+  .card-title{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:.3rem;display:flex;align-items:center;gap:.45rem}
+  .card-sub{font-size:.78rem;color:var(--lbr);margin-bottom:1.2rem;line-height:1.55}
+
+  /* ── FORM ─── */
+  .fg{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-bottom:.9rem}
+  @media(max-width:520px){.fg{grid-template-columns:1fr}}
+  .ff{display:flex;flex-direction:column}
+  .ff label{font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#b08060;margin-bottom:.34rem}
+  .ff input,.ff select,.ff textarea{padding:.7rem .95rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--ink);background:var(--warm);outline:none;transition:border-color .2s}
+  .ff input:focus,.ff select:focus,.ff textarea:focus{border-color:var(--or)}
+  .ff textarea{resize:vertical;min-height:100px}
+  .ff .note{font-size:.65rem;color:#c8a880;margin-top:.2rem}
+
+  /* ── BUTTONS ─── */
+  .btn-primary{background:linear-gradient(135deg,var(--or),#c93800);color:#fff;border:none;border-radius:10px;padding:.65rem 1.3rem;font-size:.85rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;transition:transform .2s;box-shadow:0 3px 12px rgba(232,92,0,.28)}
+  .btn-primary:hover{transform:translateY(-1px)}
+  .btn-secondary{background:var(--warm);color:var(--or);border:1.5px solid rgba(232,92,0,.3);border-radius:10px;padding:.62rem 1.2rem;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s}
+  .btn-secondary:hover{background:#fff0e0}
+  .btn-danger{background:#fff0f0;color:var(--red);border:1.5px solid rgba(192,57,43,.25);border-radius:8px;padding:.38rem .75rem;font-size:.74rem;font-weight:600;cursor:pointer}
+  .btn-danger:hover{background:#ffe0e0}
+  .btn-success{background:#f0fff4;color:var(--green);border:1.5px solid rgba(46,125,50,.25);border-radius:8px;padding:.38rem .75rem;font-size:.74rem;font-weight:600;cursor:pointer}
+  .btn-success:hover{background:#dcfce7}
+
+  /* ── TABLE ─── */
+  .tbl-wrap{overflow-x:auto;margin-bottom:1rem}
+  table{width:100%;border-collapse:collapse;font-size:.82rem}
+  th{background:var(--warm);padding:.62rem .85rem;text-align:left;font-size:.6rem;letter-spacing:.1em;text-transform:uppercase;color:var(--lbr);border-bottom:2px solid #f0d5b8;white-space:nowrap}
+  td{padding:.58rem .85rem;border-bottom:1px solid #f8eed8;vertical-align:middle}
+  tr:hover td{background:#fffaf5}
+  .tag{display:inline-block;border-radius:50px;padding:.18rem .55rem;font-size:.65rem;font-weight:700}
+  .tag-green{background:#dcfce7;color:var(--green)}
+  .tag-orange{background:#fff0e0;color:var(--or)}
+  .tag-grey{background:#f0f0f0;color:#666}
+  .tag-blue{background:#e0f0ff;color:#1a5276}
+
+  /* ── CSV PREVIEW ─── */
+  .csv-preview-wrap{background:#f9f4ee;border-radius:10px;border:1px dashed #e0c89a;padding:1rem;margin-bottom:1rem;max-height:260px;overflow-y:auto;font-size:.78rem;font-family:monospace;color:var(--br);line-height:1.6}
+
+  /* ── RESIDENT LOOKUP ─── */
+  .lookup-box{background:linear-gradient(135deg,#fff5e8,#ffe8cc);border:1.5px solid rgba(232,92,0,.22);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
+  .lb-result{margin-top:.8rem;padding:.7rem .9rem;background:var(--white);border-radius:10px;border:1px solid #f0d5b8;font-size:.86rem;display:none}
+  .lb-result .rname{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--ink)}
+  .lb-result .rdetail{color:var(--lbr);font-size:.78rem;margin-top:.15rem}
+
+  /* ── STATS BAR ─── */
+  .stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.8rem;margin-bottom:1.4rem}
+  .stat{background:var(--white);border-radius:12px;padding:.9rem;border:1px solid rgba(200,100,0,.09);text-align:center}
+  .sv{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:900;color:var(--or)}
+  .sl{font-size:.62rem;color:var(--lbr);margin-top:.15rem}
+
+  /* ── PROGRESS ─── */
+  .progress-bar{height:8px;background:#f0d5b8;border-radius:50px;overflow:hidden;margin-top:.3rem}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--or),var(--gold));border-radius:50px;transition:width .5s ease}
+
+  /* ── IMPORT STEPS ─── */
+  .import-step{display:flex;gap:.8rem;margin-bottom:1rem;padding:.9rem 1rem;background:var(--warm);border-radius:10px;border:1px solid #f0d5b8}
+  .step-num{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,var(--or),#c93800);color:#fff;font-weight:700;font-size:.85rem;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .step-body{}
+  .step-title{font-weight:600;font-size:.88rem;color:var(--ink);margin-bottom:.2rem}
+  .step-desc{font-size:.78rem;color:var(--lbr);line-height:1.5}
+  code{background:#f0e8d8;padding:.15rem .4rem;border-radius:4px;font-family:monospace;font-size:.82rem;color:var(--or)}
+
+  /* ── TOAST ─── */
+  #toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(100px);background:var(--ink);color:#fff;padding:.65rem 1.4rem;border-radius:50px;font-size:.83rem;font-weight:500;z-index:9999;transition:transform .35s ease;white-space:nowrap;pointer-events:none}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+  #toast.success{background:var(--green)}
+  #toast.error{background:var(--red)}
+  .sp{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginScreen">
+  <div class="login-box">
+    <div style="font-size:3rem;margin-bottom:.8rem">🪔</div>
+    <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;color:var(--ink);margin-bottom:.3rem">Data Manager</div>
+    <div style="font-size:.82rem;color:var(--lbr);margin-bottom:2rem">PSOTS Chhath 2026 · Historical Import & Resident Directory</div>
+    <input class="login-input" type="password" id="pwIn" placeholder="Admin password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    <button class="btn-login" onclick="doLogin()">🔐 Login</button>
+    <div class="login-err" id="loginErr">❌ Incorrect password</div>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+  <header>
+    <div><div class="h-brand">🪔 PSOTS Data Manager</div><div class="h-sub">Import & Resident Directory</div></div>
+    <div class="h-actions">
+      <a class="btn-admin-link" href="admin.html">← Admin Panel</a>
+      <button class="btn-sm" onclick="logout()">Logout</button>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab on"  onclick="sw('import')">📥 Import History</button>
+    <button class="tab"     onclick="sw('residents')">👥 Resident Directory</button>
+    <button class="tab"     onclick="sw('lookup')">🔍 Flat Lookup</button>
+    <button class="tab"     onclick="sw('script')">⚙️ Apps Script Setup</button>
+  </div>
+
+  <!-- ══ IMPORT HISTORY TAB ══ -->
+  <div class="panel on" id="tab-import">
+
+    <div class="stats-row" id="importStats">
+      <div class="stat"><div class="sv" id="st-total">0</div><div class="sl">Total Records</div></div>
+      <div class="stat"><div class="sv" id="st-years">0</div><div class="sl">Years Imported</div></div>
+      <div class="stat"><div class="sv" id="st-residents">0</div><div class="sl">Unique Residents</div></div>
+      <div class="stat"><div class="sv" id="st-amount">₹0</div><div class="sl">Total Historical</div></div>
+    </div>
+
+    <!-- Option A: CSV Paste -->
+    <div class="card">
+      <div class="card-title">📋 Option A — Paste from Google Sheets</div>
+      <div class="card-sub">
+        Open your old Google Sheet → Select all data → Copy (Ctrl+C) → Paste below.<br/>
+        <strong>Expected columns:</strong> <code>Name</code> · <code>Flat</code> · <code>Amount</code> · <code>Date</code> · <code>Mobile</code> (optional)
+      </div>
+
+      <div class="fg" style="margin-bottom:.8rem">
+        <div class="ff">
+          <label>Year this data is from</label>
+          <select id="imp-year">
+            <option value="2022">2022</option><option value="2023">2023</option>
+            <option value="2024">2024</option><option value="2025" selected>2025</option>
+          </select>
+        </div>
+        <div class="ff">
+          <label>Column separator</label>
+          <select id="imp-sep">
+            <option value="tab">Tab (Google Sheets default)</option>
+            <option value="comma">Comma (CSV)</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ff" style="margin-bottom:.8rem">
+        <label>Paste your data here</label>
+        <textarea id="imp-paste" placeholder="Paste copied cells from Google Sheets here…
+Example format:
+Name	Flat	Amount	Date
+Pushkal Kishore	15167	5001	3-Oct
+Ratnesh Singh	15165	1100	7-Oct
+Praveen Kumar	2172	5001	8-Oct" rows="10"></textarea>
+        <div class="note">Paste directly from Google Sheets — headers should be in the first row</div>
+      </div>
+      <div style="display:flex;gap:.7rem;flex-wrap:wrap">
+        <button class="btn-primary" onclick="parseCSV()">👁 Parse & Preview</button>
+        <button class="btn-secondary" onclick="document.getElementById('imp-paste').value='';document.getElementById('csvPreview').style.display='none'">Clear</button>
+      </div>
+    </div>
+
+    <!-- Preview -->
+    <div class="card" id="csvPreview" style="display:none">
+      <div class="card-title">👁 Preview — <span id="csvCount">0</span> records found</div>
+      <div class="card-sub" id="csvSub"></div>
+
+      <!-- Column mapper -->
+      <div style="background:var(--warm);border-radius:10px;padding:1rem;margin-bottom:1rem;border:1px solid #f0d5b8">
+        <div style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--lbr);margin-bottom:.7rem">Map columns to fields</div>
+        <div class="fg">
+          <div class="ff"><label>Name column</label><select id="col-name"></select></div>
+          <div class="ff"><label>Flat column</label><select id="col-flat"></select></div>
+          <div class="ff"><label>Amount column</label><select id="col-amount"></select></div>
+          <div class="ff"><label>Date column</label><select id="col-date"></select></div>
+          <div class="ff"><label>Mobile column (optional)</label><select id="col-mobile"><option value="-1">None / Skip</option></select></div>
+        </div>
+        <button class="btn-secondary" onclick="remapPreview()">↻ Remap Columns</button>
+      </div>
+
+      <div class="tbl-wrap">
+        <table id="previewTable">
+          <thead><tr><th>#</th><th>Name</th><th>Flat</th><th>Amount</th><th>Date</th><th>Mobile</th><th>Status</th></tr></thead>
+          <tbody id="previewBody"></tbody>
+        </table>
+      </div>
+
+      <div style="display:flex;gap:.7rem;flex-wrap:wrap;margin-top:.8rem">
+        <button class="btn-primary" onclick="confirmImport()">✅ Import All to System</button>
+        <button class="btn-secondary" onclick="exportAsJSON()">📥 Save as JSON Backup</button>
+      </div>
+      <div id="importResult" style="display:none;margin-top:.8rem;background:#f0fff4;border:1px solid #a5d6a7;border-radius:10px;padding:.8rem 1rem;font-size:.84rem;color:var(--green)"></div>
+    </div>
+
+    <!-- Existing imported data -->
+    <div class="card">
+      <div class="card-title">🗂 All Imported Historical Data</div>
+      <div class="card-sub">All contribution records stored in the system. Shown per year.</div>
+      <div id="historyView"><div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.85rem">No data imported yet. Use the import tool above.</div></div>
+      <div style="display:flex;gap:.7rem;margin-top:.8rem;flex-wrap:wrap">
+        <button class="btn-secondary" onclick="syncToSheet()">☁️ Sync to Google Sheet</button>
+        <button class="btn-danger" onclick="clearAllHistory()">🗑 Clear All History</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ RESIDENT DIRECTORY TAB ══ -->
+  <div class="panel" id="tab-residents">
+    <div class="card">
+      <div class="card-title">👥 Resident Directory</div>
+      <div class="card-sub">
+        Master list of all PSOTS residents with their details. Built automatically from historical contribution data. Used to auto-fill manual entries when you type a flat number.
+      </div>
+
+      <div style="display:flex;gap:.7rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center">
+        <input type="text" id="resSearch" placeholder="🔍 Search name, flat, mobile…" oninput="filterResidents()" style="flex:1;min-width:200px;padding:.65rem 1rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;background:var(--warm)"/>
+        <button class="btn-primary" onclick="buildDirectoryFromHistory()">↻ Rebuild from History</button>
+        <button class="btn-secondary" onclick="exportResidents()">📥 Export CSV</button>
+      </div>
+
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Name</th><th>Flat</th><th>Mobile</th><th>Years Contrib.</th><th>Total Given</th><th>Last Year</th><th>Actions</th></tr></thead>
+          <tbody id="resTableBody"><tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--lbr)">Build directory from history data first</td></tr></tbody>
+        </table>
+      </div>
+      <div style="font-size:.75rem;color:var(--lbr);margin-top:.5rem" id="resCount"></div>
+    </div>
+
+    <!-- Add / Edit resident manually -->
+    <div class="card">
+      <div class="card-title">✏️ Add / Update Resident Manually</div>
+      <div class="card-sub">Add a resident who isn't in the historical data — new residents, family members, etc.</div>
+      <div class="fg">
+        <div class="ff"><label>Full Name</label><input type="text" id="rn-name" placeholder="e.g. Sunita Pandey"/></div>
+        <div class="ff"><label>Flat Number</label><input type="text" id="rn-flat" placeholder="e.g. 11058"/></div>
+        <div class="ff"><label>Mobile / WhatsApp</label><input type="tel" id="rn-mobile" placeholder="10-digit number" maxlength="10"/></div>
+        <div class="ff"><label>Tower / Block</label><input type="text" id="rn-tower" placeholder="e.g. Tower B"/></div>
+      </div>
+      <button class="btn-primary" onclick="addResidentManual()">➕ Add to Directory</button>
+    </div>
+  </div>
+
+  <!-- ══ FLAT LOOKUP TAB ══ -->
+  <div class="panel" id="tab-lookup">
+    <div class="card">
+      <div class="card-title">🔍 Flat Number Lookup</div>
+      <div class="card-sub">
+        Type a flat number to instantly see resident details, contribution history and contact info. Used by the admin for manual/cash entry — no need to remember names.
+      </div>
+
+      <div style="position:relative;margin-bottom:1rem">
+        <input type="text" id="flatSearch" placeholder="Type flat number (e.g. 15167 or B-204)…"
+          oninput="lookupFlat(this.value)"
+          style="width:100%;padding:.85rem 1rem;border:2px solid #f0d5b8;border-radius:12px;font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--ink);background:var(--warm);outline:none;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--or)'" onblur="this.style.borderColor='#f0d5b8'"/>
+      </div>
+
+      <div id="lookupResult" style="display:none">
+        <!-- Resident card -->
+        <div style="background:linear-gradient(135deg,#fff5e8,#ffe8cc);border:1.5px solid rgba(232,92,0,.2);border-radius:14px;padding:1.3rem 1.4rem;margin-bottom:1rem">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap">
+            <div>
+              <div style="font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:700;color:var(--ink)" id="lr-name">—</div>
+              <div style="font-size:.8rem;color:var(--lbr);margin-top:.18rem">Flat <span id="lr-flat" style="color:var(--or);font-weight:600">—</span> · <span id="lr-tower">—</span></div>
+              <div style="margin-top:.5rem;display:flex;gap:.6rem;flex-wrap:wrap">
+                <span style="font-size:.82rem;color:var(--br)">📱 <span id="lr-mobile">—</span></span>
+              </div>
+            </div>
+            <div style="text-align:right">
+              <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:var(--or)" id="lr-total">₹0</div>
+              <div style="font-size:.65rem;color:var(--lbr)">Total contributed</div>
+              <div style="font-size:.72rem;color:var(--lbr);margin-top:.2rem">Last: <span id="lr-last">—</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contribution history for this flat -->
+        <div style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--lbr);margin-bottom:.6rem">Contribution History</div>
+        <div id="lr-history" style="margin-bottom:1rem"></div>
+
+        <!-- Quick action buttons -->
+        <div style="display:flex;gap:.7rem;flex-wrap:wrap">
+          <button class="btn-primary" onclick="useForManualEntry()" id="lr-use-btn">✍️ Use for Manual Entry</button>
+          <button class="btn-secondary" onclick="window.open('https://wa.me/91'+document.getElementById('lr-mobile').textContent,'_blank')">📲 WhatsApp</button>
+          <button class="btn-secondary" onclick="editResident()" id="lr-edit-btn">✏️ Edit Details</button>
+        </div>
+      </div>
+
+      <div id="lookupEmpty" style="text-align:center;padding:2rem;color:var(--lbr);font-size:.88rem">
+        Start typing a flat number above to look up resident details.
+      </div>
+    </div>
+
+    <!-- Recent lookups -->
+    <div class="card">
+      <div class="card-title">🕐 Quick Access — All Flats</div>
+      <div class="card-sub">All residents in the directory. Click any row to look them up.</div>
+      <input type="text" id="allFlatSearch" placeholder="🔍 Filter flats…" oninput="renderAllFlats(this.value)" style="width:100%;padding:.65rem 1rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;background:var(--warm);margin-bottom:.8rem"/>
+      <div id="allFlatsList" style="display:flex;flex-wrap:wrap;gap:.5rem"></div>
+    </div>
+  </div>
+
+  <!-- ══ APPS SCRIPT SETUP TAB ══ -->
+  <div class="panel" id="tab-script">
+    <div class="card">
+      <div class="card-title">⚙️ Google Apps Script — Full Setup</div>
+      <div class="card-sub">This script connects your Google Sheet to the website. It handles form submissions, contributor list, historical data lookup AND resident directory — all in one deployment.</div>
+
+      <div class="import-step"><div class="step-num">1</div><div class="step-body"><div class="step-title">Open your Google Sheet</div><div class="step-desc">The same sheet where 2025 contributions are stored. Create a new tab named <code>2026</code> for current year data. Keep existing tabs (2025, 2024 etc.) as-is.</div></div></div>
+      <div class="import-step"><div class="step-num">2</div><div class="step-body"><div class="step-title">Open Apps Script</div><div class="step-desc">Extensions → Apps Script → Delete all existing code → Paste the full script below.</div></div></div>
+      <div class="import-step"><div class="step-num">3</div><div class="step-body"><div class="step-title">Deploy as Web App</div><div class="step-desc">Click Deploy → New Deployment → Web App → Execute as: <strong>Me</strong> → Who has access: <strong>Anyone</strong> → Deploy → Authorize → Copy the URL.</div></div></div>
+      <div class="import-step"><div class="step-num">4</div><div class="step-body"><div class="step-title">Paste URL in Settings</div><div class="step-desc">Go to Admin Panel → Settings tab → paste URL into "Apps Script URL" field → Save.</div></div></div>
+
+      <div style="margin-top:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.5rem">
+          <span style="font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--lbr)">Apps Script Code — Copy All</span>
+          <button class="btn-primary" onclick="copyScript()" style="font-size:.72rem;padding:.35rem .85rem">📋 Copy Script</button>
+        </div>
+        <textarea id="scriptCode" readonly rows="28" style="width:100%;font-family:monospace;font-size:.74rem;background:#1a1a2e;color:#a8d8a8;padding:1rem;border-radius:10px;border:none;resize:none;line-height:1.5"></textarea>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🔗 Connect Your Sheet</div>
+      <div class="card-sub">Once deployed, paste your Apps Script URL here to test the connection.</div>
+      <div style="display:flex;gap:.7rem;flex-wrap:wrap;align-items:flex-end">
+        <div class="ff" style="flex:1">
+          <label>Apps Script Web App URL</label>
+          <input type="url" id="testUrl" placeholder="https://script.google.com/macros/s/…/exec"/>
+        </div>
+        <button class="btn-primary" onclick="testConnection()">🔌 Test Connection</button>
+      </div>
+      <div id="connResult" style="display:none;margin-top:.8rem;padding:.8rem 1rem;border-radius:10px;font-size:.84rem"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">📊 Your Sheet Structure</div>
+      <div class="card-sub">Set up your Google Sheet tabs like this:</div>
+      <div style="overflow-x:auto">
+        <table>
+          <thead><tr><th>Tab Name</th><th>Col A</th><th>Col B</th><th>Col C</th><th>Col D</th><th>Col E</th><th>Col F</th><th>Col G</th><th>Col H</th></tr></thead>
+          <tbody>
+            <tr><td><strong>2026</strong> (current)</td><td>Timestamp</td><td>Name</td><td>Flat</td><td>Mobile</td><td>Amount</td><td>Date</td><td>Method</td><td>Status</td></tr>
+            <tr><td><strong>2025</strong> (existing)</td><td>Name</td><td>Flat</td><td>Amount</td><td>Date</td><td colspan="4" style="color:var(--lbr)">…your existing columns</td></tr>
+            <tr><td><strong>Residents</strong> (new)</td><td>Flat</td><td>Name</td><td>Mobile</td><td>Tower</td><td colspan="4" style="color:var(--lbr)">Master directory</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+/* ═══════════════════════════════
+   AUTH
+═══════════════════════════════ */
+const PW = btoa('chhath2026psots');
+function doLogin() {
+  const pw = document.getElementById('pwIn').value;
+  const stored = localStorage.getItem('psots_admin_pw') || PW;
+  if (btoa(pw) === stored) {
+    localStorage.setItem('psots_auth', 'yes_' + Date.now());
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  } else {
+    document.getElementById('loginErr').style.display = 'block';
+    document.getElementById('pwIn').value = '';
+  }
+}
+function logout() { localStorage.removeItem('psots_auth'); location.reload(); }
+window.addEventListener('DOMContentLoaded', () => {
+  const a = localStorage.getItem('psots_auth');
+  if (a && Date.now() - parseInt(a.split('_')[1]) < 86400000) {
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    initApp();
+  }
+  document.getElementById('pwIn').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
+});
+
+/* ═══════════════════════════════
+   TABS
+═══════════════════════════════ */
+function sw(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.tab').forEach(b => b.classList.remove('on'));
+  document.getElementById('tab-' + id).classList.add('on');
+  event.target.classList.add('on');
+  if (id === 'residents') renderResidents();
+  if (id === 'lookup') renderAllFlats();
+}
+
+/* ═══════════════════════════════
+   DATA STORAGE
+═══════════════════════════════ */
+function getHistory() { return JSON.parse(localStorage.getItem('psots_history') || '[]'); }
+function saveHistory(d) { localStorage.setItem('psots_history', JSON.stringify(d)); }
+function getResidents() { return JSON.parse(localStorage.getItem('psots_residents') || '[]'); }
+function saveResidents(d) { localStorage.setItem('psots_residents', JSON.stringify(d)); }
+
+/* ═══════════════════════════════
+   INIT
+═══════════════════════════════ */
+function initApp() {
+  updateStats();
+  renderHistory();
+  setScriptCode();
+}
+
+function updateStats() {
+  const h = getHistory();
+  const years = [...new Set(h.map(r => r.year))];
+  const residents = [...new Set(h.map(r => r.flat).filter(Boolean))];
+  const total = h.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+  document.getElementById('st-total').textContent = h.length;
+  document.getElementById('st-years').textContent = years.length;
+  document.getElementById('st-residents').textContent = residents.length;
+  document.getElementById('st-amount').textContent = '₹' + total.toLocaleString('en-IN');
+}
+
+/* ═══════════════════════════════
+   CSV IMPORT
+═══════════════════════════════ */
+let parsedRows = [], parsedHeaders = [];
+
+function parseCSV() {
+  const raw = document.getElementById('imp-paste').value.trim();
+  const sep = document.getElementById('imp-sep').value;
+  if (!raw) { toast('Please paste data first', 'error'); return; }
+
+  const lines = raw.split('\n').filter(l => l.trim());
+  const delim = sep === 'tab' ? '\t' : ',';
+  parsedHeaders = lines[0].split(delim).map(h => h.trim());
+  parsedRows = lines.slice(1).map(l => {
+    const cols = l.split(delim).map(c => c.trim().replace(/^["']|["']$/g,''));
+    const obj = {};
+    parsedHeaders.forEach((h, i) => obj[h] = cols[i] || '');
+    return obj;
+  }).filter(r => Object.values(r).some(v => v));
+
+  // Auto-detect columns
+  const tryMatch = (keywords) => {
+    const idx = parsedHeaders.findIndex(h => keywords.some(k => h.toLowerCase().includes(k)));
+    return idx >= 0 ? idx : 0;
+  };
+  const colName   = tryMatch(['name']);
+  const colFlat   = tryMatch(['flat','unit']);
+  const colAmt    = tryMatch(['amount','amt','contribution']);
+  const colDate   = tryMatch(['date']);
+  const colMobile = tryMatch(['mobile','phone','number']);
+
+  // Populate selectors
+  ['col-name','col-flat','col-amount','col-date','col-mobile'].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = (id==='col-mobile'?'<option value="-1">None / Skip</option>':'') +
+      parsedHeaders.map((h,i) => `<option value="${i}">${h}</option>`).join('');
+  });
+  document.getElementById('col-name').value   = colName;
+  document.getElementById('col-flat').value   = colFlat;
+  document.getElementById('col-amount').value = colAmt;
+  document.getElementById('col-date').value   = colDate;
+  document.getElementById('col-mobile').value = colMobile;
+
+  document.getElementById('csvPreview').style.display = 'block';
+  document.getElementById('csvCount').textContent = parsedRows.length;
+  document.getElementById('csvSub').textContent = `Detected ${parsedHeaders.length} columns. Verify the column mapping below, then click Import.`;
+  renderPreviewTable();
+}
+
+function getColMap() {
+  return {
+    name:   parseInt(document.getElementById('col-name').value),
+    flat:   parseInt(document.getElementById('col-flat').value),
+    amount: parseInt(document.getElementById('col-amount').value),
+    date:   parseInt(document.getElementById('col-date').value),
+    mobile: parseInt(document.getElementById('col-mobile').value),
+  };
+}
+
+function remapPreview() { renderPreviewTable(); }
+
+function renderPreviewTable() {
+  const cm = getColMap();
+  const tbody = document.getElementById('previewBody');
+  const year = document.getElementById('imp-year').value;
+  tbody.innerHTML = parsedRows.slice(0, 20).map((r, i) => {
+    const vals = parsedHeaders.map(h => r[h] || '');
+    const amt = parseFloat((vals[cm.amount] || '').replace(/[^\d.]/g, '')) || 0;
+    const name = vals[cm.name] || '—';
+    const flat = vals[cm.flat] || '—';
+    const date = vals[cm.date] || '—';
+    const mobile = cm.mobile >= 0 ? (vals[cm.mobile] || '—') : '—';
+    const valid = name !== '—' && flat !== '—' && amt > 0;
+    return `<tr>
+      <td style="color:var(--lbr)">${i+1}</td>
+      <td style="font-weight:500">${name}</td>
+      <td>${flat}</td>
+      <td style="font-family:'Playfair Display',serif;font-weight:700;color:var(--or)">₹${amt.toLocaleString('en-IN')}</td>
+      <td style="color:var(--lbr);font-size:.78rem">${date}</td>
+      <td style="color:var(--lbr);font-size:.78rem">${mobile}</td>
+      <td><span class="tag ${valid?'tag-green':'tag-orange'}">${valid?'✅ OK':'⚠️ Check'}</span></td>
+    </tr>`;
+  }).join('');
+  if (parsedRows.length > 20) {
+    tbody.innerHTML += `<tr><td colspan="7" style="text-align:center;color:var(--lbr);font-style:italic;padding:.8rem">… and ${parsedRows.length - 20} more rows</td></tr>`;
+  }
+}
+
+function confirmImport() {
+  const cm = getColMap();
+  const year = parseInt(document.getElementById('imp-year').value);
+  const existing = getHistory();
+  const newRecords = parsedRows.map(r => {
+    const vals = parsedHeaders.map(h => r[h] || '');
+    return {
+      year,
+      name:   vals[cm.name]   || '',
+      flat:   vals[cm.flat]   || '',
+      amount: parseFloat((vals[cm.amount] || '').replace(/[^\d.]/g, '')) || 0,
+      date:   vals[cm.date]   || '',
+      mobile: cm.mobile >= 0 ? vals[cm.mobile] || '' : '',
+      status: '✅ Received',
+      source: 'Imported',
+    };
+  }).filter(r => r.name && r.flat && r.amount > 0);
+
+  // Deduplicate by name+flat+amount+year
+  const existingKeys = new Set(existing.map(r => `${r.name}|${r.flat}|${r.amount}|${r.year}`));
+  const fresh = newRecords.filter(r => !existingKeys.has(`${r.name}|${r.flat}|${r.amount}|${r.year}`));
+
+  const merged = [...existing, ...fresh];
+  saveHistory(merged);
+
+  // Auto-update resident directory
+  buildDirectoryFromHistory(true);
+
+  document.getElementById('importResult').style.display = 'block';
+  document.getElementById('importResult').textContent = `✅ Imported ${fresh.length} new records for ${year}. ${newRecords.length - fresh.length} duplicates skipped. Total in system: ${merged.length}.`;
+  updateStats();
+  renderHistory();
+  toast(`✅ ${fresh.length} records imported for ${year}!`, 'success');
+}
+
+function exportAsJSON() {
+  const data = { exported: new Date().toISOString(), history: getHistory(), residents: getResidents() };
+  const a = document.createElement('a');
+  a.href = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(data, null, 2));
+  a.download = 'PSOTS_History_Backup.json'; a.click();
+  toast('📥 JSON backup downloaded!', 'success');
+}
+
+function renderHistory() {
+  const all = getHistory();
+  if (!all.length) { document.getElementById('historyView').innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.85rem">No data imported yet.</div>'; return; }
+  const byYear = {};
+  all.forEach(r => (byYear[r.year] = byYear[r.year] || []).push(r));
+  document.getElementById('historyView').innerHTML = Object.keys(byYear).sort((a,b)=>b-a).map(yr => {
+    const rows = byYear[yr];
+    const total = rows.reduce((s,r) => s+(r.amount||0), 0);
+    return `<div style="margin-bottom:1rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+        <span style="font-family:'Playfair Display',serif;font-weight:700;color:var(--ink)">🪔 ${yr}</span>
+        <span style="font-family:'Playfair Display',serif;font-weight:700;color:var(--or)">₹${total.toLocaleString('en-IN')} · ${rows.length} records</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,rows.length/2)}%"></div></div>
+    </div>`;
+  }).join('');
+}
+
+async function syncToSheet() {
+  const url = localStorage.getItem('psots_script_url') || '';
+  if (!url || url.includes('YOUR_APPS')) { toast('Set up Apps Script URL in admin Settings first', 'error'); return; }
+  const all = getHistory();
+  toast('Syncing…', '');
+  try {
+    await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'bulkImport', records: all }) });
+    toast('✅ Synced to Google Sheet!', 'success');
+  } catch(e) { toast('Sync failed — check connection', 'error'); }
+}
+
+function clearAllHistory() {
+  if (!confirm('Clear ALL imported history? This cannot be undone. Export a backup first!')) return;
+  localStorage.removeItem('psots_history');
+  updateStats(); renderHistory();
+  toast('🗑 History cleared', 'error');
+}
+
+/* ═══════════════════════════════
+   RESIDENT DIRECTORY
+═══════════════════════════════ */
+function buildDirectoryFromHistory(silent = false) {
+  const history = getHistory();
+  const map = {};
+  history.forEach(r => {
+    if (!r.flat || !r.name) return;
+    const key = String(r.flat).trim();
+    if (!map[key]) map[key] = { flat: key, name: r.name, mobile: r.mobile || '', tower: '', contributions: [], total: 0 };
+    map[key].contributions.push(r);
+    map[key].total += r.amount || 0;
+    if (r.mobile && !map[key].mobile) map[key].mobile = r.mobile;
+    map[key].lastYear = Math.max(map[key].lastYear || 0, r.year || 0);
+  });
+  // Merge with existing manually added residents
+  const existing = getResidents();
+  existing.forEach(er => {
+    if (!map[er.flat]) map[er.flat] = er;
+    else { if (!map[er.flat].mobile && er.mobile) map[er.flat].mobile = er.mobile; if (er.tower) map[er.flat].tower = er.tower; }
+  });
+  const residents = Object.values(map).sort((a,b) => String(a.flat).localeCompare(String(b.flat), undefined, {numeric:true}));
+  saveResidents(residents);
+  if (!silent) { renderResidents(); renderAllFlats(); toast('✅ Directory rebuilt — ' + residents.length + ' residents', 'success'); }
+}
+
+function renderResidents(filter = '') {
+  const res = getResidents();
+  const q = (filter || document.getElementById('resSearch')?.value || '').toLowerCase();
+  const filtered = res.filter(r => !q || r.name?.toLowerCase().includes(q) || String(r.flat).includes(q) || r.mobile?.includes(q));
+  document.getElementById('resCount').textContent = filtered.length + ' residents shown of ' + res.length + ' total';
+  document.getElementById('resTableBody').innerHTML = filtered.map((r, i) => `
+    <tr onclick="document.getElementById('flatSearch').value='${r.flat}';sw('lookup');lookupFlat('${r.flat}')" style="cursor:pointer">
+      <td style="color:var(--lbr)">${i+1}</td>
+      <td style="font-weight:600">${r.name||'—'}</td>
+      <td style="color:var(--or);font-weight:600">${r.flat}</td>
+      <td style="font-size:.8rem;color:var(--lbr)">${r.mobile||'—'}</td>
+      <td>${r.contributions?.length||'—'}</td>
+      <td style="font-family:'Playfair Display',serif;font-weight:700;color:var(--or)">₹${(r.total||0).toLocaleString('en-IN')}</td>
+      <td>${r.lastYear||'—'}</td>
+      <td><button class="btn-sm" style="color:var(--or)" onclick="event.stopPropagation();editResidentRow('${r.flat}')">✏️</button></td>
+    </tr>`).join('');
+}
+
+function filterResidents() { renderResidents(document.getElementById('resSearch').value); }
+
+function addResidentManual() {
+  const name   = document.getElementById('rn-name').value.trim();
+  const flat   = document.getElementById('rn-flat').value.trim();
+  const mobile = document.getElementById('rn-mobile').value.trim();
+  const tower  = document.getElementById('rn-tower').value.trim();
+  if (!name || !flat) { toast('Name and flat are required', 'error'); return; }
+  const res = getResidents();
+  const existing = res.findIndex(r => String(r.flat) === String(flat));
+  const entry = { flat, name, mobile, tower, contributions: [], total: 0, lastYear: 0, manualEntry: true };
+  if (existing >= 0) res[existing] = { ...res[existing], ...entry };
+  else res.push(entry);
+  saveResidents(res);
+  renderResidents();
+  ['rn-name','rn-flat','rn-mobile','rn-tower'].forEach(id => document.getElementById(id).value = '');
+  toast('✅ Resident added!', 'success');
+}
+
+function exportResidents() {
+  const res = getResidents();
+  const csv = ['Flat,Name,Mobile,Tower,Total Contributed,Years', ...res.map(r => `${r.flat},"${r.name||''}",${r.mobile||''},${r.tower||''},${r.total||0},${r.lastYear||0}`)].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'PSOTS_Residents.csv'; a.click();
+  toast('📥 Exported!', 'success');
+}
+
+/* ═══════════════════════════════
+   FLAT LOOKUP
+═══════════════════════════════ */
+let currentLookup = null;
+
+function lookupFlat(q) {
+  q = String(q).trim().toLowerCase();
+  if (!q) { document.getElementById('lookupResult').style.display = 'none'; document.getElementById('lookupEmpty').style.display = 'block'; return; }
+  const res = getResidents();
+  const match = res.find(r => String(r.flat).toLowerCase() === q || String(r.flat).toLowerCase().includes(q) || (r.name||'').toLowerCase().includes(q));
+  if (!match) { document.getElementById('lookupResult').style.display = 'none'; document.getElementById('lookupEmpty').style.display = 'block'; document.getElementById('lookupEmpty').textContent = `No resident found for "${q}"`; return; }
+  currentLookup = match;
+  document.getElementById('lookupResult').style.display = 'block';
+  document.getElementById('lookupEmpty').style.display = 'none';
+  document.getElementById('lr-name').textContent   = match.name || '—';
+  document.getElementById('lr-flat').textContent   = match.flat;
+  document.getElementById('lr-tower').textContent  = match.tower || 'PSOTS';
+  document.getElementById('lr-mobile').textContent = match.mobile || '—';
+  document.getElementById('lr-total').textContent  = '₹' + (match.total||0).toLocaleString('en-IN');
+  document.getElementById('lr-last').textContent   = match.lastYear || '—';
+  // History
+  const h = (match.contributions||[]).sort((a,b)=>b.year-a.year);
+  document.getElementById('lr-history').innerHTML = h.length ? h.map(c => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem .8rem;background:var(--warm);border-radius:8px;border:1px solid #f0dfc8;margin-bottom:.38rem;font-size:.82rem">
+      <span style="color:var(--lbr)">🪔 ${c.year}</span>
+      <span style="font-family:'Playfair Display',serif;font-weight:700;color:var(--or)">₹${(c.amount||0).toLocaleString('en-IN')}</span>
+      <span style="font-size:.7rem;color:var(--lbr)">${c.date||'—'}</span>
+      <span class="tag tag-green" style="font-size:.6rem">✅ Verified</span>
+    </div>`).join('') : '<div style="color:var(--lbr);font-size:.82rem;padding:.5rem 0">No historical contributions found for this flat.</div>';
+}
+
+function renderAllFlats(q = '') {
+  const res = getResidents();
+  const filter = (document.getElementById('allFlatSearch')?.value || q || '').toLowerCase();
+  const filtered = res.filter(r => !filter || String(r.flat).includes(filter) || (r.name||'').toLowerCase().includes(filter));
+  document.getElementById('allFlatsList').innerHTML = filtered.slice(0, 80).map(r =>
+    `<div onclick="document.getElementById('flatSearch').value='${r.flat}';lookupFlat('${r.flat}')" style="background:var(--white);border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .75rem;cursor:pointer;transition:all .2s;font-size:.78rem" onmouseover="this.style.borderColor='var(--or)';this.style.background='#fff5e8'" onmouseout="this.style.borderColor='#f0d5b8';this.style.background='var(--white)'">
+      <strong style="color:var(--or)">${r.flat}</strong>
+      <div style="font-size:.68rem;color:var(--lbr)">${(r.name||'').split(' ')[0]}</div>
+    </div>`).join('');
+}
+
+function useForManualEntry() {
+  if (!currentLookup) return;
+  // Store in sessionStorage for admin manual entry to pick up
+  sessionStorage.setItem('manualEntryPrefill', JSON.stringify({
+    name: currentLookup.name, flat: currentLookup.flat, mobile: currentLookup.mobile,
+  }));
+  window.location.href = 'admin.html#manual';
+  toast('✅ Details ready for manual entry', 'success');
+}
+
+function editResidentRow(flat) {
+  const res = getResidents();
+  const r = res.find(x => x.flat === flat);
+  if (!r) return;
+  document.getElementById('rn-name').value   = r.name||'';
+  document.getElementById('rn-flat').value   = r.flat||'';
+  document.getElementById('rn-mobile').value = r.mobile||'';
+  document.getElementById('rn-tower').value  = r.tower||'';
+  document.querySelector('[onclick="addResidentManual()"]').textContent = '✅ Update Resident';
+  document.getElementById('rn-name').focus();
+}
+
+/* ═══════════════════════════════
+   APPS SCRIPT CODE
+═══════════════════════════════ */
+const SCRIPT = `
+// PSOTS Chhath 2026 — Full Apps Script
+// Handles: form submissions, contributor list, history lookup, resident directory
+
+var SHEET_2026     = '2026';
+var SHEET_RESIDENTS = 'Residents';
+
+function doPost(e) {
+  var ss    = SpreadsheetApp.getActiveSpreadsheet();
+  var d     = JSON.parse(e.postData.contents);
+  var sheet = ss.getSheetByName(SHEET_2026) || ss.getActiveSheet();
+
+  if (d.action === 'updateStatus') {
+    sheet.getRange(d.row, 8).setValue(d.status);
+    return ok();
+  }
+  if (d.action === 'saveProfile') {
+    var rs = ss.getSheetByName(SHEET_RESIDENTS);
+    if (!rs) rs = ss.insertSheet(SHEET_RESIDENTS);
+    var rdata = rs.getDataRange().getValues();
+    var found = false;
+    for (var i = 1; i < rdata.length; i++) {
+      if (rdata[i][0] === d.flat) {
+        rs.getRange(i+1,1,1,5).setValues([[d.flat,d.name,d.mobile,d.tower,d.uid]]);
+        found = true; break;
+      }
+    }
+    if (!found) rs.appendRow([d.flat, d.name, d.mobile, d.tower, d.uid]);
+    return ok();
+  }
+  if (d.action === 'bulkImport') {
+    var hdr = ['Year','Name','Flat','Mobile','Amount','Date','Method','Status','Source'];
+    var histSheet = ss.getSheetByName('History') || ss.insertSheet('History');
+    if (histSheet.getLastRow() === 0) histSheet.appendRow(hdr);
+    d.records.forEach(function(r) {
+      histSheet.appendRow([r.year,r.name,r.flat,r.mobile||'',r.amount,r.date,r.method||'',r.status||'✅ Received',r.source||'Import']);
+    });
+    return ok();
+  }
+  // Default: new contribution
+  sheet.appendRow([
+    d.timestamp, d.name, d.flat, d.mobile,
+    d.amount, d.date, d.method, d.status || 'Pending Verification',
+    d.accountType || 'Guest', d.userId || ''
+  ]);
+  return ok();
+}
+
+function doGet(e) {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var action = e.parameter.action || 'list';
+
+  // Public contributor list (verified only)
+  if (action === 'list') {
+    var s = ss.getSheetByName(SHEET_2026) || ss.getActiveSheet();
+    var rows = s.getDataRange().getValues();
+    var contributors = [];
+    for (var i = 1; i < rows.length; i++) {
+      if (rows[i][1] && rows[i][7] === '✅ Received') {
+        contributors.push({ name:rows[i][1], flat:rows[i][2], amount:rows[i][4] });
+      }
+    }
+    return json({ contributors: contributors });
+  }
+
+  // All entries for admin
+  if (action === 'list_all') {
+    var s = ss.getSheetByName(SHEET_2026) || ss.getActiveSheet();
+    var rows = s.getDataRange().getValues();
+    var all = [];
+    for (var i = 1; i < rows.length; i++) {
+      if (!rows[i][1]) continue;
+      all.push({ rowIndex:i+1, timestamp:rows[i][0], name:rows[i][1], flat:rows[i][2],
+        mobile:rows[i][3], amount:rows[i][4], date:rows[i][5], method:rows[i][6],
+        status:rows[i][7]||'Pending', accountType:rows[i][8]||'Guest', userId:rows[i][9]||'' });
+    }
+    return json({ all: all });
+  }
+
+  // Flat lookup
+  if (action === 'lookupFlat') {
+    var flat = e.parameter.flat || '';
+    var rs = ss.getSheetByName(SHEET_RESIDENTS);
+    var result = null;
+    if (rs) {
+      var rrows = rs.getDataRange().getValues();
+      for (var i = 1; i < rrows.length; i++) {
+        if (String(rrows[i][0]) === String(flat)) {
+          result = { flat:rrows[i][0], name:rrows[i][1], mobile:rrows[i][2], tower:rrows[i][3] };
+          break;
+        }
+      }
+    }
+    // Also check history across all years
+    var history = [];
+    ['2025','2024','2023','2022'].forEach(function(yr) {
+      var hs = ss.getSheetByName(yr);
+      if (!hs) return;
+      var hrows = hs.getDataRange().getValues();
+      for (var j = 1; j < hrows.length; j++) {
+        if (String(hrows[j][1]) === String(flat) || String(hrows[j][0]) === String(flat)) {
+          history.push({ year:parseInt(yr), name:hrows[j][0]||hrows[j][1], flat:flat,
+            amount:parseFloat(String(hrows[j][2]).replace(/[^\\d.]/g,''))||0, date:hrows[j][3]||'' });
+          if (!result) result = { flat:flat, name:hrows[j][0]||hrows[j][1], mobile:'' };
+        }
+      }
+    });
+    return json({ resident: result, history: history });
+  }
+
+  // User's own contributions
+  if (action === 'myContribs') {
+    var flat   = e.parameter.flat   || '';
+    var mobile = e.parameter.mobile || '';
+    var uid    = e.parameter.uid    || '';
+    var contribs = [];
+    ['2026','2025','2024','2023','2022'].forEach(function(yr) {
+      var hs = ss.getSheetByName(yr);
+      if (!hs) return;
+      var hrows = hs.getDataRange().getValues();
+      for (var j = 1; j < hrows.length; j++) {
+        var rowFlat   = String(hrows[j][2]||hrows[j][1]||'');
+        var rowMobile = String(hrows[j][3]||hrows[j][4]||'');
+        var rowUid    = String(hrows[j][9]||'');
+        if ((flat && rowFlat === flat) || (mobile && rowMobile === mobile) || (uid && rowUid === uid)) {
+          contribs.push({ year:parseInt(yr), name:hrows[j][1]||hrows[j][0],
+            amount:hrows[j][4]||hrows[j][2], date:hrows[j][5]||hrows[j][3],
+            method:hrows[j][6]||'UPI', status:hrows[j][7]||'✅ Received' });
+        }
+      }
+    });
+    return json({ contributions: contribs });
+  }
+
+  return ok();
+}
+
+function ok()   { return ContentService.createTextOutput('OK').setMimeType(ContentService.MimeType.TEXT); }
+function json(d){ return ContentService.createTextOutput(JSON.stringify(d)).setMimeType(ContentService.MimeType.JSON); }
+`.trim();
+
+function setScriptCode() {
+  document.getElementById('scriptCode').value = SCRIPT;
+}
+
+function copyScript() {
+  navigator.clipboard.writeText(SCRIPT).then(() => toast('📋 Script copied! Paste into Apps Script editor', 'success')).catch(() => { document.getElementById('scriptCode').select(); document.execCommand('copy'); toast('📋 Copied!', 'success'); });
+}
+
+async function testConnection() {
+  const url = document.getElementById('testUrl').value.trim();
+  const el  = document.getElementById('connResult');
+  if (!url) { toast('Paste your Apps Script URL first', 'error'); return; }
+  el.style.display = 'block';
+  el.style.background = '#fff8dc'; el.style.borderColor = '#f0c030'; el.style.color = '#8b6000';
+  el.textContent = '🔌 Testing connection…';
+  try {
+    const res  = await fetch(url + '?action=list');
+    const data = await res.json();
+    localStorage.setItem('psots_script_url', url);
+    el.style.background = '#f0fff4'; el.style.borderColor = '#a5d6a7'; el.style.color = '#2e7d32';
+    el.textContent = `✅ Connected! Found ${(data.contributors||[]).length} verified contributors in 2026 sheet.`;
+    toast('✅ Connection successful!', 'success');
+  } catch(e) {
+    el.style.background = '#fff3f0'; el.style.borderColor = '#ffb8a0'; el.style.color = '#c03000';
+    el.textContent = '❌ Connection failed. Make sure: (1) Script is deployed as Web App, (2) Access is set to "Anyone", (3) URL is correct.';
+  }
+}
+
+/* ═══════════════════════════════
+   TOAST
+═══════════════════════════════ */
+function toast(m, t='') {
+  const el = document.getElementById('toast');
+  el.textContent = m; el.className = t ? `show ${t}` : 'show';
+  setTimeout(() => el.className = '', 3500);
+}
+</script>
+</body>
+</html>
