@@ -149,8 +149,15 @@
     <div class="stats-row" id="importStats">
       <div class="stat"><div class="sv" id="st-total">0</div><div class="sl">Total Records</div></div>
       <div class="stat"><div class="sv" id="st-years">0</div><div class="sl">Years Imported</div></div>
-      <div class="stat"><div class="sv" id="st-residents">0</div><div class="sl">Unique Residents</div></div>
+      <div class="stat"><div class="sv" id="st-residents">0</div><div class="sl">Unique Flats</div></div>
       <div class="stat"><div class="sv" id="st-amount">₹0</div><div class="sl">Total Historical</div></div>
+    </div>
+
+    <!-- Tower Summary — admin only, not on public site -->
+    <div class="card" id="towerSummaryCard" style="display:none">
+      <div class="card-title">🏢 Tower-wise Summary <span style="font-size:.65rem;background:#fff0e0;color:var(--or);border-radius:50px;padding:.1rem .55rem;margin-left:.35rem;font-weight:600">Admin Only</span></div>
+      <div class="card-sub">How many contributions and total amount received per tower. Not visible on the public website.</div>
+      <div id="towerSummaryGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.55rem"></div>
     </div>
 
     <!-- Option A: CSV Paste -->
@@ -283,7 +290,7 @@ Praveen Kumar	2172	5001	8-Oct" rows="10"></textarea>
 
       <div class="tbl-wrap">
         <table>
-          <thead><tr><th>#</th><th>Name</th><th>Flat</th><th>Mobile</th><th>Years Contrib.</th><th>Total Given</th><th>Last Year</th><th>Actions</th></tr></thead>
+          <thead><tr><th>#</th><th>Name</th><th>Flat / Tower</th><th>Mobile</th><th>Years Contrib.</th><th>Total Given</th><th>Last Year</th><th>Actions</th></tr></thead>
           <tbody id="resTableBody"><tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--lbr)">Build directory from history data first</td></tr></tbody>
         </table>
       </div>
@@ -296,9 +303,10 @@ Praveen Kumar	2172	5001	8-Oct" rows="10"></textarea>
       <div class="card-sub">Add a resident who isn't in the historical data — new residents, family members, etc.</div>
       <div class="fg">
         <div class="ff"><label>Full Name</label><input type="text" id="rn-name" placeholder="e.g. Sunita Pandey"/></div>
-        <div class="ff"><label>Flat Number</label><input type="text" id="rn-flat" placeholder="e.g. 11058"/></div>
+        <div class="ff"><label>Flat Number</label><input type="text" id="rn-flat" placeholder="e.g. 15167 → T15 F16 U7" oninput="autoFillTowerFromFlat()"/></div>
         <div class="ff"><label>Mobile / WhatsApp</label><input type="tel" id="rn-mobile" placeholder="10-digit number" maxlength="10"/></div>
-        <div class="ff"><label>Tower / Block</label><input type="text" id="rn-tower" placeholder="e.g. Tower B"/></div>
+        <div class="ff"><label>Tower (auto-filled)</label><input type="text" id="rn-tower" placeholder="Auto-detected from flat number" readonly style="background:#f5f0e8;color:var(--lbr)"/></div>
+        <div class="ff"><label>Vrati in Family?</label><select id="rn-vrati"><option value="no">No</option><option value="yes">Yes — observes fast</option></select></div>
       </div>
       <button class="btn-primary" onclick="addResidentManual()">➕ Add to Directory</button>
     </div>
@@ -313,7 +321,7 @@ Praveen Kumar	2172	5001	8-Oct" rows="10"></textarea>
       </div>
 
       <div style="position:relative;margin-bottom:1rem">
-        <input type="text" id="flatSearch" placeholder="Type flat number (e.g. 15167 or B-204)…"
+        <input type="text" id="flatSearch" placeholder="e.g. 15167 = Tower 15, Floor 16, Unit 7"
           oninput="lookupFlat(this.value)"
           style="width:100%;padding:.85rem 1rem;border:2px solid #f0d5b8;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1.2rem;font-weight:700;color:var(--ink);background:var(--warm);outline:none;transition:border-color .2s"
           onfocus="this.style.borderColor='var(--or)'" onblur="this.style.borderColor='#f0d5b8'"/>
@@ -458,6 +466,37 @@ function sw(id) {
 }
 
 /* ═══════════════════════════════
+   FLAT NUMBER PARSER
+   Format: [tower][floor 2 digits][unit 1-2 digits]
+   Valid towers: 1-17 excluding 6, 7, 13
+   Examples: 15167 = T15 F16 U7 | 110712 = T11 F07 U12 | 1072 = T1 F07 U2
+═══════════════════════════════ */
+const PSOTS_TOWERS = new Set([1,2,3,4,5,8,9,10,11,12,14,15,16,17]);
+function parseFlatNumber(flat) {
+  const s = String(flat||'').replace(/\D/g,'');
+  if (!s || s.length < 3) return {tower:null,floor:null,unit:null,label:String(flat||'')};
+  let tower, rest;
+  const t2 = parseInt(s.slice(0,2));
+  if (s.length >= 5 && t2 >= 10 && PSOTS_TOWERS.has(t2)) {
+    tower = t2; rest = s.slice(2);
+  } else {
+    const t1 = parseInt(s.slice(0,1));
+    tower = PSOTS_TOWERS.has(t1) ? t1 : null;
+    rest = tower !== null ? s.slice(1) : '';
+  }
+  if (!tower || rest.length < 2) return {tower:null,floor:null,unit:null,label:String(flat||'')};
+  const floor = parseInt(rest.slice(0,2));
+  const unit  = rest.length >= 3 ? parseInt(rest.slice(2)) : null;
+  return {tower, floor, unit, short:`T${tower}·F${floor}·U${unit??'?'}`, label:`Tower ${tower}  ·  Floor ${floor}  ·  Unit ${unit??'?'}`};
+}
+
+function autoFillTowerFromFlat() {
+  const flat = document.getElementById('rn-flat').value;
+  const p = parseFlatNumber(flat);
+  document.getElementById('rn-tower').value = p.tower ? 'Tower ' + p.tower : '';
+}
+
+/* ═══════════════════════════════
    DATA STORAGE
 ═══════════════════════════════ */
 function getHistory() { return JSON.parse(localStorage.getItem('psots_history') || '[]'); }
@@ -471,6 +510,7 @@ function saveResidents(d) { localStorage.setItem('psots_residents', JSON.stringi
 function initApp() {
   updateStats();
   renderHistory();
+  renderTowerSummary();
   setScriptCode();
 }
 
@@ -618,7 +658,11 @@ function exportAsJSON() {
 
 function renderHistory() {
   const all = getHistory();
-  if (!all.length) { document.getElementById('historyView').innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.85rem">No data imported yet.</div>'; return; }
+  if (!all.length) {
+    document.getElementById('historyView').innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.85rem">No data imported yet.</div>';
+    renderTowerSummary(); // hide tower card
+    return;
+  }
   const byYear = {};
   all.forEach(r => (byYear[r.year] = byYear[r.year] || []).push(r));
   document.getElementById('historyView').innerHTML = Object.keys(byYear).sort((a,b)=>b-a).map(yr => {
@@ -632,6 +676,32 @@ function renderHistory() {
       <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,rows.length/2)}%"></div></div>
     </div>`;
   }).join('');
+  renderTowerSummary();
+}
+
+function renderTowerSummary() {
+  const h = getHistory();
+  const card = document.getElementById('towerSummaryCard');
+  if (!h.length) { card.style.display = 'none'; return; }
+  const towers = {};
+  h.forEach(r => {
+    const p = parseFlatNumber(r.flat);
+    if (!p.tower) return;
+    if (!towers[p.tower]) towers[p.tower] = { count: 0, amount: 0, flats: new Set() };
+    towers[p.tower].count++;
+    towers[p.tower].amount += r.amount || 0;
+    towers[p.tower].flats.add(String(r.flat));
+  });
+  const sorted = Object.keys(towers).map(Number).sort((a, b) => a - b);
+  if (!sorted.length) { card.style.display = 'none'; return; }
+  document.getElementById('towerSummaryGrid').innerHTML = sorted.map(t => `
+    <div style="background:var(--warm);border-radius:10px;padding:.75rem .65rem;border:1px solid rgba(232,92,0,.12);text-align:center">
+      <div style="font-size:.62rem;font-weight:700;letter-spacing:.08em;color:var(--lbr);margin-bottom:.2rem">TOWER ${t}</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:1.15rem;font-weight:900;color:var(--ink)">${towers[t].flats.size}</div>
+      <div style="font-size:.6rem;color:var(--lbr)">flat${towers[t].flats.size!==1?'s':''} · ${towers[t].count} records</div>
+      <div style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--or);font-size:.85rem;margin-top:.28rem">₹${towers[t].amount.toLocaleString('en-IN')}</div>
+    </div>`).join('');
+  card.style.display = 'block';
 }
 
 async function syncToSheet() {
@@ -661,7 +731,8 @@ function buildDirectoryFromHistory(silent = false) {
   history.forEach(r => {
     if (!r.flat || !r.name) return;
     const key = String(r.flat).trim();
-    if (!map[key]) map[key] = { flat: key, name: r.name, mobile: r.mobile || '', tower: '', contributions: [], total: 0 };
+    const fp = parseFlatNumber(key);
+    if (!map[key]) map[key] = { flat: key, name: r.name, mobile: r.mobile || '', tower: fp.tower ? 'Tower ' + fp.tower : '', contributions: [], total: 0 };
     map[key].contributions.push(r);
     map[key].total += r.amount || 0;
     if (r.mobile && !map[key].mobile) map[key].mobile = r.mobile;
@@ -683,17 +754,21 @@ function renderResidents(filter = '') {
   const q = (filter || document.getElementById('resSearch')?.value || '').toLowerCase();
   const filtered = res.filter(r => !q || r.name?.toLowerCase().includes(q) || String(r.flat).includes(q) || r.mobile?.includes(q));
   document.getElementById('resCount').textContent = filtered.length + ' residents shown of ' + res.length + ' total';
-  document.getElementById('resTableBody').innerHTML = filtered.map((r, i) => `
+  document.getElementById('resTableBody').innerHTML = filtered.map((r, i) => {
+    const fp = parseFlatNumber(r.flat);
+    const twLabel = fp.tower ? `<div style="font-size:.62rem;color:var(--lbr);margin-top:.1rem">Tower ${fp.tower}</div>` : '';
+    return `
     <tr onclick="document.getElementById('flatSearch').value='${r.flat}';sw('lookup');lookupFlat('${r.flat}')" style="cursor:pointer">
       <td style="color:var(--lbr)">${i+1}</td>
       <td style="font-weight:600">${r.name||'—'}</td>
-      <td style="color:var(--or);font-weight:600">${r.flat}</td>
+      <td style="color:var(--or);font-weight:600">${r.flat}${twLabel}</td>
       <td style="font-size:.8rem;color:var(--lbr)">${r.mobile||'—'}</td>
       <td>${r.contributions?.length||'—'}</td>
       <td style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--or)">₹${(r.total||0).toLocaleString('en-IN')}</td>
       <td>${r.lastYear||'—'}</td>
       <td><button class="btn-sm" style="color:var(--or)" onclick="event.stopPropagation();editResidentRow('${r.flat}')">✏️</button></td>
-    </tr>`).join('');
+    </tr>`;
+  }).join('');
 }
 
 function filterResidents() { renderResidents(document.getElementById('resSearch').value); }
@@ -706,12 +781,14 @@ function addResidentManual() {
   if (!name || !flat) { toast('Name and flat are required', 'error'); return; }
   const res = getResidents();
   const existing = res.findIndex(r => String(r.flat) === String(flat));
-  const entry = { flat, name, mobile, tower, contributions: [], total: 0, lastYear: 0, manualEntry: true };
+  const isVrati = document.getElementById('rn-vrati').value;
+  const entry = { flat, name, mobile, tower, isVrati, contributions: [], total: 0, lastYear: 0, manualEntry: true };
   if (existing >= 0) res[existing] = { ...res[existing], ...entry };
   else res.push(entry);
   saveResidents(res);
   renderResidents();
   ['rn-name','rn-flat','rn-mobile','rn-tower'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('rn-vrati').value = 'no';
   toast('✅ Resident added!', 'success');
 }
 
@@ -740,7 +817,8 @@ function lookupFlat(q) {
   document.getElementById('lookupEmpty').style.display = 'none';
   document.getElementById('lr-name').textContent   = match.name || '—';
   document.getElementById('lr-flat').textContent   = match.flat;
-  document.getElementById('lr-tower').textContent  = match.tower || 'PSOTS';
+  const fp = parseFlatNumber(match.flat);
+  document.getElementById('lr-tower').textContent  = fp.tower ? fp.label : (match.tower || 'PSOTS');
   document.getElementById('lr-mobile').textContent = match.mobile || '—';
   document.getElementById('lr-total').textContent  = '₹' + (match.total||0).toLocaleString('en-IN');
   document.getElementById('lr-last').textContent   = match.lastYear || '—';
@@ -784,8 +862,11 @@ function editResidentRow(flat) {
   document.getElementById('rn-flat').value   = r.flat||'';
   document.getElementById('rn-mobile').value = r.mobile||'';
   document.getElementById('rn-tower').value  = r.tower||'';
+  document.getElementById('rn-vrati').value  = r.isVrati||'no';
   document.querySelector('[onclick="addResidentManual()"]').textContent = '✅ Update Resident';
   document.getElementById('rn-name').focus();
+  // Scroll to form
+  document.getElementById('rn-name').scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 /* ═══════════════════════════════

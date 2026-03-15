@@ -218,6 +218,7 @@
     <button class="tab-btn" onclick="switchTab('broadcast')">📲 Broadcast</button>
     <button class="tab-btn" onclick="switchTab('manual')">✍️ Manual Entry</button>
     <button class="tab-btn" onclick="switchTab('settings')">⚙️ Settings</button>
+    <button class="tab-btn" onclick="switchTab('directory')">👥 Directory</button>
     <a href="data-manager.html" class="tab-btn" style="text-decoration:none">📥 Import CSV</a>
   </div>
 
@@ -538,11 +539,55 @@
     </div>
   </div>
 
+  <!-- ═══ DIRECTORY TAB ═══ -->
+  <div class="tab-panel" id="tab-directory">
+    <div class="admin-card">
+      <div class="ac-title">👥 Resident Directory <span style="font-size:.62rem;background:#fff0e0;color:var(--or);border-radius:50px;padding:.1rem .5rem;margin-left:.35rem;font-weight:600">Admin Only</span></div>
+      <div class="ac-sub">Full resident profiles — built from historical import data. Shows Vrati status, total contribution across all years, and contact info. <a href="data-manager.html" style="color:var(--or)">Import / manage data →</a></div>
+
+      <!-- Tower filter + search -->
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.8rem;align-items:center">
+        <span style="font-size:.72rem;color:var(--lbr);flex-shrink:0">Tower:</span>
+        <div id="dirTowerFilters" style="display:flex;gap:.4rem;flex-wrap:wrap">
+          <div class="filter-chip active" onclick="filterDirTower(null,this)">All</div>
+        </div>
+        <input id="dirSearch" type="text" placeholder="🔍 Search name, flat, mobile…" oninput="renderDirCards()"
+          style="margin-left:auto;padding:.48rem .85rem;border:1.5px solid #f0d5b8;border-radius:50px;font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;background:var(--warm);min-width:160px;flex:1;max-width:260px"/>
+      </div>
+
+      <div id="dirStats" style="font-size:.78rem;color:var(--lbr);margin-bottom:1rem"></div>
+
+      <div id="dirCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.8rem"></div>
+      <div id="dirEmpty" style="display:none;text-align:center;padding:2rem;color:var(--lbr);font-size:.85rem">
+        No residents found. <a href="data-manager.html" style="color:var(--or)">Import historical data first →</a>
+      </div>
+    </div>
+  </div>
+
 </div><!-- end adminApp -->
 
 <div id="toast"></div>
 
 <script>
+/* ═══════════════════════════════════════════════════
+   FLAT NUMBER PARSER (towers 1-17 excl 6,7,13)
+   Format: [tower][floor 2 digits][unit 1-2 digits]
+   e.g. 15167 = T15 F16 U7 | 110712 = T11 F07 U12 | 1072 = T1 F07 U2
+═══════════════════════════════════════════════════ */
+const PSOTS_TOWERS = new Set([1,2,3,4,5,8,9,10,11,12,14,15,16,17]);
+function parseFlatNumber(flat) {
+  const s = String(flat||'').replace(/\D/g,'');
+  if (!s || s.length < 3) return {tower:null,floor:null,unit:null,short:String(flat||''),label:String(flat||'')};
+  let tower, rest;
+  const t2 = parseInt(s.slice(0,2));
+  if (s.length >= 5 && t2 >= 10 && PSOTS_TOWERS.has(t2)) { tower = t2; rest = s.slice(2); }
+  else { const t1 = parseInt(s.slice(0,1)); tower = PSOTS_TOWERS.has(t1) ? t1 : null; rest = tower !== null ? s.slice(1) : ''; }
+  if (!tower || rest.length < 2) return {tower:null,floor:null,unit:null,short:String(flat||''),label:String(flat||'')};
+  const floor = parseInt(rest.slice(0,2));
+  const unit  = rest.length >= 3 ? parseInt(rest.slice(2)) : null;
+  return {tower, floor, unit, short:`T${tower}·F${floor}·U${unit??'?'}`, label:`Tower ${tower}  ·  Floor ${floor}  ·  Unit ${unit??'?'}`};
+}
+
 /* ═══════════════════════════════════════════════════
    CONFIG
 ═══════════════════════════════════════════════════ */
@@ -676,7 +721,127 @@ function switchTab(id) {
   document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
   document.getElementById('tab-' + id).classList.add('active');
   event.target.classList.add('active');
+  if (id === 'directory') loadDirectory();
 }
+
+/* ═══════════════════════════════════════════════════
+   DIRECTORY TAB
+═══════════════════════════════════════════════════ */
+let dirTowerFilter = null;
+
+function loadDirectory() {
+  const residents = JSON.parse(localStorage.getItem('psots_residents') || '[]');
+  // Build tower filter chips from available data
+  const towers = [...new Set(residents.map(r => parseFlatNumber(r.flat).tower).filter(Boolean))].sort((a,b)=>a-b);
+  const filtersEl = document.getElementById('dirTowerFilters');
+  filtersEl.innerHTML = `<div class="filter-chip active" onclick="filterDirTower(null,this)">All</div>` +
+    towers.map(t => `<div class="filter-chip" onclick="filterDirTower(${t},this)">T${t}</div>`).join('');
+  if (dirTowerFilter && !towers.includes(dirTowerFilter)) dirTowerFilter = null;
+  renderDirCards();
+}
+
+function filterDirTower(t, el) {
+  dirTowerFilter = t;
+  document.querySelectorAll('#dirTowerFilters .filter-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderDirCards();
+}
+
+function renderDirCards() {
+  const residents = JSON.parse(localStorage.getItem('psots_residents') || '[]');
+  const history   = JSON.parse(localStorage.getItem('psots_history')   || '[]');
+  const q = (document.getElementById('dirSearch')?.value || '').toLowerCase();
+
+  // Build all-time contribution map by flat from historical data
+  const histMap = {};
+  history.forEach(r => {
+    const f = String(r.flat).trim();
+    if (!histMap[f]) histMap[f] = { total: 0, years: [] };
+    histMap[f].total += r.amount || 0;
+    if (r.year && !histMap[f].years.includes(r.year)) histMap[f].years.push(r.year);
+  });
+  // Also include 2026 from live contributor data (verified only)
+  allConData.forEach(r => {
+    if (!r.flat || !(r.status||'').includes('Received')) return;
+    const f = String(r.flat).trim();
+    if (!histMap[f]) histMap[f] = { total: 0, years: [] };
+    histMap[f].total += parseFloat(r.amount) || 0;
+    if (!histMap[f].years.includes(2026)) histMap[f].years.push(2026);
+  });
+
+  let filtered = residents.filter(r => {
+    if (dirTowerFilter && parseFlatNumber(r.flat).tower !== dirTowerFilter) return false;
+    if (q && !r.name?.toLowerCase().includes(q) && !String(r.flat).includes(q) && !r.mobile?.includes(q)) return false;
+    return true;
+  });
+
+  const vratiCount = filtered.filter(r => r.isVrati === 'yes').length;
+  const totalAmt   = filtered.reduce((s, r) => s + (histMap[String(r.flat)]?.total || 0), 0);
+  document.getElementById('dirStats').innerHTML =
+    `👥 ${filtered.length} resident${filtered.length!==1?'s':''} &nbsp;·&nbsp; 🙏 ${vratiCount} Vrati &nbsp;·&nbsp; ` +
+    `💰 All-time total: <strong style="color:var(--or)">₹${totalAmt.toLocaleString('en-IN')}</strong>`;
+
+  const cards = document.getElementById('dirCards');
+  const empty = document.getElementById('dirEmpty');
+  if (!filtered.length) { cards.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  cards.innerHTML = filtered.map(r => {
+    const fp = parseFlatNumber(r.flat);
+    const h  = histMap[String(r.flat)] || { total: 0, years: [] };
+    const initials = (r.name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const isVrati  = r.isVrati === 'yes';
+    const has2026  = h.years.includes(2026);
+    const yearBadges = h.years.sort((a,b)=>b-a).map(y =>
+      `<span style="background:${y===2026?'#dcfce7':'#f0f0f0'};color:${y===2026?'var(--green)':'#666'};border-radius:50px;font-size:.6rem;padding:.1rem .38rem">${y}</span>`).join('');
+    return `
+    <div style="background:var(--white);border:1.5px solid rgba(200,100,0,${has2026?'.25':'.1'});border-radius:14px;padding:1rem;position:relative">
+      ${has2026 ? `<div style="position:absolute;top:.55rem;right:.6rem;background:#dcfce7;color:var(--green);font-size:.58rem;font-weight:700;border-radius:50px;padding:.12rem .45rem">2026 ✅</div>` : ''}
+      <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.65rem">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--or),#c93800);display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-weight:900;font-size:.9rem;color:#fff;flex-shrink:0">${initials}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font-weight:700;font-size:.9rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.name||'—'}</div>
+          <div style="font-size:.68rem;color:var(--lbr)">Flat <strong style="color:var(--or)">${r.flat}</strong>${fp.tower ? ` · Tower ${fp.tower}` : ''}</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:.3rem;margin-bottom:.6rem">
+        ${isVrati ? `<span style="background:#fff5e8;color:var(--or);border:1px solid rgba(232,92,0,.2);border-radius:50px;font-size:.62rem;font-weight:700;padding:.1rem .42rem">🙏 Vrati</span>` : ''}
+        ${yearBadges}
+      </div>
+      ${r.mobile ? `<div style="font-size:.7rem;color:var(--lbr);margin-bottom:.5rem">📱 ${r.mobile}</div>` : ''}
+      <div style="display:flex;justify-content:space-between;align-items:center;border-top:1px solid #f5ede0;padding-top:.6rem">
+        <div>
+          <div style="font-family:'DM Sans',sans-serif;font-weight:900;color:var(--or);font-size:1.05rem">₹${h.total.toLocaleString('en-IN')}</div>
+          <div style="font-size:.6rem;color:var(--lbr)">${h.years.length} yr${h.years.length!==1?'s':''} · ${h.years.length?Math.round(h.total/h.years.length).toLocaleString('en-IN')+' avg':'-'}</div>
+        </div>
+        <div style="display:flex;gap:.38rem">
+          ${r.mobile ? `<a href="https://wa.me/91${r.mobile}" target="_blank" style="background:#f0fff4;color:var(--green);border:1px solid rgba(46,125,50,.2);border-radius:8px;padding:.3rem .55rem;font-size:.7rem;text-decoration:none">📲</a>` : ''}
+          <button onclick="prefillManualFromDir('${escAdm(r.flat)}')" style="background:#fff5e8;color:var(--or);border:1px solid rgba(232,92,0,.2);border-radius:8px;padding:.3rem .55rem;font-size:.7rem;cursor:pointer" title="Use for manual entry">✍️</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function prefillManualFromDir(flat) {
+  const residents = JSON.parse(localStorage.getItem('psots_residents') || '[]');
+  const r = residents.find(x => String(x.flat) === String(flat));
+  if (!r) return;
+  // Switch to manual tab
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-manual').classList.add('active');
+  document.querySelectorAll('.tab-btn').forEach(b => { if (b.textContent.includes('Manual')) b.classList.add('active'); });
+  setTimeout(() => {
+    if (document.getElementById('me-name'))   document.getElementById('me-name').value   = r.name   || '';
+    if (document.getElementById('me-flat'))   document.getElementById('me-flat').value   = r.flat   || '';
+    if (document.getElementById('me-mobile')) document.getElementById('me-mobile').value = r.mobile || '';
+    document.getElementById('me-name').focus();
+    toast('✅ Details pre-filled from directory', 'success');
+  }, 80);
+}
+
+function escAdm(s) { return String(s||'').replace(/'/g,"\\'"); }
 
 /* ═══════════════════════════════════════════════════
    CONTRIBUTORS
@@ -733,11 +898,13 @@ function renderConTable(data) {
     const isRejected = r.status?.includes('Rejected');
     const badge = isVerified ? 'verified' : isRejected ? 'rejected' : 'pending';
     const label = isVerified ? '✅ Verified' : isRejected ? '❌ Rejected' : '⏳ Pending';
+    const fp = parseFlatNumber(r.flat);
+    const towerBadge = fp.tower ? `<div style="font-size:.6rem;color:var(--lbr);margin-top:.1rem">Tower ${fp.tower}</div>` : '';
     return `
       <tr>
         <td>${i+1}</td>
         <td class="con-name-cell">${r.name||'—'}</td>
-        <td class="con-flat-cell">${r.flat||'—'}</td>
+        <td class="con-flat-cell">${r.flat||'—'}${towerBadge}</td>
         <td style="font-size:.78rem;color:var(--lbr)">${r.mobile||'—'}</td>
         <td class="con-amt-cell">₹${parseInt(r.amount||0).toLocaleString('en-IN')}</td>
         <td style="font-size:.78rem">${r.method||'UPI'}</td>
@@ -747,6 +914,7 @@ function renderConTable(data) {
           <div class="action-btns">
             ${!isVerified ? `<button class="btn-success" onclick="updateStatus(${i},'✅ Received')">✅</button>` : ''}
             ${!isRejected ? `<button class="btn-danger"  onclick="updateStatus(${i},'❌ Rejected')">❌</button>` : ''}
+            <button class="btn-danger" onclick="deleteEntry(${i})" title="Delete record">🗑</button>
             <button class="btn-icon" onclick="sendWAConfirm('${r.name}','${r.flat}','${r.amount}','${r.mobile}')">📲</button>
           </div>
         </td>
@@ -786,10 +954,22 @@ async function updateStatus(idx, newStatus) {
 }
 
 function sendWAConfirm(name, flat, amount, mobile) {
+  const fp = parseFlatNumber(flat);
+  const towerLine = fp.tower ? `Tower ${fp.tower}, Floor ${fp.floor}, Unit ${fp.unit}` : '';
   const msg = encodeURIComponent(
-    `🪔 *जय छठ मइया!*\n\nनमस्ते ${name} जी 🙏\n\nYour contribution of *₹${parseInt(amount).toLocaleString('en-IN')}* for *PSOTS Chhath Puja 2026 — पंच वर्ष महोत्सव* has been *verified* by the committee!\n\n🏠 Flat: ${flat}\n💰 Amount: ₹${parseInt(amount).toLocaleString('en-IN')}\n\nEvent: Nov 1–4, 2026\nKharna: Nov 2 | Thekua: Nov 4\n\nआपके योगदान के लिए हृदय से धन्यवाद! 🙏\n— PSOTS Chhath Committee`
+    `*जय छठ मइया!* ✨\n\nनमस्ते, *${name}* जी 🙏\n\nआपका योगदान *₹${parseInt(amount).toLocaleString('en-IN')}* PSOTS Chhath Puja 2026 के लिए committee द्वारा *verified* ✅ हो गया है!\n\nFlat: ${flat}${towerLine ? `  (${towerLine})` : ''}\nAmount: ₹${parseInt(amount).toLocaleString('en-IN')}\n\nEvent: Nov 1–4, 2026\nKharna: Nov 2  |  Thekua: Nov 4\n\nआपके योगदान के लिए हृदय से धन्यवाद!\n— PSOTS Chhath Committee`
   );
   window.open(`https://wa.me/91${mobile}?text=${msg}`, '_blank');
+}
+
+function deleteEntry(idx) {
+  const r = allConData[idx];
+  if (!r) return;
+  if (!confirm(`Delete this entry?\n\n${r.name} · Flat ${r.flat} · ₹${r.amount}\n\nThis only removes it from your local view. If synced to Google Sheets, delete from there too.`)) return;
+  allConData.splice(idx, 1);
+  renderConTable(allConData);
+  updateDashStats();
+  toast('🗑 Entry deleted', 'error');
 }
 
 function setFilter(mode, el) {
@@ -1145,7 +1325,7 @@ async function submitManualEntry() {
   const waTarget = waSend === 'proxy' ? proxy : (waSend === 'yes' ? mobile : null);
   if (waTarget && /^\d{10}$/.test(waTarget)) {
     const msg = encodeURIComponent(
-      `🪔 *जय छठ मइया!*\n\nनमस्ते ${name} जी 🙏\n\nYour contribution of *₹${parseInt(amount).toLocaleString('en-IN')}* for *PSOTS Chhath Puja 2026* has been recorded by the committee.\n\n🏠 Flat: ${flat||'—'}\n💰 ₹${parseInt(amount).toLocaleString('en-IN')}\n📅 ${dateStr}\n\nजय छठ मइया! 🪔\n— PSOTS Chhath Committee`
+      `*जय छठ मइया!* ✨\n\nनमस्ते, *${name}* जी 🙏\n\nYour contribution of *₹${parseInt(amount).toLocaleString('en-IN')}* for *PSOTS Chhath Puja 2026* has been recorded by the committee.\n\nFlat: ${flat||'—'}${parseFlatNumber(flat||'').tower ? `  (Tower ${parseFlatNumber(flat||'').tower})` : ''}\nAmount: ₹${parseInt(amount).toLocaleString('en-IN')}\nDate: ${dateStr}\n\n*जय छठ मइया!* ✨\n— PSOTS Chhath Committee`
     );
     window.open(`https://wa.me/91${waTarget}?text=${msg}`, '_blank');
   }
