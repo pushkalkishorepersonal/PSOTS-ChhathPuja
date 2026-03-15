@@ -16,11 +16,13 @@
 const SHEET_CONTRIBUTIONS = 'Contributions';
 const SHEET_PROFILES      = 'Profiles';
 const SHEET_FINANCE       = 'Finance';
+const SHEET_ANNOUNCEMENTS = 'Announcements';
 
 // ─── Column headers ───
 const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','Date','Status','AccountType','UserID','Year'];
 const PROF_HEADERS = ['UserID','Name','Email','Flat','Mobile','IsVrati','Photo','LastUpdated'];
 const FIN_HEADERS  = ['Key','Value'];
+const ANN_HEADERS  = ['Tag','Meta','Text'];
 
 /* ══════════════════════════════════════════════════════════
    INITIAL SETUP — Run this ONCE
@@ -79,20 +81,25 @@ function setupSheets() {
     fin.getRange(1, 1, 1, 2).setFontWeight('bold').setBackground('#1A5276').setFontColor('#FFF');
   }
 
+  // Create Announcements sheet
+  let ann = ss.getSheetByName(SHEET_ANNOUNCEMENTS);
+  if (!ann) {
+    ann = ss.insertSheet(SHEET_ANNOUNCEMENTS);
+    ann.appendRow(ANN_HEADERS);
+    ann.appendRow(['🎊 5th Year', '2026 — Grand Celebration', "This year marks our पंच वर्ष महोत्सव! Grander ghat, extended cultural programme. ₹1,04,670 carried forward from 2025."]);
+    ann.appendRow(['🙏 Prasad',  '2026 — Prasad Details', '2nd Nov खरना प्रसाद & 4th Nov ठेकुआ प्रसाद for all PSOTS residents after Arghya.']);
+    ann.appendRow(['🤝 Volunteer','2026 — Volunteers', 'Volunteers needed for ghat decoration on 2nd November. Breakfast provided for all volunteers.']);
+    ann.appendRow(['⏰ Important','2026 — Deadline', 'Contribute before 25th October 2026 to be on the prasad list.']);
+    ann.getRange(1, 1, 1, 3).setFontWeight('bold').setBackground('#2C7744').setFontColor('#FFF');
+  }
+
   // Remove default Sheet1 if it exists and is empty
   const sheet1 = ss.getSheetByName('Sheet1');
   if (sheet1 && sheet1.getLastRow() <= 1) {
     try { ss.deleteSheet(sheet1); } catch(e) {}
   }
 
-  SpreadsheetApp.getUi().alert(
-    '✅ Setup Complete!\n\n' +
-    'Sheets created:\n' +
-    '• Contributions — stores all payment records\n' +
-    '• Profiles — stores user profiles from portal\n\n' +
-    'Next step: Deploy as Web App\n' +
-    '(Extensions → Apps Script → Deploy → New deployment)'
-  );
+  Logger.log('✅ setupSheets complete — Contributions, Profiles, Finance, Announcements sheets ready.');
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -119,6 +126,9 @@ function doGet(e) {
       break;
     case 'getFinance':
       result = actionGetFinance();
+      break;
+    case 'getAnnouncements':
+      result = actionGetAnnouncements();
       break;
     case 'ping':
       result = { ok: true, message: 'PSOTS Backend is running!' };
@@ -149,6 +159,8 @@ function doPost(e) {
       result = actionUpdateFinance(body);
     } else if (body.action === 'bulkImport') {
       result = actionBulkImport(body.records || []);
+    } else if (body.action === 'updateAnnouncements') {
+      result = actionUpdateAnnouncements(body.data || []);
     } else {
       // Default: new contribution
       result = actionAddContribution(body);
@@ -404,7 +416,8 @@ function actionUpdateFinance(body) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_FINANCE);
   if (!sheet) return { error: 'Finance sheet not found. Run setupSheets() first.' };
 
-  const keys = ['carry','collected','budget','expenses','expTent','expKharna','expThekua','expAV','expCultural','expMisc'];
+  const keys = ['carry','collected','budget','expenses','expTent','expKharna','expThekua','expAV','expCultural','expMisc',
+                 'timEveTime','timEveDate','timEveLoc','timMornTime','timMornDate','timMornLoc','timKharnaTime','timKharnaDate'];
   const data = sheet.getLastRow() >= 2
     ? sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues()
     : [];
@@ -455,6 +468,38 @@ function actionBulkImport(records) {
 
   sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, CON_HEADERS.length).setValues(rows);
   return { success: true, added: toAdd.length, skipped: records.length - toAdd.length };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Get announcements (public GET)
+══════════════════════════════════════════════════════════ */
+function actionGetAnnouncements() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ANNOUNCEMENTS);
+  if (!sheet || sheet.getLastRow() < 2) return { announcements: [] };
+  const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).getValues();
+  const announcements = rows
+    .filter(r => r[0] || r[2])
+    .map(r => ({ tag: String(r[0]), meta: String(r[1]), text: String(r[2]) }));
+  return { announcements };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Update announcements (admin POST)
+══════════════════════════════════════════════════════════ */
+function actionUpdateAnnouncements(data) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ANNOUNCEMENTS);
+  if (!sheet) return { error: 'Announcements sheet not found. Run setupSheets() first.' };
+
+  // Clear existing data rows
+  if (sheet.getLastRow() > 1) {
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).clearContent();
+  }
+  // Write new rows
+  if (data.length > 0) {
+    const rows = data.map(a => [a.tag || '', a.meta || '', a.text || '']);
+    sheet.getRange(2, 1, rows.length, 3).setValues(rows);
+  }
+  return { success: true };
 }
 
 /* ══════════════════════════════════════════════════════════

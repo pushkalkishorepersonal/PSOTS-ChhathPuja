@@ -690,6 +690,58 @@ function initAdmin() {
   initBroadcast();
   updateAdminCountdown();
   setInterval(updateAdminCountdown, 60000);
+  // Override localStorage with live data from Apps Script
+  loadAllFromSheet();
+}
+
+async function loadAllFromSheet() {
+  const url = getScriptUrl();
+  if (!url) return;
+  try {
+    // Load finance + timings (both stored in Finance sheet)
+    const fd = await fetch(url + '?action=getFinance').then(r => r.json());
+    const f = fd.finance || {};
+    // Finance fields
+    if (f.carry     != null && f.carry     !== '') document.getElementById('f-carry').value     = f.carry;
+    if (f.collected != null && f.collected !== '') document.getElementById('f-collected').value = f.collected;
+    if (f.budget    != null && f.budget    !== '') document.getElementById('f-budget').value    = f.budget;
+    if (f.expenses  != null && f.expenses  !== '') document.getElementById('f-expenses').value  = f.expenses;
+    if (f.expTent     != null && f.expTent     !== '') document.getElementById('exp-tent').value     = f.expTent;
+    if (f.expKharna   != null && f.expKharna   !== '') document.getElementById('exp-kharna').value   = f.expKharna;
+    if (f.expThekua   != null && f.expThekua   !== '') document.getElementById('exp-thekua').value   = f.expThekua;
+    if (f.expAV       != null && f.expAV       !== '') document.getElementById('exp-av').value        = f.expAV;
+    if (f.expCultural != null && f.expCultural !== '') document.getElementById('exp-cultural').value  = f.expCultural;
+    if (f.expMisc     != null && f.expMisc     !== '') document.getElementById('exp-misc').value      = f.expMisc;
+    // Timing fields
+    if (f.timEveTime)  document.getElementById('t-evening').value = f.timEveTime;
+    if (f.timEveDate)  document.getElementById('d-evening').value = f.timEveDate;
+    if (f.timEveLoc)   document.getElementById('l-evening').value = f.timEveLoc;
+    if (f.timMornTime) document.getElementById('t-morning').value = f.timMornTime;
+    if (f.timMornDate) document.getElementById('d-morning').value = f.timMornDate;
+    if (f.timMornLoc)  document.getElementById('l-morning').value = f.timMornLoc;
+    if (f.timKharnaTime) document.getElementById('t-kharna').value = f.timKharnaTime;
+    if (f.timKharnaDate) document.getElementById('d-kharna').value = f.timKharnaDate;
+    // Cache locally for offline fallback
+    localStorage.setItem('psots_finance', JSON.stringify({
+      carry:f.carry,collected:f.collected,budget:f.budget,expenses:f.expenses,
+      expTent:f.expTent,expKharna:f.expKharna,expThekua:f.expThekua,expAV:f.expAV,expCultural:f.expCultural,expMisc:f.expMisc
+    }));
+    localStorage.setItem('psots_timings', JSON.stringify({
+      evening:{time:f.timEveTime,date:f.timEveDate,location:f.timEveLoc},
+      morning:{time:f.timMornTime,date:f.timMornDate,location:f.timMornLoc},
+      kharna:{time:f.timKharnaTime,date:f.timKharnaDate}
+    }));
+  } catch(e) { console.warn('loadAllFromSheet finance:', e); }
+
+  try {
+    // Load announcements
+    const ad = await fetch(url + '?action=getAnnouncements').then(r => r.json());
+    if (ad.announcements && ad.announcements.length > 0) {
+      announcements = ad.announcements;
+      renderAnnouncements();
+      localStorage.setItem('psots_announcements', JSON.stringify(announcements));
+    }
+  } catch(e) { console.warn('loadAllFromSheet announcements:', e); }
 }
 
 function getScriptUrl() {
@@ -1068,6 +1120,24 @@ function updateAdminCountdown() {
 /* ═══════════════════════════════════════════════════
    FINANCE
 ═══════════════════════════════════════════════════ */
+function loadFinance() {
+  const saved = localStorage.getItem('psots_finance');
+  if (!saved) return;
+  try {
+    const f = JSON.parse(saved);
+    if (f.carry    != null) document.getElementById('f-carry').value    = f.carry;
+    if (f.collected!= null) document.getElementById('f-collected').value= f.collected;
+    if (f.budget   != null) document.getElementById('f-budget').value   = f.budget;
+    if (f.expenses != null) document.getElementById('f-expenses').value = f.expenses;
+    if (f.expTent    != null) document.getElementById('exp-tent').value     = f.expTent;
+    if (f.expKharna  != null) document.getElementById('exp-kharna').value   = f.expKharna;
+    if (f.expThekua  != null) document.getElementById('exp-thekua').value   = f.expThekua;
+    if (f.expAV      != null) document.getElementById('exp-av').value        = f.expAV;
+    if (f.expCultural!= null) document.getElementById('exp-cultural').value  = f.expCultural;
+    if (f.expMisc    != null) document.getElementById('exp-misc').value      = f.expMisc;
+  } catch(e) {}
+}
+
 function calcTotal() {
   const ids = ['exp-tent','exp-kharna','exp-thekua','exp-av','exp-cultural','exp-misc'];
   const total = ids.reduce((s,id) => s + (parseFloat(document.getElementById(id).value)||0), 0);
@@ -1180,13 +1250,54 @@ function loadDayEditor() {
     </div>`).join('');
 }
 
-function saveTimings() {
+function loadTimings() {
+  const saved = localStorage.getItem('psots_timings');
+  if (!saved) return;
+  try {
+    const t = JSON.parse(saved);
+    if (t.evening) {
+      if (t.evening.time)     document.getElementById('t-evening').value = t.evening.time;
+      if (t.evening.date)     document.getElementById('d-evening').value = t.evening.date;
+      if (t.evening.location) document.getElementById('l-evening').value = t.evening.location;
+    }
+    if (t.morning) {
+      if (t.morning.time)     document.getElementById('t-morning').value = t.morning.time;
+      if (t.morning.date)     document.getElementById('d-morning').value = t.morning.date;
+      if (t.morning.location) document.getElementById('l-morning').value = t.morning.location;
+    }
+    if (t.kharna) {
+      if (t.kharna.time) document.getElementById('t-kharna').value = t.kharna.time;
+      if (t.kharna.date) document.getElementById('d-kharna').value = t.kharna.date;
+    }
+  } catch(e) {}
+}
+
+async function saveTimings() {
   const timings = {
     evening: { time: document.getElementById('t-evening').value, date: document.getElementById('d-evening').value, location: document.getElementById('l-evening').value },
     morning: { time: document.getElementById('t-morning').value, date: document.getElementById('d-morning').value, location: document.getElementById('l-morning').value },
     kharna:  { time: document.getElementById('t-kharna').value,  date: document.getElementById('d-kharna').value },
   };
   localStorage.setItem('psots_timings', JSON.stringify(timings));
+  // Persist to Google Sheet so public pages can read live timings
+  const url = getScriptUrl();
+  if (url) {
+    try {
+      await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({
+          action: 'updateFinance',
+          timEveTime: timings.evening.time,
+          timEveDate: timings.evening.date,
+          timEveLoc:  timings.evening.location,
+          timMornTime: timings.morning.time,
+          timMornDate: timings.morning.date,
+          timMornLoc:  timings.morning.location,
+          timKharnaTime: timings.kharna.time,
+          timKharnaDate: timings.kharna.date,
+        })
+      });
+    } catch(e) {}
+  }
   toast('✅ Arghya timings saved!', 'success');
 }
 
@@ -1286,6 +1397,8 @@ function setEntryType(type, el) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  loadFinance();
+  loadTimings();
   document.getElementById('me-date').valueAsDate = new Date();
   document.getElementById('bulk-date').valueAsDate = new Date();
   document.getElementById('me-wa-send').addEventListener('change', waConfirmChange);

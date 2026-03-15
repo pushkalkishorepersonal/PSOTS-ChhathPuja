@@ -42,7 +42,7 @@
     <div class="sc"><div class="sc-val">₹2,35,553</div><div class="sc-lbl">Total Collected</div></div>
     <div class="sc"><div class="sc-val">₹1,98,383</div><div class="sc-lbl">Total Expenses</div></div>
     <div class="sc" style="background:linear-gradient(135deg,#fff5e8,#ffe8cc);border-color:rgba(232,92,0,.25)"><div class="sc-val g">₹1,04,670</div><div class="sc-lbl">Carried to 2026 ✅</div></div>
-    <div class="sc"><div class="sc-val">₹2,82,000</div><div class="sc-lbl">2026 Budget Plan</div></div>
+    <div class="sc"><div class="sc-val" id="stat-budget">₹2,82,000</div><div class="sc-lbl">2026 Budget Plan</div></div>
   </div>
 
   <div class="card" id="expCard">
@@ -61,7 +61,7 @@
       <div class="yc"><div class="yc-yr">2023</div><div class="yc-val">₹1,83,630</div></div>
       <div class="yc"><div class="yc-yr">2024</div><div class="yc-val">₹2,17,048</div></div>
       <div class="yc"><div class="yc-yr">2025</div><div class="yc-val">₹1,98,383</div></div>
-      <div class="yc" style="background:linear-gradient(135deg,#fff5e8,#ffe8cc);border-color:rgba(232,92,0,.3)"><div class="yc-yr" style="color:var(--or)">2026 Budget</div><div class="yc-val" style="color:var(--or)">~₹2,82,000</div></div>
+      <div class="yc" style="background:linear-gradient(135deg,#fff5e8,#ffe8cc);border-color:rgba(232,92,0,.3)"><div class="yc-yr" style="color:var(--or)">2026 Budget</div><div class="yc-val" style="color:var(--or)" id="yoy-budget">~₹2,82,000</div></div>
     </div>
   </div>
 
@@ -71,7 +71,7 @@
     <div style="font-size:.82rem;color:var(--br);line-height:1.7">
       <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid #f0d5b8"><span>Carry forward from 2025</span><strong style="color:var(--green)">₹1,04,670</strong></div>
       <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid #f0d5b8"><span>Collected 2026 (so far)</span><strong id="live-collected" style="color:var(--or)">Loading…</strong></div>
-      <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid #f0d5b8"><span>2026 Budget</span><strong>₹2,82,000</strong></div>
+      <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid #f0d5b8"><span>2026 Budget</span><strong id="live-budget">₹2,82,000</strong></div>
       <div style="display:flex;justify-content:space-between;padding:.5rem 0"><span>Expenses 2026 (so far)</span><strong id="live-expenses">₹0</strong></div>
     </div>
   </div>
@@ -99,6 +99,12 @@ async function loadLive(){
     const f=d2.finance||{};
     if(f.expenses&&Number(f.expenses)>0)
       document.getElementById('live-expenses').textContent='₹'+parseInt(f.expenses).toLocaleString('en-IN');
+    if(f.budget&&Number(f.budget)>0){
+      const bFmt='₹'+parseInt(f.budget).toLocaleString('en-IN');
+      document.getElementById('live-budget').textContent=bFmt;
+      document.getElementById('yoy-budget').textContent='~'+bFmt;
+      document.getElementById('stat-budget').textContent=bFmt;
+    }
   }catch(e){}
 }
 loadLive();
