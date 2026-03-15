@@ -1,0 +1,387 @@
+/*  ══════════════════════════════════════════════════════════
+    PSOTS Chhath Puja — Google Apps Script Backend
+    ══════════════════════════════════════════════════════════
+
+    This script connects your Google Sheet to the PSOTS website.
+    It handles:
+      - Recording new contributions (POST from payment page)
+      - Listing contributions (GET for homepage, admin, portal)
+      - User profiles (GET/POST for portal)
+
+    SETUP:  Run the setupSheets() function ONCE after pasting this code.
+            Then deploy as Web App (see setup-guide.html for details).
+    ══════════════════════════════════════════════════════════ */
+
+// ─── Sheet Names ───
+const SHEET_CONTRIBUTIONS = 'Contributions';
+const SHEET_PROFILES      = 'Profiles';
+const SHEET_SETTINGS      = 'Settings';
+
+// ─── Column headers ───
+const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','Date','Status','AccountType','UserID','Year'];
+const PROF_HEADERS = ['UserID','Name','Email','Flat','Mobile','IsVrati','Photo','LastUpdated'];
+
+/* ══════════════════════════════════════════════════════════
+   INITIAL SETUP — Run this ONCE
+══════════════════════════════════════════════════════════ */
+function setupSheets() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  // Create Contributions sheet
+  let con = ss.getSheetByName(SHEET_CONTRIBUTIONS);
+  if (!con) {
+    con = ss.insertSheet(SHEET_CONTRIBUTIONS);
+    con.appendRow(CON_HEADERS);
+    con.getRange(1, 1, 1, CON_HEADERS.length)
+       .setFontWeight('bold')
+       .setBackground('#E85C00')
+       .setFontColor('#FFFFFF');
+    con.setFrozenRows(1);
+    // Set column widths
+    con.setColumnWidth(1, 160); // Timestamp
+    con.setColumnWidth(2, 180); // Name
+    con.setColumnWidth(3, 80);  // Flat
+    con.setColumnWidth(4, 120); // Mobile
+    con.setColumnWidth(5, 90);  // Amount
+    con.setColumnWidth(6, 100); // Method
+    con.setColumnWidth(7, 100); // Date
+    con.setColumnWidth(8, 130); // Status
+  }
+
+  // Create Profiles sheet
+  let prof = ss.getSheetByName(SHEET_PROFILES);
+  if (!prof) {
+    prof = ss.insertSheet(SHEET_PROFILES);
+    prof.appendRow(PROF_HEADERS);
+    prof.getRange(1, 1, 1, PROF_HEADERS.length)
+        .setFontWeight('bold')
+        .setBackground('#1A5276')
+        .setFontColor('#FFFFFF');
+    prof.setFrozenRows(1);
+  }
+
+  // Create Settings sheet
+  let settings = ss.getSheetByName(SHEET_SETTINGS);
+  if (!settings) {
+    settings = ss.insertSheet(SHEET_SETTINGS);
+    settings.appendRow(['Key', 'Value']);
+    settings.appendRow(['AdminPassword', 'Y2hoaGF0aA==']);
+    settings.appendRow(['UPI_ID', '9482088904-3@ybl']);
+    settings.appendRow(['WhatsApp', '919482088904']);
+    settings.appendRow(['EventDate', '2026-10-26']);
+    settings.getRange(1, 1, 1, 2)
+            .setFontWeight('bold')
+            .setBackground('#333')
+            .setFontColor('#FFF');
+  }
+
+  // Remove default Sheet1 if it exists and is empty
+  const sheet1 = ss.getSheetByName('Sheet1');
+  if (sheet1 && sheet1.getLastRow() <= 1) {
+    try { ss.deleteSheet(sheet1); } catch(e) {}
+  }
+
+  SpreadsheetApp.getUi().alert(
+    '✅ Setup Complete!\n\n' +
+    'Sheets created:\n' +
+    '• Contributions — stores all payment records\n' +
+    '• Profiles — stores user profiles from portal\n' +
+    '• Settings — admin settings\n\n' +
+    'Next step: Deploy as Web App\n' +
+    '(Extensions → Apps Script → Deploy → New deployment)'
+  );
+}
+
+/* ══════════════════════════════════════════════════════════
+   WEB APP ENTRY POINTS
+══════════════════════════════════════════════════════════ */
+
+// Handle GET requests
+function doGet(e) {
+  const action = (e.parameter.action || '').trim();
+  let result;
+
+  switch (action) {
+    case 'list':
+      result = actionList();
+      break;
+    case 'list_all':
+      result = actionListAll();
+      break;
+    case 'myContribs':
+      result = actionMyContribs(e.parameter.flat, e.parameter.mobile);
+      break;
+    case 'getProfile':
+      result = actionGetProfile(e.parameter.uid);
+      break;
+    case 'ping':
+      result = { ok: true, message: 'PSOTS Backend is running!' };
+      break;
+    default:
+      result = { error: 'Unknown action: ' + action };
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+// Handle POST requests (new contributions + profile saves)
+function doPost(e) {
+  let result;
+
+  try {
+    const body = JSON.parse(e.postData.contents);
+
+    if (body.action === 'saveProfile') {
+      result = actionSaveProfile(body);
+    } else if (body.action === 'updateStatus') {
+      result = actionUpdateStatus(body.flat, body.year, body.newStatus);
+    } else if (body.action === 'deleteEntry') {
+      result = actionDeleteEntry(body.flat, body.year, body.amount);
+    } else {
+      // Default: new contribution
+      result = actionAddContribution(body);
+    }
+  } catch (err) {
+    result = { error: err.message };
+  }
+
+  return ContentService
+    .createTextOutput(JSON.stringify(result))
+    .setMimeType(ContentService.MimeType.JSON);
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: List contributors (public — for homepage)
+══════════════════════════════════════════════════════════ */
+function actionList() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
+  if (!sheet || sheet.getLastRow() < 2) return { contributors: [] };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, CON_HEADERS.length).getValues();
+
+  // Only return verified contributions, grouped by flat
+  const verified = data.filter(r => String(r[7]).includes('Received'));
+
+  const contributors = verified.map(r => ({
+    name:   String(r[1]),
+    flat:   String(r[2]),
+    amount: Number(r[4]) || 0,
+    method: String(r[5]),
+    date:   String(r[6]),
+    status: String(r[7])
+  }));
+
+  // Sort by amount descending
+  contributors.sort((a, b) => b.amount - a.amount);
+
+  return { contributors };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: List ALL contributions (admin only)
+══════════════════════════════════════════════════════════ */
+function actionListAll() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
+  if (!sheet || sheet.getLastRow() < 2) return { all: [] };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, CON_HEADERS.length).getValues();
+
+  const all = data.map(r => ({
+    ts:     String(r[0]),
+    name:   String(r[1]),
+    flat:   String(r[2]),
+    mobile: String(r[3]),
+    amount: Number(r[4]) || 0,
+    method: String(r[5]),
+    date:   String(r[6]),
+    status: String(r[7]),
+    accountType: String(r[8]),
+    year:   Number(r[10]) || new Date().getFullYear()
+  }));
+
+  return { all };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: My contributions (portal — by flat/mobile)
+══════════════════════════════════════════════════════════ */
+function actionMyContribs(flat, mobile) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
+  if (!sheet || sheet.getLastRow() < 2) return { contributions: [] };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, CON_HEADERS.length).getValues();
+
+  const mine = data.filter(r => {
+    if (flat && String(r[2]).trim() === String(flat).trim()) return true;
+    if (mobile && String(r[3]).replace(/\D/g, '').slice(-10) === String(mobile).replace(/\D/g, '').slice(-10)) return true;
+    return false;
+  });
+
+  const contributions = mine.map(r => ({
+    year:   Number(r[10]) || new Date().getFullYear(),
+    amount: Number(r[4]) || 0,
+    method: String(r[5]),
+    date:   String(r[6]),
+    status: String(r[7])
+  }));
+
+  // Sort by year descending
+  contributions.sort((a, b) => b.year - a.year);
+
+  return { contributions };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Add new contribution (POST from payment page)
+══════════════════════════════════════════════════════════ */
+function actionAddContribution(body) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
+  if (!sheet) return { error: 'Contributions sheet not found' };
+
+  const year = extractYear(body.date) || new Date().getFullYear();
+
+  sheet.appendRow([
+    body.timestamp || new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+    body.name   || '',
+    body.flat   || '',
+    body.mobile || '',
+    Math.round(Number(body.amount) || 0),
+    body.method || 'UPI',
+    body.date   || '',
+    body.status || 'Pending Verification',
+    body.accountType || 'Guest 👤',
+    body.userId || '',
+    year
+  ]);
+
+  return { success: true, message: 'Contribution recorded!' };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Update contribution status (admin)
+══════════════════════════════════════════════════════════ */
+function actionUpdateStatus(flat, year, newStatus) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
+  if (!sheet || sheet.getLastRow() < 2) return { error: 'No data' };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, CON_HEADERS.length).getValues();
+
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][2]).trim() === String(flat).trim() &&
+        (Number(data[i][10]) === Number(year) || !year)) {
+      sheet.getRange(i + 2, 8).setValue(newStatus); // Status column
+      return { success: true };
+    }
+  }
+
+  return { error: 'Entry not found' };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Delete entry (admin)
+══════════════════════════════════════════════════════════ */
+function actionDeleteEntry(flat, year, amount) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
+  if (!sheet || sheet.getLastRow() < 2) return { error: 'No data' };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, CON_HEADERS.length).getValues();
+
+  for (let i = data.length - 1; i >= 0; i--) {
+    if (String(data[i][2]).trim() === String(flat).trim() &&
+        Number(data[i][10]) === Number(year) &&
+        Number(data[i][4]) === Number(amount)) {
+      sheet.deleteRow(i + 2);
+      return { success: true };
+    }
+  }
+
+  return { error: 'Entry not found' };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Get user profile (portal)
+══════════════════════════════════════════════════════════ */
+function actionGetProfile(uid) {
+  if (!uid) return { profile: null };
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROFILES);
+  if (!sheet || sheet.getLastRow() < 2) return { profile: null };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, PROF_HEADERS.length).getValues();
+
+  for (const r of data) {
+    if (String(r[0]) === String(uid)) {
+      return {
+        profile: {
+          uid:    String(r[0]),
+          name:   String(r[1]),
+          email:  String(r[2]),
+          flat:   String(r[3]),
+          mobile: String(r[4]),
+          isVrati: String(r[5]) === 'true',
+          photo:  String(r[6])
+        }
+      };
+    }
+  }
+
+  return { profile: null };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Save user profile (portal POST)
+══════════════════════════════════════════════════════════ */
+function actionSaveProfile(body) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROFILES);
+  if (!sheet) return { error: 'Profiles sheet not found' };
+
+  const uid = body.uid || body.userId || '';
+  if (!uid) return { error: 'No user ID' };
+
+  // Check if profile exists
+  if (sheet.getLastRow() >= 2) {
+    const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][0]) === String(uid)) {
+        // Update existing row
+        const row = i + 2;
+        sheet.getRange(row, 2).setValue(body.name || '');
+        sheet.getRange(row, 3).setValue(body.email || '');
+        sheet.getRange(row, 4).setValue(body.flat || '');
+        sheet.getRange(row, 5).setValue(body.mobile || '');
+        sheet.getRange(row, 6).setValue(String(body.isVrati || false));
+        sheet.getRange(row, 7).setValue(body.photo || '');
+        sheet.getRange(row, 8).setValue(new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
+        return { success: true, updated: true };
+      }
+    }
+  }
+
+  // Insert new profile
+  sheet.appendRow([
+    uid,
+    body.name || '',
+    body.email || '',
+    body.flat || '',
+    body.mobile || '',
+    String(body.isVrati || false),
+    body.photo || '',
+    new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+  ]);
+
+  return { success: true, created: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   HELPER: Extract year from date string
+══════════════════════════════════════════════════════════ */
+function extractYear(dateStr) {
+  if (!dateStr) return null;
+  const s = String(dateStr);
+  // Try DD/MM/YYYY or DD-MM-YYYY
+  const m1 = s.match(/(\d{4})/);
+  if (m1) return parseInt(m1[1]);
+  return null;
+}

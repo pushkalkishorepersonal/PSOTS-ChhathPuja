@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PSOTS — Google Sheet Setup Guide</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--or:#E85C00;--bg:#FFF8F0;--card:#fff;--txt:#1a1a2e;--sub:#666;--gr:#27ae60;--bl:#2980b9}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:var(--bg);color:var(--txt);line-height:1.6;padding:1rem}
+.container{max-width:720px;margin:0 auto}
+h1{color:var(--or);font-size:1.5rem;margin-bottom:.5rem;text-align:center}
+.subtitle{text-align:center;color:var(--sub);margin-bottom:2rem;font-size:.9rem}
+.step{background:var(--card);border-radius:12px;padding:1.2rem;margin-bottom:1rem;border-left:4px solid var(--or);box-shadow:0 2px 8px rgba(0,0,0,.06)}
+.step-num{display:inline-flex;align-items:center;justify-content:center;width:28px;height:28px;background:var(--or);color:#fff;border-radius:50%;font-weight:700;font-size:.85rem;margin-right:.5rem}
+.step h2{font-size:1.05rem;display:flex;align-items:center;margin-bottom:.6rem}
+.step p,.step li{font-size:.88rem;color:var(--sub)}
+.step ol,.step ul{padding-left:1.2rem;margin-top:.4rem}
+.step li{margin-bottom:.3rem}
+.step img{max-width:100%;border-radius:8px;margin:.5rem 0;border:1px solid #eee}
+.code-box{background:#1a1a2e;color:#e0e0e0;padding:.8rem;border-radius:8px;font-family:'Fira Code',monospace;font-size:.78rem;overflow-x:auto;margin:.5rem 0;position:relative;white-space:pre-wrap;word-break:break-all}
+.copy-btn{position:absolute;top:.4rem;right:.4rem;background:var(--or);color:#fff;border:none;border-radius:6px;padding:.25rem .6rem;cursor:pointer;font-size:.72rem}
+.copy-btn:active{transform:scale(.95)}
+.warn{background:#FFF3CD;border-left-color:#F0AD4E;color:#856404}
+.warn p{color:#856404}
+.success{background:#D4EDDA;border-left-color:var(--gr);color:#155724}
+.success p{color:#155724}
+.btn{display:inline-block;background:var(--or);color:#fff;padding:.6rem 1.2rem;border-radius:8px;text-decoration:none;font-weight:600;font-size:.9rem;margin-top:.5rem;border:none;cursor:pointer}
+.btn:hover{opacity:.9}
+.btn-blue{background:var(--bl)}
+a{color:var(--bl)}
+.checklist{list-style:none;padding:0}
+.checklist li{padding:.3rem 0;font-size:.88rem}
+.checklist li::before{content:'☐ ';color:var(--or)}
+.back-link{text-align:center;margin-top:1.5rem}
+.back-link a{color:var(--or);text-decoration:none;font-weight:600}
+</style>
+</head>
+<body>
+<div class="container">
+<h1>Google Sheet Setup Guide</h1>
+<p class="subtitle">Follow these steps to connect your PSOTS website to a Google Sheet for live data management</p>
+
+<!-- Step 1 -->
+<div class="step">
+  <h2><span class="step-num">1</span> Create a New Google Sheet</h2>
+  <ol>
+    <li>Go to <a href="https://sheets.google.com" target="_blank">sheets.google.com</a></li>
+    <li>Click <b>+ Blank spreadsheet</b></li>
+    <li>Name it: <b>PSOTS Chhath Puja Data</b></li>
+  </ol>
+  <a href="https://sheets.google.com" target="_blank" class="btn btn-blue" style="margin-top:.8rem">Open Google Sheets →</a>
+</div>
+
+<!-- Step 2 -->
+<div class="step">
+  <h2><span class="step-num">2</span> Open Apps Script Editor</h2>
+  <ol>
+    <li>In your new Google Sheet, click <b>Extensions</b> in the menu bar</li>
+    <li>Click <b>Apps Script</b></li>
+    <li>A new tab will open with the script editor</li>
+    <li>Delete any default code in the editor (select all → delete)</li>
+  </ol>
+</div>
+
+<!-- Step 3 -->
+<div class="step">
+  <h2><span class="step-num">3</span> Paste the Backend Code</h2>
+  <p>Copy the code below and paste it into the Apps Script editor:</p>
+  <div style="position:relative">
+    <button class="copy-btn" onclick="copyCode('code1')">Copy Code</button>
+    <div class="code-box" id="code1">Paste the contents of google-apps-script/Code.gs here.
+
+Click the button below to load it automatically.</div>
+  </div>
+  <button class="btn" onclick="loadAndCopy('Code.gs','code1')" style="margin-top:.5rem">Load Code.gs & Copy</button>
+</div>
+
+<!-- Step 4 -->
+<div class="step">
+  <h2><span class="step-num">4</span> Run Initial Setup</h2>
+  <ol>
+    <li>In Apps Script editor, find the function dropdown at the top (says "myFunction" or similar)</li>
+    <li>Change it to <b>setupSheets</b></li>
+    <li>Click the <b>▶ Run</b> button</li>
+    <li>When prompted, click <b>Review Permissions</b> → choose your Google account → click <b>Advanced</b> → <b>Go to PSOTS Chhath Puja Data (unsafe)</b> → <b>Allow</b></li>
+    <li>You'll see a success message: "✅ Setup Complete!"</li>
+  </ol>
+</div>
+
+<!-- Step 5 -->
+<div class="step">
+  <h2><span class="step-num">5</span> Import Historical Data</h2>
+  <ol>
+    <li>In the script editor, click <b>+</b> next to "Files" on the left sidebar</li>
+    <li>Click <b>Script</b> and name the new file <b>ImportHistory</b></li>
+    <li>Copy and paste the contents from the button below into this new file</li>
+    <li>Select <b>importAllHistory</b> from the function dropdown</li>
+    <li>Click <b>▶ Run</b></li>
+    <li>Click <b>Yes</b> if prompted about existing data</li>
+    <li>Wait for "✅ Import Complete!" message (imports 429 records)</li>
+  </ol>
+  <button class="btn" onclick="loadAndCopy('ImportHistory.gs','code2')" style="margin-top:.5rem">Load ImportHistory.gs & Copy</button>
+  <div class="code-box" id="code2" style="max-height:200px;overflow-y:auto;margin-top:.5rem">Click the button above to load the import script.</div>
+</div>
+
+<!-- Step 6 -->
+<div class="step">
+  <h2><span class="step-num">6</span> Deploy as Web App</h2>
+  <ol>
+    <li>In Apps Script editor, click <b>Deploy</b> (blue button, top right)</li>
+    <li>Click <b>New deployment</b></li>
+    <li>Click the ⚙️ gear icon next to "Select type" → choose <b>Web app</b></li>
+    <li>Fill in:
+      <ul>
+        <li><b>Description:</b> PSOTS Backend v1</li>
+        <li><b>Execute as:</b> Me (your email)</li>
+        <li><b>Who has access:</b> Anyone</li>
+      </ul>
+    </li>
+    <li>Click <b>Deploy</b></li>
+    <li>Copy the <b>Web app URL</b> — it looks like:<br>
+    <code style="font-size:.75rem;background:#f5f5f5;padding:.2rem .4rem;border-radius:4px">https://script.google.com/macros/s/ABCDEF.../exec</code></li>
+  </ol>
+</div>
+
+<!-- Step 7 -->
+<div class="step success">
+  <h2><span class="step-num">7</span> Connect to Your Website</h2>
+  <ol>
+    <li>Open your PSOTS website → go to <b>Admin Panel</b></li>
+    <li>Click the <b>Settings</b> tab</li>
+    <li>Paste the Web App URL in the <b>"Apps Script URL"</b> field</li>
+    <li>Click <b>Save Settings</b></li>
+    <li>Refresh the page — your live data should now load!</li>
+  </ol>
+  <div style="margin-top:.8rem">
+    <label style="font-size:.85rem;font-weight:600">Paste your URL here to test:</label>
+    <div style="display:flex;gap:.5rem;margin-top:.4rem">
+      <input type="text" id="testUrl" placeholder="https://script.google.com/macros/s/.../exec" style="flex:1;padding:.5rem;border:1px solid #ddd;border-radius:6px;font-size:.82rem"/>
+      <button class="btn" onclick="testConnection()" style="margin:0;padding:.5rem .8rem">Test</button>
+    </div>
+    <div id="testResult" style="margin-top:.5rem;font-size:.82rem"></div>
+  </div>
+</div>
+
+<!-- Step 8 -->
+<div class="step warn">
+  <h2>⚠️ Important Notes</h2>
+  <ul>
+    <li>The Google Sheet must remain accessible (don't delete it!)</li>
+    <li>If you update the Apps Script code, you must create a <b>new deployment</b> for changes to take effect</li>
+    <li>The script runs under your Google account — only you can see the raw data in the Sheet</li>
+    <li>Everyone accessing the website sees the same data (it's global, not per-device)</li>
+    <li>For future contributions: residents submit via the website → data goes to your Google Sheet → admin verifies in the Sheet or Admin panel</li>
+  </ul>
+</div>
+
+<!-- Checklist -->
+<div class="step">
+  <h2>✅ Final Checklist</h2>
+  <ul class="checklist">
+    <li>Google Sheet created with "Contributions", "Profiles", "Settings" sheets</li>
+    <li>429 historical records imported (2022-2025)</li>
+    <li>Apps Script deployed as Web App</li>
+    <li>URL pasted into Admin Panel → Settings</li>
+    <li>Homepage shows real contributor data</li>
+    <li>Portal shows personal contribution history when logged in</li>
+    <li>Admin panel shows all records from Google Sheet</li>
+  </ul>
+</div>
+
+<div class="back-link">
+  <a href="index.html">← Back to PSOTS Home</a>
+</div>
+</div>
+
+<script>
+async function loadAndCopy(filename, targetId) {
+  try {
+    const res = await fetch('google-apps-script/' + filename);
+    const code = await res.text();
+    document.getElementById(targetId).textContent = code;
+    await navigator.clipboard.writeText(code);
+    const btn = event.target;
+    btn.textContent = '✅ Copied to clipboard!';
+    setTimeout(() => { btn.textContent = 'Load ' + filename + ' & Copy'; }, 2000);
+  } catch(e) {
+    alert('Could not load file. Make sure you are accessing this from the website.');
+  }
+}
+
+function copyCode(id) {
+  const code = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(code).then(() => {
+    const btn = event.target;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => { btn.textContent = 'Copy Code'; }, 1500);
+  });
+}
+
+async function testConnection() {
+  const url = document.getElementById('testUrl').value.trim();
+  const el = document.getElementById('testResult');
+  if (!url) { el.innerHTML = '<span style="color:red">Please paste your Apps Script URL first</span>'; return; }
+  el.innerHTML = '<span style="color:var(--or)">Testing connection...</span>';
+  try {
+    const res = await fetch(url + '?action=ping');
+    const data = await res.json();
+    if (data.ok) {
+      el.innerHTML = '<span style="color:var(--gr)">✅ Connection successful! Your backend is working.</span>';
+    } else {
+      el.innerHTML = '<span style="color:red">❌ Connected but got unexpected response: ' + JSON.stringify(data) + '</span>';
+    }
+  } catch(e) {
+    el.innerHTML = '<span style="color:red">❌ Could not connect. Make sure the URL is correct and "Who has access" is set to "Anyone".</span>';
+  }
+}
+</script>
+</body>
+</html>

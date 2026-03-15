@@ -729,8 +729,20 @@ function switchTab(id) {
 ═══════════════════════════════════════════════════ */
 let dirTowerFilter = null;
 
-function loadDirectory() {
-  const residents = JSON.parse(localStorage.getItem('psots_residents') || '[]');
+async function loadDirectory() {
+  // Try to load from global data if localStorage is empty
+  let residents = JSON.parse(localStorage.getItem('psots_residents') || '[]');
+  let history = JSON.parse(localStorage.getItem('psots_history') || '[]');
+  if (residents.length === 0 || history.length === 0) {
+    try {
+      const gRes = await fetch('data/history.json');
+      if (gRes.ok) {
+        const g = await gRes.json();
+        if (history.length === 0 && g.history) { localStorage.setItem('psots_history', JSON.stringify(g.history)); history = g.history; }
+        if (residents.length === 0 && g.residents) { localStorage.setItem('psots_residents', JSON.stringify(g.residents)); residents = g.residents; }
+      }
+    } catch(e) {}
+  }
   // Build tower filter chips from available data
   const towers = [...new Set(residents.map(r => parseFlatNumber(r.flat).tower).filter(Boolean))].sort((a,b)=>a-b);
   const filtersEl = document.getElementById('dirTowerFilters');
@@ -852,13 +864,26 @@ async function loadAdminCon() {
   tbody.innerHTML = '<tr><td colspan="9" class="loading-state">🪔 Loading from Google Sheets…</td></tr>';
 
   if (!url) {
-    // Demo data
+    // Load from global data/history.json
+    try {
+      const gRes = await fetch('data/history.json');
+      if (gRes.ok) {
+        const g = await gRes.json();
+        allConData = (g.history || []).map(r => ({
+          ts: r.date || '', name: r.name || '', flat: r.flat || '',
+          mobile: r.mobile || '', amount: r.amount || 0, method: r.method || '',
+          date: r.date || '', status: r.status || '✅ Received', year: r.year || 2025
+        }));
+        renderConTable(allConData);
+        updateDashStats();
+        return;
+      }
+    } catch(e) {}
+    // Fallback demo data
     allConData = [
       {ts:'2026-10-01 10:30',name:'Pushkal Kishore',flat:'15167',mobile:'9482088904',amount:5001,method:'GPay',date:'01/10/2026',status:'Pending Verification'},
       {ts:'2026-10-02 11:00',name:'Ratnesh Singh',flat:'15165',mobile:'9876543210',amount:1100,method:'PhonePe',date:'02/10/2026',status:'✅ Received'},
       {ts:'2026-10-02 14:22',name:'Praveen Kumar',flat:'2172',mobile:'9123456789',amount:5001,method:'GPay',date:'02/10/2026',status:'Pending Verification'},
-      {ts:'2026-10-03 09:10',name:'Rekha Sinha',flat:'9045',mobile:'9988776655',amount:11000,method:'Direct Transfer',date:'03/10/2026',status:'✅ Received'},
-      {ts:'2026-10-03 16:45',name:'Anupam Rai',flat:'5143',mobile:'9012345678',amount:1001,method:'PayTM',date:'03/10/2026',status:'Pending Verification'},
     ];
     renderConTable(allConData);
     updateDashStats();
