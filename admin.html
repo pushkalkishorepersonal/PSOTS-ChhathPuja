@@ -6,6 +6,8 @@
   <title>PSOTS Admin — Chhath 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="config.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
   :root {
     --or:#e85c00; --gold:#ffc200; --ink:#1a0800; --cream:#fdf5e0;
@@ -196,10 +198,9 @@
     <div class="login-icon">🪔</div>
     <div class="login-title">Admin Panel</div>
     <div class="login-sub">PSOTS Chhath 2026 · Committee Access Only</div>
-    <input class="login-input" type="password" id="pwInput" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doLogin()"/>
-    <button class="btn-login" onclick="doLogin()">🔐 Login to Admin</button>
-    <div class="login-err" id="loginErr">❌ Incorrect password. Try again.</div>
-    <p style="font-size:.65rem;color:#c8a880;margin-top:1.2rem">Forgot password? Contact Pushkal — 9482088904</p>
+    <div id="googleBtnWrap" style="display:flex;justify-content:center;margin-bottom:1rem"></div>
+    <div class="login-err" id="loginErr">❌ Your Google account is not authorised as admin. Contact Pushkal — 9482088904</div>
+    <p style="font-size:.65rem;color:#c8a880;margin-top:1.2rem">Only authorised committee members can access this panel.</p>
   </div>
 </div>
 
@@ -535,16 +536,6 @@
     </div>
 
     <div class="admin-card">
-      <div class="ac-title">🔐 Change Admin Password</div>
-      <div class="fg">
-        <div class="ff"><label>Current Password</label><input type="password" id="pw-current" placeholder="Current password"/></div>
-        <div class="ff"><label>New Password</label><input type="password" id="pw-new" placeholder="New password (min 8 chars)"/></div>
-        <div class="ff"><label>Confirm New Password</label><input type="password" id="pw-confirm" placeholder="Confirm new password"/></div>
-      </div>
-      <button class="btn-primary" onclick="changePw()">🔐 Update Password</button>
-    </div>
-
-    <div class="admin-card">
       <div class="ac-title">🗄 Data Management</div>
       <div style="display:flex;gap:.7rem;flex-wrap:wrap">
         <button class="btn-secondary" onclick="exportAll()">📥 Export All Data (JSON)</button>
@@ -562,45 +553,67 @@
 /* ═══════════════════════════════════════════════════
    CONFIG
 ═══════════════════════════════════════════════════ */
-// DEFAULT PASSWORD — change this after first login!
-// Password is stored as a simple hash in localStorage
-const DEFAULT_PW_HASH = btoa('chhath2026psots'); // change this!
-const SCRIPT_URL_KEY  = 'psots_script_url';
+const SCRIPT_URL_KEY = 'psots_script_url';
 
 let allConData = [];
 let filterMode = 'all';
 let announcements = [];
 
 /* ═══════════════════════════════════════════════════
-   AUTH
+   AUTH — Google Sign-In
 ═══════════════════════════════════════════════════ */
-function doLogin() {
-  const pw = document.getElementById('pwInput').value;
-  const stored = localStorage.getItem('psots_admin_pw') || DEFAULT_PW_HASH;
-  if (btoa(pw) === stored) {
-    localStorage.setItem('psots_auth', 'yes_' + Date.now());
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('adminApp').style.display = 'block';
-    initAdmin();
-  } else {
-    document.getElementById('loginErr').style.display = 'block';
-    document.getElementById('pwInput').value = '';
-    document.getElementById('pwInput').focus();
+function getAdminEmails() {
+  const base  = (window.PSOTS && window.PSOTS.adminEmails) || [];
+  const extra = JSON.parse(localStorage.getItem('psots_admins') || '[]');
+  return [...new Set([...base, ...extra])];
+}
+
+window.addEventListener('load', () => {
+  // Auto-login if valid session exists
+  const saved = localStorage.getItem('psots_admin_user');
+  if (saved) {
+    const u = JSON.parse(saved);
+    if (getAdminEmails().includes(u.email)) { enterAdmin(u); return; }
+    localStorage.removeItem('psots_admin_user');
   }
+  // Render Google button
+  google.accounts.id.initialize({
+    client_id: (window.PSOTS && window.PSOTS.googleClientId) || '',
+    callback: handleAdminLogin,
+  });
+  google.accounts.id.renderButton(document.getElementById('googleBtnWrap'), {
+    theme: 'outline', size: 'large', shape: 'pill', text: 'signin_with',
+  });
+});
+
+function handleAdminLogin(response) {
+  const payload = JSON.parse(atob(response.credential.split('.')[1]));
+  if (!getAdminEmails().includes(payload.email)) {
+    document.getElementById('loginErr').style.display = 'block';
+    return;
+  }
+  const u = { name: payload.name, email: payload.email, picture: payload.picture };
+  localStorage.setItem('psots_admin_user', JSON.stringify(u));
+  enterAdmin(u);
+}
+
+function enterAdmin(u) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminApp').style.display = 'block';
+  // Show user in nav
+  const nav = document.querySelector('.an-actions');
+  nav.insertAdjacentHTML('afterbegin', `
+    <div style="display:flex;align-items:center;gap:.5rem;margin-right:.5rem">
+      ${u.picture ? `<img src="${u.picture}" style="width:28px;height:28px;border-radius:50%;object-fit:cover"/>` : ''}
+      <span style="font-size:.75rem;color:rgba(255,255,255,.8)">${u.name}</span>
+    </div>`);
+  initAdmin();
 }
 
 function logout() {
-  localStorage.removeItem('psots_auth');
+  localStorage.removeItem('psots_admin_user');
+  if (typeof google !== 'undefined') google.accounts.id.disableAutoSelect();
   location.reload();
-}
-
-function checkAuth() {
-  const auth = localStorage.getItem('psots_auth');
-  if (auth && Date.now() - parseInt(auth.split('_')[1]) < 86400000) {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('adminApp').style.display = 'block';
-    initAdmin();
-  }
 }
 
 function changePw() {
@@ -1220,7 +1233,7 @@ document.addEventListener('DOMContentLoaded', () => {
 const origSwitch = switchTab;
 
 // Auto-check auth on load
-window.addEventListener('DOMContentLoaded', checkAuth);
+// Auth handled by window.addEventListener('load') above
 </script>
 </body>
 </html>
