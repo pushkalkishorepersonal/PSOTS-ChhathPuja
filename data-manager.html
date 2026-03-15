@@ -111,6 +111,7 @@
   .sp{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
   @keyframes spin{to{transform:rotate(360deg)}}
   </style>
+  <script src="config.js"></script>
 </head>
 <body>
 
@@ -268,7 +269,8 @@ Praveen Kumar	2172	5001	8-Oct" rows="10"></textarea>
       <div class="card-sub">All contribution records stored in the system. Shown per year.</div>
       <div id="historyView"><div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.85rem">No data imported yet. Use the import tool above.</div></div>
       <div style="display:flex;gap:.7rem;margin-top:.8rem;flex-wrap:wrap">
-        <button class="btn-primary" onclick="loadBaseSheet()" id="baseSheetBtn" style="background:linear-gradient(135deg,#2e7d32,#1b5e20)">📂 Load BaseSheet (2022–2025)</button>
+        <button class="btn-primary" onclick="loadFromSheet()" id="loadSheetBtn" style="background:linear-gradient(135deg,#2e7d32,#1b5e20)">☁️ Load from Google Sheet</button>
+        <button class="btn-primary" onclick="loadBaseSheet()" id="baseSheetBtn" style="background:linear-gradient(135deg,#555,#333);font-size:.8rem">📂 Load BaseSheet (offline fallback)</button>
         <button class="btn-secondary" onclick="syncToSheet()">☁️ Sync to Google Sheet</button>
         <button class="btn-danger" onclick="clearAllHistory()">🗑 Clear History</button>
         <button class="btn-danger" onclick="clearAllData()">🗑 Clear ALL Data (History + Directory)</button>
@@ -806,9 +808,35 @@ function renderTowerSummary() {
   card.style.display = 'block';
 }
 
+function getSheetUrl() {
+  return (window.PSOTS && window.PSOTS.scriptUrl) || localStorage.getItem('psots_script_url') || '';
+}
+
+async function loadFromSheet() {
+  const url = getSheetUrl();
+  if (!url) { toast('Apps Script URL not set in config.js', 'error'); return; }
+  const btn = document.getElementById('loadSheetBtn');
+  btn.disabled = true; btn.textContent = '⏳ Loading…';
+  try {
+    const res = await fetch(url + '?action=list_all');
+    const data = await res.json();
+    const records = (data.all || []).map(r => ({
+      name: r.name, flat: r.flat, mobile: r.mobile,
+      amount: r.amount, method: r.method, date: r.date,
+      status: r.status, accountType: r.accountType, year: r.year
+    }));
+    localStorage.setItem('psots_history', JSON.stringify(records));
+    toast('✅ Loaded ' + records.length + ' records from Google Sheet', 'success');
+    setTimeout(() => location.reload(), 1200);
+  } catch(e) {
+    toast('❌ Failed to load from sheet: ' + e.message, 'error');
+    btn.disabled = false; btn.textContent = '☁️ Load from Google Sheet';
+  }
+}
+
 async function syncToSheet() {
-  const url = localStorage.getItem('psots_script_url') || '';
-  if (!url || url.includes('YOUR_APPS')) { toast('Set up Apps Script URL in admin Settings first', 'error'); return; }
+  const url = getSheetUrl();
+  if (!url) { toast('Apps Script URL not set in config.js', 'error'); return; }
   const all = getHistory();
   toast('Syncing…', '');
   try {

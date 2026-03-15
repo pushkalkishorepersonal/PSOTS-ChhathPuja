@@ -693,11 +693,11 @@ function initAdmin() {
 }
 
 function getScriptUrl() {
-  return document.getElementById('s-scriptUrl')?.value || localStorage.getItem(SCRIPT_URL_KEY) || '';
+  return document.getElementById('s-scriptUrl')?.value || localStorage.getItem(SCRIPT_URL_KEY) || (window.PSOTS && window.PSOTS.scriptUrl) || '';
 }
 
 function loadScriptUrl() {
-  const url = localStorage.getItem(SCRIPT_URL_KEY) || '';
+  const url = localStorage.getItem(SCRIPT_URL_KEY) || (window.PSOTS && window.PSOTS.scriptUrl) || '';
   const el = document.getElementById('s-scriptUrl');
   if (el && url) el.value = url;
 }
