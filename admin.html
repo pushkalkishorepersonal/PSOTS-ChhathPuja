@@ -192,17 +192,8 @@
 </head>
 <body>
 
-<!-- ════ LOGIN SCREEN ════ -->
-<div id="loginScreen">
-  <div class="login-box">
-    <div class="login-icon">🪔</div>
-    <div class="login-title">Admin Panel</div>
-    <div class="login-sub">PSOTS Chhath 2026 · Committee Access Only</div>
-    <div id="googleBtnWrap" style="display:flex;justify-content:center;margin-bottom:1rem"></div>
-    <div class="login-err" id="loginErr">❌ Your Google account is not authorised as admin. Contact Pushkal — 9482088904</div>
-    <p style="font-size:.65rem;color:#c8a880;margin-top:1.2rem">Only authorised committee members can access this panel.</p>
-  </div>
-</div>
+<!-- ════ LOGIN SCREEN (redirects to portal) ════ -->
+<div id="loginScreen" style="display:none"></div>
 
 <!-- ════ ADMIN APP ════ -->
 <div id="adminApp">
@@ -579,7 +570,7 @@ window.addEventListener('load', () => {
     localStorage.removeItem('psots_admin_user');
   }
 
-  // 2. Already logged into portal — reuse session, no second login needed
+  // 2. Already logged into portal — reuse session
   const portalSaved = localStorage.getItem('psots_user');
   if (portalSaved) {
     const u = JSON.parse(portalSaved);
@@ -587,16 +578,13 @@ window.addEventListener('load', () => {
       localStorage.setItem('psots_admin_user', JSON.stringify(u));
       enterAdmin(u); return;
     }
+    // Logged in but not admin — send back to portal
+    window.location.href = 'portal.html';
+    return;
   }
 
-  // 3. Not logged in anywhere — show Google button
-  google.accounts.id.initialize({
-    client_id: (window.PSOTS && window.PSOTS.googleClientId) || '',
-    callback: handleAdminLogin,
-  });
-  google.accounts.id.renderButton(document.getElementById('googleBtnWrap'), {
-    theme: 'outline', size: 'large', shape: 'pill', text: 'signin_with',
-  });
+  // 3. Not logged in at all — redirect to portal login
+  window.location.href = 'portal.html?next=admin';
 });
 
 function handleAdminLogin(response) {

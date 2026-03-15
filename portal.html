@@ -506,9 +506,18 @@ window.addEventListener('load', () => {
   const saved = localStorage.getItem('psots_user');
   if (saved) {
     currentUser = JSON.parse(saved);
-    showPortal();
+    redirectIfAdmin() || showPortal();
   }
 });
+
+function redirectIfAdmin() {
+  const next = new URLSearchParams(window.location.search).get('next');
+  if (next === 'admin' && isAdmin(currentUser.email)) {
+    window.location.href = 'admin.html';
+    return true;
+  }
+  return false;
+}
 
 function handleGoogleLogin(response) {
   // Decode JWT token from Google
@@ -521,7 +530,7 @@ function handleGoogleLogin(response) {
     loginTime: Date.now(),
   };
   localStorage.setItem('psots_user', JSON.stringify(currentUser));
-  showPortal();
+  redirectIfAdmin() || showPortal();
 }
 
 function demoLogin() {
