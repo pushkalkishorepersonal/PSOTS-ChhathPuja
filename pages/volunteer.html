@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Volunteer & RSVP — PSOTS Chhath 2026</title>
+  <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:ital,wght@0,700;0,900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script src="../config.js"></script>
+  <style>
+  .section-divider{display:flex;align-items:center;gap:.8rem;margin:2rem 0 1.5rem}
+  .section-divider::before,.section-divider::after{content:'';flex:1;height:1px;background:#f0d5b8}
+  .section-divider span{font-family:'Yatra One',serif;font-size:1rem;color:var(--or);white-space:nowrap}
+  .task-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.6rem;margin-bottom:1rem}
+  .task-chip{display:flex;align-items:center;gap:.5rem;padding:.7rem .9rem;border:1.5px solid #f0d5b8;border-radius:12px;background:var(--warm);cursor:pointer;transition:all .2s;font-size:.82rem;color:var(--ink)}
+  .task-chip:hover{border-color:var(--or)}
+  .task-chip.selected{background:linear-gradient(135deg,#fff5e8,#ffe8d0);border-color:var(--or);color:var(--or);font-weight:600}
+  .task-chip input{display:none}
+  .day-chips{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem}
+  .day-chip{padding:.55rem 1rem;border:1.5px solid #f0d5b8;border-radius:50px;background:var(--warm);cursor:pointer;transition:all .2s;font-size:.78rem;font-weight:600;color:var(--br)}
+  .day-chip:hover{border-color:var(--or)}
+  .day-chip.selected{background:var(--or);color:#fff;border-color:var(--or)}
+  .prasad-counter{display:flex;align-items:center;gap:.8rem;padding:.8rem 1rem;background:var(--warm);border-radius:12px;border:1px solid #f0d5b8;margin-bottom:.6rem}
+  .prasad-counter label{flex:1;font-size:.85rem;color:var(--ink)}
+  .counter-btns{display:flex;align-items:center;gap:.5rem}
+  .counter-btns button{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--or);background:var(--warm);color:var(--or);font-size:1.1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .2s}
+  .counter-btns button:hover{background:var(--or);color:#fff}
+  .counter-val{font-family:'DM Sans',sans-serif;font-weight:900;font-size:1.1rem;color:var(--or);min-width:24px;text-align:center}
+  .success-card{background:linear-gradient(135deg,#f0fff4,#dcfce7);border:1.5px solid #a5d6a7;border-radius:16px;padding:1.5rem;text-align:center;display:none}
+  .success-card h3{color:var(--green);font-size:1.1rem;margin-bottom:.4rem}
+  .success-card p{font-size:.85rem;color:#555;line-height:1.6}
+  </style>
+</head>
+<body>
+<nav class="page-nav">
+  <a class="page-nav-back" href="../index.html"><span class="page-nav-back-icon">←</span> Home</a>
+  <div class="page-nav-title">🤝 Volunteer & RSVP</div>
+  <div></div>
+</nav>
+<div class="page-hero">
+  <span class="ph-icon">🤝</span>
+  <div class="ph-title">Volunteer & RSVP</div>
+  <div class="ph-sub">Help us make the 5th year celebration grand!</div>
+</div>
+<div class="page-content">
+
+  <!-- ═══ RSVP SECTION — Prasad Estimation ═══ -->
+  <div class="card">
+    <div class="card-title">🙏 Prasad RSVP</div>
+    <div class="card-sub">Help us prepare the right amount of prasad. Tell us how many packets your family needs — this isn't a commitment to attend, just helps us plan quantities.</div>
+
+    <div class="fg">
+      <div class="ff"><label>Your Name</label><input type="text" id="rsvp-name" placeholder="Full name"/></div>
+      <div class="ff"><label>Flat / Unit No.</label><input type="text" id="rsvp-flat" placeholder="e.g. 15167"/></div>
+      <div class="ff"><label>WhatsApp Number</label><input type="tel" id="rsvp-mobile" placeholder="10-digit" maxlength="10" inputmode="numeric"/></div>
+      <div class="ff"><label>Family Members Attending</label><input type="number" id="rsvp-family" placeholder="e.g. 4" min="1" value="4"/></div>
+    </div>
+
+    <div class="prasad-counter">
+      <label>🍚 Kharna Prasad (Nov 2 dinner) — plates needed</label>
+      <div class="counter-btns">
+        <button onclick="adjustCount('rsvp-kharna',-1)">−</button>
+        <span class="counter-val" id="rsvp-kharna">2</span>
+        <button onclick="adjustCount('rsvp-kharna',1)">+</button>
+      </div>
+    </div>
+    <div class="prasad-counter">
+      <label>🪔 Thekua Prasad (Nov 4 after Arghya) — packets needed</label>
+      <div class="counter-btns">
+        <button onclick="adjustCount('rsvp-thekua',-1)">−</button>
+        <span class="counter-val" id="rsvp-thekua">2</span>
+        <button onclick="adjustCount('rsvp-thekua',1)">+</button>
+      </div>
+    </div>
+
+    <button class="btn-primary btn-block" onclick="submitRSVP()" id="rsvpBtn" style="margin-top:1rem">🙏 Submit RSVP</button>
+    <div class="success-card" id="rsvpSuccess">
+      <h3>🙏 RSVP Received!</h3>
+      <p>Thank you! The committee will prepare prasad accordingly. You'll get a WhatsApp update on Nov 2 with collection details.</p>
+    </div>
+  </div>
+
+  <div class="section-divider"><span>🤝 Volunteer Sign-Up</span></div>
+
+  <!-- ═══ VOLUNTEER SECTION ═══ -->
+  <div class="card">
+    <div class="card-title">🤝 Volunteer for Chhath 2026</div>
+    <div class="card-sub">We need helping hands for ghat setup, prasad distribution, decoration, and cultural events. Sign up below — breakfast and meals provided for all volunteers!</div>
+
+    <div class="fg">
+      <div class="ff"><label>Your Name <span class="req">*</span></label><input type="text" id="vol-name" placeholder="Full name"/></div>
+      <div class="ff"><label>Flat / Unit No. <span class="req">*</span></label><input type="text" id="vol-flat" placeholder="e.g. 15167"/></div>
+      <div class="ff"><label>WhatsApp Number <span class="req">*</span></label><input type="tel" id="vol-mobile" placeholder="10-digit" maxlength="10" inputmode="numeric"/></div>
+    </div>
+
+    <div class="ff" style="margin-bottom:1rem">
+      <label>Which days are you available?</label>
+      <div class="day-chips">
+        <div class="day-chip" onclick="toggleDayChip(this)" data-day="Nov 1">Nov 1 — Nahay Khay</div>
+        <div class="day-chip" onclick="toggleDayChip(this)" data-day="Nov 2">Nov 2 — Kharna</div>
+        <div class="day-chip selected" onclick="toggleDayChip(this)" data-day="Nov 3">Nov 3 — Sandhya Arghya</div>
+        <div class="day-chip selected" onclick="toggleDayChip(this)" data-day="Nov 4">Nov 4 — Usha Arghya</div>
+      </div>
+    </div>
+
+    <div class="ff" style="margin-bottom:1rem">
+      <label>What tasks can you help with? (select all that apply)</label>
+      <div class="task-grid">
+        <div class="task-chip" onclick="toggleTask(this)" data-task="Ghat Setup">🏗 Ghat Setup</div>
+        <div class="task-chip" onclick="toggleTask(this)" data-task="Decoration">🎨 Decoration</div>
+        <div class="task-chip" onclick="toggleTask(this)" data-task="Prasad Prep">🍳 Prasad Prep</div>
+        <div class="task-chip" onclick="toggleTask(this)" data-task="Prasad Distribution">🙏 Prasad Distribution</div>
+        <div class="task-chip" onclick="toggleTask(this)" data-task="Cultural Program">🎤 Cultural Program</div>
+        <div class="task-chip" onclick="toggleTask(this)" data-task="Audio/Visuals">🔊 Audio/Visuals</div>
+        <div class="task-chip" onclick="toggleTask(this)" data-task="Photography">📸 Photography</div>
+        <div class="task-chip" onclick="toggleTask(this)" data-task="Cleanup">🧹 Cleanup</div>
+        <div class="task-chip" onclick="toggleTask(this)" data-task="Anything">🤝 Anything needed</div>
+      </div>
+    </div>
+
+    <div class="ff" style="margin-bottom:1.2rem">
+      <label>Any note for the committee?</label>
+      <input type="text" id="vol-note" placeholder="e.g. I have a pickup truck for transporting supplies"/>
+    </div>
+
+    <button class="btn-primary btn-block" onclick="submitVolunteer()" id="volBtn">🤝 Sign Up as Volunteer</button>
+    <div class="success-card" id="volSuccess">
+      <h3>🤝 Welcome, Volunteer!</h3>
+      <p id="volSuccessMsg">Thank you for signing up! The committee will assign you a task and you'll get a WhatsApp message with details.</p>
+    </div>
+  </div>
+
+  <div class="card" style="text-align:center">
+    <div class="card-title" style="justify-content:center">📞 Questions?</div>
+    <p style="font-size:.85rem;color:var(--br);margin-bottom:1rem">Contact the organising committee</p>
+    <div style="display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap">
+      <a href="https://wa.me/919482088904" target="_blank" style="text-decoration:none"><button class="btn-wa">📲 WhatsApp Pushkal</button></a>
+      <a href="../pages/payment.html" style="text-decoration:none"><button class="btn-primary">💰 Contribute</button></a>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+function toast(msg, type='') {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = type ? `show ${type}` : 'show';
+  setTimeout(() => el.className = '', 3000);
+}
+
+function adjustCount(id, delta) {
+  const el = document.getElementById(id);
+  const v = Math.max(0, parseInt(el.textContent) + delta);
+  el.textContent = v;
+}
+
+function toggleDayChip(el) { el.classList.toggle('selected'); }
+function toggleTask(el) { el.classList.toggle('selected'); }
+
+// Pre-fill from portal profile if signed in
+(function() {
+  try {
+    const u = JSON.parse(localStorage.getItem('psots_user') || 'null');
+    const pKey = u ? 'psots_profile_' + u.id : null;
+    const p = pKey ? JSON.parse(localStorage.getItem(pKey) || '{}') : {};
+    if (p.name)   { document.getElementById('rsvp-name').value = p.name;  document.getElementById('vol-name').value = p.name; }
+    if (p.flat)   { document.getElementById('rsvp-flat').value = p.flat;  document.getElementById('vol-flat').value = p.flat; }
+    if (p.mobile) { document.getElementById('rsvp-mobile').value = p.mobile; document.getElementById('vol-mobile').value = p.mobile; }
+    if (p.family) document.getElementById('rsvp-family').value = p.family;
+  } catch(e) {}
+})();
+
+async function submitRSVP() {
+  const name   = document.getElementById('rsvp-name').value.trim();
+  const flat   = document.getElementById('rsvp-flat').value.trim();
+  const mobile = document.getElementById('rsvp-mobile').value.trim();
+  const family = document.getElementById('rsvp-family').value;
+  const kharna = document.getElementById('rsvp-kharna').textContent;
+  const thekua = document.getElementById('rsvp-thekua').textContent;
+
+  if (!name || !flat) return toast('Please enter your name and flat number', 'error');
+
+  const btn = document.getElementById('rsvpBtn');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  const data = { action:'submitRSVP', name, flat, mobile, family, kharnaPlates: kharna, thekuaPackets: thekua, timestamp: new Date().toISOString() };
+  const su = (window.PSOTS && window.PSOTS.scriptUrl) || localStorage.getItem('psots_script_url') || '';
+  if (su && !su.includes('YOUR_APPS')) {
+    try { await fetch(su, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) }); } catch(e) {}
+  }
+  // Save locally too
+  const rsvps = JSON.parse(localStorage.getItem('psots_rsvps') || '[]');
+  rsvps.push(data);
+  localStorage.setItem('psots_rsvps', JSON.stringify(rsvps));
+
+  btn.textContent = '✅ Submitted!';
+  document.getElementById('rsvpSuccess').style.display = 'block';
+  toast('🙏 RSVP submitted!', 'success');
+}
+
+async function submitVolunteer() {
+  const name   = document.getElementById('vol-name').value.trim();
+  const flat   = document.getElementById('vol-flat').value.trim();
+  const mobile = document.getElementById('vol-mobile').value.trim();
+  const note   = document.getElementById('vol-note').value.trim();
+
+  if (!name || !flat || !mobile) return toast('Please fill in name, flat and WhatsApp number', 'error');
+
+  const days  = [...document.querySelectorAll('.day-chip.selected')].map(el => el.dataset.day);
+  const tasks = [...document.querySelectorAll('.task-chip.selected')].map(el => el.dataset.task);
+
+  if (!days.length) return toast('Please select at least one day', 'error');
+  if (!tasks.length) return toast('Please select at least one task', 'error');
+
+  const btn = document.getElementById('volBtn');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  const data = { action:'submitVolunteer', name, flat, mobile, days: days.join(', '), tasks: tasks.join(', '), note, status:'Registered', timestamp: new Date().toISOString() };
+  const su = (window.PSOTS && window.PSOTS.scriptUrl) || localStorage.getItem('psots_script_url') || '';
+  if (su && !su.includes('YOUR_APPS')) {
+    try { await fetch(su, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) }); } catch(e) {}
+  }
+  // Save locally
+  const vols = JSON.parse(localStorage.getItem('psots_volunteers') || '[]');
+  vols.push(data);
+  localStorage.setItem('psots_volunteers', JSON.stringify(vols));
+
+  btn.textContent = '✅ Signed Up!';
+  document.getElementById('volSuccess').style.display = 'block';
+  document.getElementById('volSuccessMsg').textContent = `Thank you ${name}! You're signed up for ${days.join(', ')}. The committee will WhatsApp you at ${mobile} with your task assignment.`;
+  toast('🤝 Volunteer registered!', 'success');
+
+  // Open WhatsApp confirmation
+  setTimeout(() => {
+    const wa = (window.PSOTS && window.PSOTS.waOrg) || '919482088904';
+    const msg = encodeURIComponent(`🤝 *Volunteer Sign-Up — Chhath 2026*\n\n👤 ${name}\n🏠 Flat ${flat}\n📱 ${mobile}\n📅 Days: ${days.join(', ')}\n🔧 Tasks: ${tasks.join(', ')}\n${note ? '📝 ' + note : ''}\n\nPlease confirm my assignment 🙏`);
+    window.open(`https://wa.me/${wa}?text=${msg}`, '_blank');
+  }, 1500);
+}
+</script>
+</body>
+</html>

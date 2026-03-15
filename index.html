@@ -175,6 +175,20 @@
   .wt-btn{display:inline-flex;align-items:center;gap:.4rem;background:#25d366;color:#fff;border-radius:50px;padding:.52rem 1.15rem;font-size:.78rem;font-weight:600;text-decoration:none;transition:background .2s;width:fit-content}
   .wt-btn:hover{background:#1da851}
 
+  /* LIVE STATUS BANNER (event day) */
+  .live-banner{display:none;background:linear-gradient(135deg,#c94000,#ff8c00);padding:.8rem 1.2rem;text-align:center;position:relative;z-index:30}
+  .live-banner.active{display:block;animation:bannerPulse 3s ease-in-out infinite}
+  @keyframes bannerPulse{0%,100%{opacity:1}50%{opacity:.92}}
+  .lb-text{font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;color:#fff}
+  .lb-sub{font-size:.72rem;color:rgba(255,255,255,.85);margin-top:.2rem}
+  .lb-dot{display:inline-block;width:8px;height:8px;background:#fff;border-radius:50%;margin-right:.4rem;animation:blink 1.5s ease-in-out infinite}
+  @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+
+  /* VOLUNTEER & GALLERY TILES */
+  .t-vol{grid-column:span 6;background:linear-gradient(135deg,#2d1200,#5a2400);border:1px solid rgba(255,194,0,.12);box-shadow:0 4px 20px rgba(0,0,0,.25)}
+  .t-gallery{grid-column:span 6;background:#fff;border:1px solid rgba(200,100,0,.09);box-shadow:0 4px 20px rgba(26,8,0,.07)}
+  @media(max-width:680px){.t-vol,.t-gallery{grid-column:span 12}}
+
   footer{background:#080200;padding:2rem 1.5rem;text-align:center}
   .ft-t{font-family:'Yatra One',serif;font-size:.95rem;color:var(--gold);margin-bottom:.28rem}
   footer p{font-size:.74rem;color:rgba(255,220,120,.65);line-height:1.8}
@@ -190,6 +204,12 @@
   </div>
   <a class="nav-portal-btn" href="portal.html">👤 My Account</a>
 </nav>
+
+<!-- Live Status Banner (shows on event days Nov 1-4) -->
+<div class="live-banner" id="liveBanner">
+  <div class="lb-text"><span class="lb-dot"></span><span id="lbText">Chhath Puja is LIVE!</span></div>
+  <div class="lb-sub" id="lbSub">Join us at the Society Ghat</div>
+</div>
 
 <section class="hero">
   <div class="h-sky"></div><div class="h-rays"></div><div class="h-sun"></div>
@@ -292,6 +312,21 @@
       <span class="tad">All Announcements →</span>
     </a>
 
+    <!-- VOLUNTEER & RSVP -->
+    <a class="tile t-vol" href="pages/volunteer.html" style="padding:1.4rem;display:flex;flex-direction:column;justify-content:space-between;gap:.6rem;min-height:160px">
+      <div><div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,194,0,.85);margin-bottom:.15rem">Volunteer & RSVP</div><div style="font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;color:var(--gilt);display:flex;align-items:center;gap:.38rem">🤝 Volunteer Sign-Up</div></div>
+      <div style="font-size:.78rem;color:rgba(255,237,200,.85);line-height:1.5">Help with ghat setup, prasad, decoration & cultural events. Also RSVP for prasad packets!</div>
+      <span style="display:inline-flex;align-items:center;gap:.4rem;font-size:.68rem;font-weight:600;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;border-top:1px solid rgba(255,194,0,.1);padding-top:.6rem">Sign Up & RSVP →</span>
+    </a>
+
+    <!-- GALLERY -->
+    <a class="tile t-gallery" href="pages/gallery.html" style="padding:1.4rem">
+      <div style="font-size:2rem;margin-bottom:.5rem">📸</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:1.02rem;font-weight:700;color:var(--ink);margin-bottom:.3rem">Event Gallery</div>
+      <div style="font-size:.78rem;color:var(--lbr);line-height:1.5;margin-bottom:.8rem">Photos & memories from 5 years of Chhath at PSOTS — 2022 to 2025.</div>
+      <span style="font-size:.68rem;font-weight:600;color:var(--or);letter-spacing:.06em;text-transform:uppercase">View Gallery →</span>
+    </a>
+
     <!-- PORTAL -->
     <a class="tile t-portal" href="portal.html" id="portalTile">
       <span class="tp-ico" id="portalIco">👤</span>
@@ -308,8 +343,8 @@
     <!-- WHATSAPP SUBSCRIBE -->
     <a class="tile t-wa" href="pages/subscribe.html">
       <div class="wt-top"><div class="wt-ico">📲</div><div class="wt-tag">Free Updates</div></div>
-      <div><div class="wt-title">WhatsApp Updates</div><div class="wt-sub">Event reminders, Arghya timings, prasad details and announcements — direct to your WhatsApp.</div></div>
-      <span class="wt-btn">Subscribe Now →</span>
+      <div><div class="wt-title">WhatsApp Updates</div><div class="wt-sub">Event reminders, Arghya timings, prasad details — direct to your WhatsApp. Join our broadcast channel!</div></div>
+      <span class="wt-btn">Subscribe / Join Channel →</span>
     </a>
 
   </div>
@@ -339,6 +374,28 @@ if(su){fetch(su+'?action=getFinance').then(r=>r.json()).then(d=>{const f=d.finan
   if(f.timMornTime){const t=fmtTime(f.timMornTime);if(t){document.getElementById('morn-time').textContent=t;const el=document.getElementById('sch-morn-time');if(el)el.textContent=t+' 🌅';}}
   if(f.timMornDate||f.timMornLoc){const s=fmtDate(f.timMornDate,f.timMornLoc);if(s)document.getElementById('morn-date').textContent=s;}
 }).catch(()=>{});}
+// Live Status Banner — shows contextual message on event days
+(function(){
+  const now=new Date();const y=now.getFullYear(),m=now.getMonth(),d=now.getDate(),h=now.getHours();
+  // Event dates: Nov 1-4 (month index 10)
+  if(y===2026&&m===10&&d>=1&&d<=4){
+    const banner=document.getElementById('liveBanner');
+    const txt=document.getElementById('lbText');
+    const sub=document.getElementById('lbSub');
+    banner.classList.add('active');
+    if(d===1){txt.textContent='Day 1 — Nahay Khay is LIVE!';sub.textContent='Ghat sanctification from 5:30 AM · Society Ghat';}
+    else if(d===2){txt.textContent='Day 2 — Kharna is TODAY!';sub.textContent=h<19?'Fast day · Kharna Prasad at 7:00 PM · Community Hall':'Kharna Prasad is being served at Community Hall!';}
+    else if(d===3){
+      if(h<17){txt.textContent='Day 3 — Sandhya Arghya TODAY!';sub.textContent='Evening Arghya at 5:45 PM · Society Ghat · Be there!';}
+      else{txt.textContent='Sandhya Arghya is HAPPENING NOW!';sub.textContent='Join us at the Society Ghat · जय छठ मइया!';}
+    }
+    else if(d===4){
+      if(h<6){txt.textContent='Day 4 — Usha Arghya at DAWN!';sub.textContent='Morning Arghya at 6:15 AM · Society Ghat';}
+      else if(h<8){txt.textContent='Usha Arghya is HAPPENING NOW!';sub.textContent='Offering to the rising sun · Society Ghat · जय छठ मइया!';}
+      else{txt.textContent='जय छठ मइया! Thekua Prasad Available';sub.textContent='Collect Thekua Prasad at Society Ghat · Thank you for a wonderful 5th year!';}
+    }
+  }
+})();
 // Portal tile — show personalised view when already signed in
 (function(){
   try {

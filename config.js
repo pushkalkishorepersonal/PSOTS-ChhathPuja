@@ -48,6 +48,9 @@ window.PSOTS = {
     yoy: { 2022:125300, 2023:183630, 2024:217048, 2025:198383 },
   },
 
+  /* ── WHATSAPP CHANNEL ─────────── */
+  waChannel: 'https://chat.whatsapp.com/G9hKgycJFZDB6Bcuqv3Uzp',
+
   /* ── DOMAIN ───────────────────── */
   domain:  'chhath.psots.in',
   siteUrl: 'https://chhath.psots.in',

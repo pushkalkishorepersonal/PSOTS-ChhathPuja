@@ -196,6 +196,29 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   .loading{text-align:center;padding:2rem;color:var(--lbr);font-size:.88rem}
 
+  /* Receipt / Thank You Card */
+  .receipt-card{background:linear-gradient(145deg,#1a0800,#3d1200);border-radius:20px;padding:2rem;color:#fff;text-align:center;position:relative;overflow:hidden;max-width:400px;margin:0 auto 1rem}
+  .receipt-card::before{content:'';position:absolute;top:-40px;left:50%;transform:translateX(-50%);width:300px;height:200px;background:radial-gradient(ellipse,rgba(255,194,0,.12) 0%,transparent 70%)}
+  .rc-icon{font-size:3rem;margin-bottom:.6rem;display:block;position:relative}
+  .rc-title{font-family:'DM Sans',sans-serif;font-weight:900;font-size:1.3rem;background:linear-gradient(180deg,#fff,var(--gilt),var(--gold));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:.15rem}
+  .rc-sub{font-size:.72rem;color:rgba(255,220,120,.7);letter-spacing:.12em;text-transform:uppercase;margin-bottom:1.2rem}
+  .rc-name{font-family:'DM Sans',sans-serif;font-size:1.6rem;font-weight:900;color:var(--gold);margin-bottom:.1rem}
+  .rc-flat{font-size:.78rem;color:rgba(255,220,120,.8);margin-bottom:1rem}
+  .rc-amount{font-family:'DM Sans',sans-serif;font-size:2.2rem;font-weight:900;color:#fff;margin-bottom:.1rem}
+  .rc-label{font-size:.68rem;color:rgba(255,220,120,.65);margin-bottom:1rem}
+  .rc-year{font-size:.72rem;color:rgba(255,220,120,.5);border-top:1px solid rgba(255,194,0,.15);padding-top:.8rem;margin-top:.5rem}
+  .rc-badge{display:inline-block;background:rgba(46,125,50,.25);border:1px solid rgba(46,125,50,.4);color:#81c784;border-radius:50px;font-size:.7rem;font-weight:700;padding:.2rem .7rem;margin-bottom:.8rem}
+  .btn-download-receipt{background:var(--gold);color:var(--ink);border:none;border-radius:10px;padding:.65rem 1.3rem;font-size:.85rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem}
+
+  /* Volunteer Portal Tab */
+  .vol-status{display:flex;align-items:center;gap:.8rem;padding:1rem 1.2rem;border-radius:12px;border:1.5px solid;margin-bottom:1.2rem}
+  .vol-status.registered{background:#f0fff4;border-color:#a5d6a7}
+  .vol-status.not-registered{background:#fff8f0;border-color:#f0d5b8}
+  .vol-task-card{background:var(--warm);border:1.5px solid #f0d5b8;border-radius:12px;padding:1rem;margin-bottom:.6rem;transition:border-color .2s}
+  .vol-task-card.assigned{border-color:var(--or);background:linear-gradient(135deg,#fff5e8,#ffe8d0)}
+  .vol-checkin-btn{background:var(--green);color:#fff;border:none;border-radius:10px;padding:.65rem 1.3rem;font-size:.85rem;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;gap:.4rem}
+  .vol-checkin-btn:disabled{opacity:.5;cursor:not-allowed}
+
   footer{background:var(--ink);padding:1.5rem;text-align:center;margin-top:2rem}
   footer p{font-size:.72rem;color:rgba(255,220,120,.3);line-height:1.7}
   footer span{color:rgba(255,194,0,.5)}
@@ -268,6 +291,8 @@
     <button class="ptab" onclick="switchTab('notifications')">📲 Notifications</button>
     <button class="ptab" onclick="switchTab('messages')">💬 Message Admin</button>
     <button class="ptab" onclick="switchTab('quickpay')">⚡ Quick Pay</button>
+    <button class="ptab" onclick="switchTab('receipt')">🎫 Receipt</button>
+    <button class="ptab" onclick="switchTab('volunteer')">🤝 Volunteer</button>
     <button class="ptab" id="adminTab" style="display:none" onclick="switchTab('adminmgmt')">⚙️ Admin</button>
   </div>
 
@@ -436,6 +461,61 @@
         📲 Open My UPI App — Pay ₹<span id="qp-btn-lbl">—</span>
       </button>
       <p style="text-align:center;font-size:.7rem;color:#c8a880">After paying, your confirmation is auto-recorded from your profile ✅</p>
+    </div>
+  </div>
+
+  <!-- ═══ RECEIPT / THANK YOU TAB ═══ -->
+  <div class="portal-panel" id="tab-receipt">
+    <div class="pcard">
+      <div class="pcard-title">🎫 Contribution Receipt</div>
+      <div class="pcard-sub">Your digital Thank You card from the Chhath Puja committee. Share it with friends and family!</div>
+
+      <div id="receiptContent">
+        <div class="loading">Loading your contribution data…</div>
+      </div>
+
+      <div id="receiptActions" style="display:none;text-align:center;margin-top:1rem">
+        <div style="display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap">
+          <button class="btn-download-receipt" onclick="shareReceipt()">📤 Share</button>
+          <button class="btn-download-receipt" onclick="downloadReceipt()">💾 Save as Image</button>
+        </div>
+        <p style="font-size:.7rem;color:#c8a880;margin-top:.6rem">Share on WhatsApp or save to your gallery</p>
+      </div>
+
+      <div id="noReceiptMsg" style="display:none;text-align:center;padding:2rem">
+        <div style="font-size:2.5rem;margin-bottom:.6rem">🪔</div>
+        <p style="font-size:.88rem;color:var(--lbr)">No verified contribution found for 2026 yet.</p>
+        <p style="font-size:.78rem;color:#c8a880;margin-top:.3rem">Your receipt will appear here after the committee verifies your payment.</p>
+        <a href="#" onclick="switchTab('quickpay');return false" style="display:inline-block;margin-top:1rem;text-decoration:none"><button class="btn-primary">⚡ Contribute Now</button></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ VOLUNTEER TAB ═══ -->
+  <div class="portal-panel" id="tab-volunteer">
+    <div class="pcard">
+      <div class="pcard-title">🤝 My Volunteer Status</div>
+
+      <div class="vol-status not-registered" id="volStatusBanner">
+        <div>
+          <div style="font-weight:600;font-size:.88rem;color:var(--ink)" id="volStatusText">You haven't signed up as a volunteer yet</div>
+          <div style="font-size:.75rem;color:var(--lbr);margin-top:.15rem" id="volStatusSub">Help make the 5th year grand!</div>
+        </div>
+      </div>
+
+      <div id="volTaskList">
+        <div style="text-align:center;padding:1.5rem">
+          <p style="font-size:.88rem;color:var(--lbr);margin-bottom:1rem">Sign up as a volunteer to see your assigned tasks here.</p>
+          <a href="pages/volunteer.html" style="text-decoration:none"><button class="btn-primary">🤝 Sign Up to Volunteer</button></a>
+        </div>
+      </div>
+    </div>
+
+    <div class="pcard" id="volCheckinCard" style="display:none">
+      <div class="pcard-title">📍 Event Day Check-In</div>
+      <div class="pcard-sub">Mark yourself as arrived on event day. The committee can see real-time volunteer attendance.</div>
+      <button class="vol-checkin-btn" onclick="volunteerCheckin()" id="volCheckinBtn">📍 I'm Here — Check In</button>
+      <div id="volCheckinStatus" style="display:none;margin-top:.8rem;padding:.7rem 1rem;background:#f0fff4;border:1px solid #a5d6a7;border-radius:10px;font-size:.85rem;color:var(--green)">✅ Checked in! The committee knows you're here. Thank you!</div>
     </div>
   </div>
 
@@ -1048,14 +1128,192 @@ function switchTab(id) {
   document.getElementById('tab-' + id).classList.add('active');
   // Find matching tab button
   const buttons = document.querySelectorAll('.ptab');
-  const tabMap = { contributions:0, profile:1, notifications:2, messages:3, quickpay:4, adminmgmt:5 };
+  const tabMap = { contributions:0, profile:1, notifications:2, messages:3, quickpay:4, receipt:5, volunteer:6, adminmgmt:7 };
   if (tabMap[id] !== undefined) buttons[tabMap[id]].classList.add('active');
+  if (id === 'receipt') loadReceipt();
+  if (id === 'volunteer') loadVolunteerStatus();
 }
 
 function toast(msg, type='') {
   const el = document.getElementById('toast');
   el.textContent = msg; el.className = type ? `show ${type}` : 'show';
   setTimeout(() => el.className = '', 3000);
+}
+
+/* ═══════════════════════════════════════════════════
+   RECEIPT / THANK YOU CARD
+═══════════════════════════════════════════════════ */
+function loadReceipt() {
+  const el = document.getElementById('receiptContent');
+  const actions = document.getElementById('receiptActions');
+  const noMsg = document.getElementById('noReceiptMsg');
+
+  // Find 2026 verified contribution for this user
+  const flat = userProfile.flat;
+  const name = userProfile.name || currentUser?.name || '';
+  if (!flat) {
+    el.innerHTML = '';
+    noMsg.style.display = 'block';
+    noMsg.querySelector('p').textContent = 'Complete your profile with flat number to see your receipt.';
+    return;
+  }
+
+  // Check localStorage for cached contributions first
+  const contribs = JSON.parse(localStorage.getItem('psots_my_contribs_2026') || '[]');
+  const verified = contribs.filter(c => c.status && c.status.includes('Received'));
+
+  if (verified.length > 0) {
+    renderReceipt(name, flat, verified);
+    return;
+  }
+
+  // Try fetching from sheet
+  const su = C.scriptUrl;
+  if (su && !su.includes('YOUR_APPS')) {
+    el.innerHTML = '<div class="loading">Loading…</div>';
+    fetch(su + '?action=list').then(r => r.json()).then(d => {
+      const all = d.contributors || [];
+      const mine = all.filter(c => String(c.flat).trim() === String(flat).trim() && c.status && c.status.includes('Received'));
+      if (mine.length > 0) {
+        localStorage.setItem('psots_my_contribs_2026', JSON.stringify(mine));
+        renderReceipt(name, flat, mine);
+      } else {
+        el.innerHTML = '';
+        noMsg.style.display = 'block';
+        actions.style.display = 'none';
+      }
+    }).catch(() => {
+      el.innerHTML = '';
+      noMsg.style.display = 'block';
+    });
+  } else {
+    el.innerHTML = '';
+    noMsg.style.display = 'block';
+  }
+}
+
+function renderReceipt(name, flat, contribs) {
+  const total = contribs.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
+  const el = document.getElementById('receiptContent');
+  const actions = document.getElementById('receiptActions');
+  const noMsg = document.getElementById('noReceiptMsg');
+  noMsg.style.display = 'none';
+  actions.style.display = 'block';
+
+  el.innerHTML = `
+    <div class="receipt-card" id="receiptCard">
+      <div class="rc-icon">🪔</div>
+      <div class="rc-title">PSOTS Chhath Puja 2026</div>
+      <div class="rc-sub">पंच वर्ष महोत्सव · Thank You Certificate</div>
+      <div class="rc-badge">✅ Verified Contributor</div>
+      <div class="rc-name">${name}</div>
+      <div class="rc-flat">Flat ${flat} · Prestige Song of the South</div>
+      <div class="rc-amount">₹${total.toLocaleString('en-IN')}</div>
+      <div class="rc-label">Total Contribution · ${contribs.length} payment${contribs.length > 1 ? 's' : ''}</div>
+      <div class="rc-year">Nov 1–4, 2026 · Society Ghat · Bengaluru<br/>जय छठ मइया! 🙏</div>
+    </div>`;
+}
+
+function shareReceipt() {
+  const name = userProfile.name || currentUser?.name || '';
+  const flat = userProfile.flat || '';
+  const text = `🪔 *PSOTS Chhath Puja 2026 — पंच वर्ष महोत्सव*\n\nI've contributed to Chhath Puja at Prestige Song of the South! 🙏\n\n👤 ${name}\n🏠 Flat ${flat}\n\nJoin us: Nov 1-4, 2026 at Society Ghat\nContribute: ${(window.PSOTS && window.PSOTS.siteUrl) || 'chhath.psots.in'}\n\nजय छठ मइया! 🪔`;
+  if (navigator.share) {
+    navigator.share({ title: 'Chhath Puja 2026 — My Contribution', text }).catch(() => {});
+  } else {
+    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+  }
+}
+
+function downloadReceipt() {
+  // Simple approach: open receipt card in new window for screenshot
+  const card = document.getElementById('receiptCard');
+  if (!card) return toast('No receipt to download', 'error');
+  const win = window.open('', '_blank');
+  win.document.write(`<html><head><title>Chhath Puja 2026 Receipt</title>
+    <style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#1a0800;font-family:'DM Sans',sans-serif}
+    *{box-sizing:border-box;margin:0;padding:0}</style></head><body>${card.outerHTML}
+    <script>setTimeout(()=>{window.print()},500)<\/script></body></html>`);
+  win.document.close();
+  toast('📸 Print or save as PDF', 'success');
+}
+
+/* ═══════════════════════════════════════════════════
+   VOLUNTEER STATUS & CHECK-IN
+═══════════════════════════════════════════════════ */
+function loadVolunteerStatus() {
+  const vols = JSON.parse(localStorage.getItem('psots_volunteers') || '[]');
+  const flat = userProfile.flat || '';
+  const name = userProfile.name || currentUser?.name || '';
+  const myVol = vols.find(v => (v.flat && v.flat === flat) || (v.name && v.name.toLowerCase() === name.toLowerCase()));
+
+  const banner = document.getElementById('volStatusBanner');
+  const taskList = document.getElementById('volTaskList');
+  const checkinCard = document.getElementById('volCheckinCard');
+
+  if (myVol) {
+    banner.className = 'vol-status registered';
+    document.getElementById('volStatusText').textContent = '✅ You\'re registered as a volunteer!';
+    document.getElementById('volStatusSub').textContent = `Days: ${myVol.days || 'TBD'} · Tasks: ${myVol.tasks || 'TBD'}`;
+
+    const tasks = (myVol.tasks || '').split(', ').filter(Boolean);
+    const days = (myVol.days || '').split(', ').filter(Boolean);
+    taskList.innerHTML = `
+      <div style="font-size:.72rem;color:var(--lbr);font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">Your Assignment</div>
+      ${days.map(d => `
+        <div class="vol-task-card assigned">
+          <div style="font-weight:700;font-size:.88rem;color:var(--or);margin-bottom:.3rem">📅 ${d}</div>
+          <div style="font-size:.8rem;color:var(--br)">${tasks.join(' · ')}</div>
+          <div style="font-size:.7rem;color:var(--lbr);margin-top:.3rem">Status: ${myVol.status || 'Registered'} · Contact committee for timing</div>
+        </div>
+      `).join('')}
+      <p style="font-size:.75rem;color:var(--lbr);margin-top:.8rem">The committee will WhatsApp you reporting time and specific instructions before the event.</p>`;
+
+    // Show check-in on event days
+    const now = new Date();
+    if (now.getFullYear() === 2026 && now.getMonth() === 10 && now.getDate() >= 1 && now.getDate() <= 4) {
+      checkinCard.style.display = 'block';
+      const checked = localStorage.getItem('psots_vol_checkin_' + now.getDate());
+      if (checked) {
+        document.getElementById('volCheckinBtn').disabled = true;
+        document.getElementById('volCheckinBtn').textContent = '✅ Checked In';
+        document.getElementById('volCheckinStatus').style.display = 'block';
+      }
+    }
+  } else {
+    banner.className = 'vol-status not-registered';
+    document.getElementById('volStatusText').textContent = 'You haven\'t signed up as a volunteer yet';
+    document.getElementById('volStatusSub').textContent = 'Help make the 5th year grand!';
+    taskList.innerHTML = `
+      <div style="text-align:center;padding:1.5rem">
+        <p style="font-size:.88rem;color:var(--lbr);margin-bottom:1rem">Sign up as a volunteer to see your assigned tasks here.</p>
+        <a href="pages/volunteer.html" style="text-decoration:none"><button class="btn-primary">🤝 Sign Up to Volunteer</button></a>
+      </div>`;
+  }
+}
+
+async function volunteerCheckin() {
+  const btn = document.getElementById('volCheckinBtn');
+  btn.disabled = true; btn.textContent = 'Checking in…';
+
+  const day = new Date().getDate();
+  const data = {
+    action: 'volunteerCheckin',
+    name: userProfile.name || currentUser?.name,
+    flat: userProfile.flat,
+    day: 'Nov ' + day,
+    timestamp: new Date().toISOString()
+  };
+
+  const su = C.scriptUrl;
+  if (su && !su.includes('YOUR_APPS')) {
+    try { await fetch(su, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) }); } catch(e) {}
+  }
+
+  localStorage.setItem('psots_vol_checkin_' + day, 'true');
+  btn.textContent = '✅ Checked In';
+  document.getElementById('volCheckinStatus').style.display = 'block';
+  toast('📍 Checked in! Thank you, volunteer!', 'success');
 }
 
 // Check auth on load

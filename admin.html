@@ -217,6 +217,7 @@
     <button class="tab-btn" onclick="switchTab('timings')">⏰ Arghya Timings</button>
     <button class="tab-btn" onclick="switchTab('broadcast')">📲 Broadcast</button>
     <button class="tab-btn" onclick="switchTab('manual')">✍️ Manual Entry</button>
+    <button class="tab-btn" onclick="switchTab('volunteers')">🤝 Volunteers</button>
     <button class="tab-btn" onclick="switchTab('settings')">⚙️ Settings</button>
     <button class="tab-btn" onclick="switchTab('directory')">👥 Directory</button>
     <a href="data-manager.html" class="tab-btn" style="text-decoration:none">📥 Import CSV</a>
@@ -272,6 +273,7 @@
         </table>
       </div>
       <div class="total-bar"><span class="tl">Total Verified</span><span class="tv" id="conVerifiedTotal">—</span></div>
+      <div id="dupAlert" style="display:none;background:#fff5e8;border:1.5px solid rgba(232,92,0,.3);border-radius:12px;padding:.8rem 1rem;margin-top:.8rem;font-size:.82rem;color:var(--br)"></div>
       <div style="margin-top:.8rem;display:flex;gap:.7rem;flex-wrap:wrap">
         <button class="btn-primary" onclick="loadAdminCon()">🔄 Refresh List</button>
         <button class="btn-secondary" onclick="exportCSV()">📥 Export CSV</button>
@@ -307,6 +309,7 @@
       <div style="display:flex;gap:.7rem;margin-top:.5rem;flex-wrap:wrap">
         <button class="btn-primary" onclick="saveFinance()">💾 Save Finance Data</button>
         <button class="btn-secondary" onclick="calcTotal()">🔢 Auto-Calculate Total</button>
+        <button class="btn-secondary" onclick="exportFinancePDF()">📄 Export PDF Report</button>
       </div>
       <div id="finance-total" style="margin-top:1rem;font-family:'DM Sans',sans-serif;font-size:1.1rem;font-weight:700;color:var(--or);display:none"></div>
     </div>
@@ -412,6 +415,25 @@
       </div>
       <button class="btn-primary" onclick="sendBroadcast()" style="font-size:.95rem;padding:.75rem 1.5rem">📲 Open in WhatsApp to Send</button>
       <p style="font-size:.7rem;color:var(--lbr);margin-top:.6rem">This opens WhatsApp with the message ready. Select your "PSOTS Chhath 2026" broadcast list and tap send.</p>
+    </div>
+
+    <div class="admin-card">
+      <div class="ac-title">⏰ Reminder Scheduler</div>
+      <div class="ac-sub">Set up key reminder dates. On each date, the broadcast message will be pre-composed and ready to send. You'll see a notification on the dashboard.</div>
+      <div id="reminderList" style="margin-bottom:1rem"></div>
+      <div class="fg">
+        <div class="ff"><label>Reminder Date</label><input type="date" id="rem-date"/></div>
+        <div class="ff"><label>Template</label>
+          <select id="rem-template">
+            <option value="reminder">⏰ Payment Reminder</option>
+            <option value="timing">🌅 Arghya Timing</option>
+            <option value="prasad">🙏 Prasad Update</option>
+            <option value="thankyou">🎉 Thank You</option>
+          </select>
+        </div>
+        <div class="ff" style="grid-column:1/-1"><label>Custom Note (optional)</label><input type="text" id="rem-note" placeholder="e.g. Last 3 days to contribute!"/></div>
+      </div>
+      <button class="btn-primary" onclick="addReminder()">➕ Add Reminder</button>
     </div>
   </div>
 
@@ -524,6 +546,48 @@
       <div id="bulk-preview" style="margin-top:1rem"></div>
     </div>
 
+  </div>
+
+  <!-- ═══ VOLUNTEERS TAB ═══ -->
+  <div class="tab-panel" id="tab-volunteers">
+    <div class="admin-card">
+      <div class="ac-title">🤝 Volunteer Management</div>
+      <div class="ac-sub">View all volunteer sign-ups, assign tasks, and track event-day attendance. Data syncs from the volunteer sign-up page.</div>
+
+      <div class="stat-grid" id="volStats" style="margin-bottom:1.2rem">
+        <div class="stat-card"><div class="stat-val" id="v-total">—</div><div class="stat-lbl">Total Volunteers</div></div>
+        <div class="stat-card"><div class="stat-val" id="v-day3">—</div><div class="stat-lbl">Nov 3 (Sandhya)</div></div>
+        <div class="stat-card"><div class="stat-val" id="v-day4">—</div><div class="stat-lbl">Nov 4 (Usha)</div></div>
+        <div class="stat-card"><div class="stat-val green" id="v-checkin">—</div><div class="stat-lbl">Checked In</div></div>
+      </div>
+
+      <div style="display:flex;gap:.7rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap">
+        <button class="btn-primary" onclick="loadVolunteers()">🔄 Refresh</button>
+        <button class="btn-secondary" onclick="exportVolunteersCSV()">📥 Export CSV</button>
+        <input id="volSearch" type="text" placeholder="🔍 Search volunteer…" oninput="filterVolunteers()"
+          style="margin-left:auto;padding:.48rem .85rem;border:1.5px solid #f0d5b8;border-radius:50px;font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;background:var(--warm);min-width:160px;flex:1;max-width:240px"/>
+      </div>
+
+      <div style="overflow-x:auto">
+        <table class="con-table">
+          <thead><tr><th>#</th><th>Name</th><th>Flat</th><th>Mobile</th><th>Days</th><th>Tasks</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="volTableBody"><tr><td colspan="8" class="loading-state">Click Refresh to load volunteers…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="admin-card">
+      <div class="ac-title">🙏 Prasad RSVP Summary</div>
+      <div class="ac-sub">Aggregated prasad requirements from resident RSVPs. Use this to order the right quantities.</div>
+      <div class="stat-grid" id="rsvpStats" style="margin-bottom:1rem">
+        <div class="stat-card"><div class="stat-val" id="r-total">—</div><div class="stat-lbl">Total RSVPs</div></div>
+        <div class="stat-card"><div class="stat-val" id="r-people">—</div><div class="stat-lbl">People Attending</div></div>
+        <div class="stat-card"><div class="stat-val" id="r-kharna">—</div><div class="stat-lbl">Kharna Plates</div></div>
+        <div class="stat-card"><div class="stat-val" id="r-thekua">—</div><div class="stat-lbl">Thekua Packets</div></div>
+      </div>
+      <button class="btn-secondary" onclick="loadRSVPs()">🔄 Load RSVPs</button>
+      <div id="rsvpList" style="margin-top:1rem"></div>
+    </div>
   </div>
 
   <!-- ═══ SETTINGS TAB ═══ -->
@@ -700,6 +764,7 @@ function initAdmin() {
   loadAnnouncements();
   loadDayEditor();
   initBroadcast();
+  loadReminders();
   updateAdminCountdown();
   setInterval(updateAdminCountdown, 60000);
   // Override localStorage with live data from Apps Script
@@ -786,6 +851,7 @@ function switchTab(id) {
   document.getElementById('tab-' + id).classList.add('active');
   event.target.classList.add('active');
   if (id === 'directory') loadDirectory();
+  if (id === 'volunteers') loadVolunteers();
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1015,6 +1081,7 @@ function renderConTable(data) {
   document.getElementById('conVerifiedTotal').textContent = '₹' + verTotal.toLocaleString('en-IN');
   updateDashStats();
   updatePendingList();
+  checkDuplicates();
 }
 
 async function updateStatus(idx, newStatus) {
@@ -1408,7 +1475,7 @@ function saveAll() {
   saveAnnouncements();
   saveSettings();
   saveTimings();
-  toast('✅ All changes saved!', 'success');
+  toast('✅ All changes saved (finance, announcements, timings, settings)!', 'success');
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1617,6 +1684,312 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Auto-load manual entries when tab is shown
 const origSwitch = switchTab;
+
+/* ═══════════════════════════════════════════════════
+   DUPLICATE PAYMENT DETECTION
+═══════════════════════════════════════════════════ */
+function checkDuplicates() {
+  const el = document.getElementById('dupAlert');
+  const byMobile = {};
+  const byFlat = {};
+  allConData.forEach(r => {
+    if (r.mobile && r.mobile.length >= 10) {
+      if (!byMobile[r.mobile]) byMobile[r.mobile] = [];
+      byMobile[r.mobile].push(r);
+    }
+    if (r.flat) {
+      const f = String(r.flat).trim();
+      if (!byFlat[f]) byFlat[f] = [];
+      byFlat[f].push(r);
+    }
+  });
+  const dups = [];
+  Object.entries(byMobile).forEach(([mob, rows]) => {
+    if (rows.length > 1) dups.push(`📱 Mobile ${mob}: ${rows.length} entries (${rows.map(r=>r.name).join(', ')})`);
+  });
+  Object.entries(byFlat).forEach(([flat, rows]) => {
+    if (rows.length > 1 && flat !== '—' && flat) dups.push(`🏠 Flat ${flat}: ${rows.length} entries (${rows.map(r=>r.name).join(', ')})`);
+  });
+  if (dups.length > 0) {
+    el.style.display = 'block';
+    el.innerHTML = `<strong>⚠️ Possible Duplicates Found (${dups.length})</strong><br/><div style="margin-top:.4rem;font-size:.78rem;line-height:1.7">${dups.join('<br/>')}</div>`;
+  } else {
+    el.style.display = 'none';
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   FINANCE PDF EXPORT
+═══════════════════════════════════════════════════ */
+function exportFinancePDF() {
+  const carry = document.getElementById('f-carry').value || 0;
+  const collected = document.getElementById('f-collected').value || 0;
+  const budget = document.getElementById('f-budget').value || 0;
+  const expenses = document.getElementById('f-expenses').value || 0;
+  const tent = document.getElementById('exp-tent').value || 0;
+  const kharna = document.getElementById('exp-kharna').value || 0;
+  const thekua = document.getElementById('exp-thekua').value || 0;
+  const av = document.getElementById('exp-av').value || 0;
+  const cultural = document.getElementById('exp-cultural').value || 0;
+  const misc = document.getElementById('exp-misc').value || 0;
+  const verified = allConData.filter(r => r.status?.includes('Received'));
+  const total = verified.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
+  const balance = parseFloat(carry) + total - parseFloat(expenses);
+
+  const fmt = n => '₹' + parseInt(n||0).toLocaleString('en-IN');
+  const date = new Date().toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'});
+
+  const html = `<!DOCTYPE html><html><head><title>PSOTS Chhath 2026 — Finance Report</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:'Segoe UI',sans-serif;padding:2rem;max-width:800px;margin:0 auto;color:#1a0800}
+  h1{font-size:1.5rem;text-align:center;margin-bottom:.2rem}
+  .sub{text-align:center;color:#6b3a18;font-size:.85rem;margin-bottom:2rem}
+  h2{font-size:1.1rem;color:#e85c00;margin:1.5rem 0 .8rem;border-bottom:2px solid #ffc200;padding-bottom:.3rem}
+  table{width:100%;border-collapse:collapse;margin-bottom:1rem}
+  th,td{padding:.6rem .8rem;text-align:left;border-bottom:1px solid #f0d5b8;font-size:.88rem}
+  th{background:#fff5e8;font-weight:700;color:#1a0800}
+  .amt{text-align:right;font-weight:700;font-family:monospace;font-size:.92rem}
+  .total-row{background:#fff5e8;font-weight:700}
+  .surplus{color:#2e7d32}
+  .footer{text-align:center;margin-top:2rem;color:#a05828;font-size:.78rem;border-top:1px solid #f0d5b8;padding-top:1rem}
+  @media print{body{padding:1rem}}
+</style></head><body>
+<h1>PSOTS Chhath Puja 2026</h1>
+<div class="sub">पंच वर्ष महोत्सव · Financial Report · Generated ${date}</div>
+
+<h2>Income Summary</h2>
+<table>
+  <tr><td>Carry Forward from 2025</td><td class="amt">${fmt(carry)}</td></tr>
+  <tr><td>Total Collected 2026 (${verified.length} contributors)</td><td class="amt">${fmt(total)}</td></tr>
+  <tr class="total-row"><td>Total Available Funds</td><td class="amt">${fmt(parseFloat(carry)+total)}</td></tr>
+</table>
+
+<h2>Expense Breakdown</h2>
+<table>
+  <tr><td>Tent & Decoration</td><td class="amt">${fmt(tent)}</td></tr>
+  <tr><td>Kharna Prasad</td><td class="amt">${fmt(kharna)}</td></tr>
+  <tr><td>Thekua Prasad</td><td class="amt">${fmt(thekua)}</td></tr>
+  <tr><td>Audio & Visuals</td><td class="amt">${fmt(av)}</td></tr>
+  <tr><td>Cultural Activities</td><td class="amt">${fmt(cultural)}</td></tr>
+  <tr><td>Miscellaneous</td><td class="amt">${fmt(misc)}</td></tr>
+  <tr class="total-row"><td>Total Expenses</td><td class="amt">${fmt(expenses)}</td></tr>
+</table>
+
+<h2>Balance</h2>
+<table>
+  <tr><td>Total Available</td><td class="amt">${fmt(parseFloat(carry)+total)}</td></tr>
+  <tr><td>Total Spent</td><td class="amt">${fmt(expenses)}</td></tr>
+  <tr class="total-row"><td>Balance Remaining</td><td class="amt ${balance>=0?'surplus':''}">${fmt(balance)}</td></tr>
+  <tr><td>Planned Budget 2026</td><td class="amt">${fmt(budget)}</td></tr>
+</table>
+
+<div class="footer">
+  PSOTS Chhath Puja Committee · Prestige Song of the South, Bengaluru<br/>
+  WhatsApp: 9482088904 · 9902837002 · chhath.psots.in
+</div>
+<script>setTimeout(()=>window.print(),500)<\/script>
+</body></html>`;
+
+  const win = window.open('', '_blank');
+  win.document.write(html);
+  win.document.close();
+  toast('📄 Finance report ready — print or save as PDF', 'success');
+}
+
+/* ═══════════════════════════════════════════════════
+   VOLUNTEER MANAGEMENT
+═══════════════════════════════════════════════════ */
+let allVolunteers = [];
+
+function loadVolunteers() {
+  // Load from localStorage (synced from volunteer sign-up page)
+  allVolunteers = JSON.parse(localStorage.getItem('psots_volunteers') || '[]');
+
+  // Also try loading from Google Sheet
+  const url = getScriptUrl();
+  if (url && !url.includes('YOUR_APPS')) {
+    fetch(url + '?action=getVolunteers').then(r => r.json()).then(d => {
+      if (d.volunteers && d.volunteers.length > 0) {
+        allVolunteers = d.volunteers;
+        localStorage.setItem('psots_volunteers', JSON.stringify(allVolunteers));
+      }
+      renderVolunteers();
+    }).catch(() => renderVolunteers());
+  } else {
+    renderVolunteers();
+  }
+}
+
+function renderVolunteers() {
+  const tbody = document.getElementById('volTableBody');
+  const q = (document.getElementById('volSearch')?.value || '').toLowerCase();
+  let filtered = allVolunteers.filter(v => {
+    if (!q) return true;
+    return (v.name||'').toLowerCase().includes(q) || (v.flat||'').includes(q) || (v.tasks||'').toLowerCase().includes(q);
+  });
+
+  // Stats
+  document.getElementById('v-total').textContent = allVolunteers.length;
+  document.getElementById('v-day3').textContent = allVolunteers.filter(v => (v.days||'').includes('Nov 3')).length;
+  document.getElementById('v-day4').textContent = allVolunteers.filter(v => (v.days||'').includes('Nov 4')).length;
+  document.getElementById('v-checkin').textContent = allVolunteers.filter(v => v.checkedIn).length;
+
+  if (!filtered.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:2rem;color:var(--lbr)">No volunteers found. Share the volunteer sign-up page to get sign-ups!</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = filtered.map((v, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td style="font-weight:600">${v.name||'—'}</td>
+      <td>${v.flat||'—'}</td>
+      <td style="font-size:.78rem">${v.mobile||'—'}</td>
+      <td style="font-size:.75rem">${v.days||'—'}</td>
+      <td style="font-size:.75rem;max-width:160px">${v.tasks||'—'}</td>
+      <td><span class="status-badge ${v.status==='Confirmed'?'verified':v.checkedIn?'verified':'pending'}">${v.checkedIn?'📍 Checked In':v.status||'Registered'}</span></td>
+      <td>
+        <div class="action-btns">
+          <button class="btn-success" onclick="confirmVolunteer(${i})" title="Confirm">✅</button>
+          ${v.mobile ? `<button class="btn-icon" onclick="window.open('https://wa.me/91${v.mobile}','_blank')" title="WhatsApp">📲</button>` : ''}
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+function filterVolunteers() { renderVolunteers(); }
+
+function confirmVolunteer(i) {
+  allVolunteers[i].status = 'Confirmed';
+  localStorage.setItem('psots_volunteers', JSON.stringify(allVolunteers));
+  renderVolunteers();
+  toast('✅ Volunteer confirmed!', 'success');
+  // Send WhatsApp if mobile available
+  const v = allVolunteers[i];
+  if (v.mobile) {
+    const msg = encodeURIComponent(`🤝 *Volunteer Confirmed — Chhath 2026*\n\nHi ${v.name}!\n\nYou're confirmed as a volunteer for:\n📅 ${v.days}\n🔧 ${v.tasks}\n\nReporting time will be shared before the event. Meals provided!\n\nThank you! 🙏\n— PSOTS Chhath Committee`);
+    window.open(`https://wa.me/91${v.mobile}?text=${msg}`, '_blank');
+  }
+}
+
+function exportVolunteersCSV() {
+  const headers = ['Name','Flat','Mobile','Days','Tasks','Status','Note'];
+  const rows = allVolunteers.map(v => [v.name,v.flat,v.mobile,v.days,v.tasks,v.status,v.note].map(f=>`"${(f||'').replace(/"/g,'""')}"`).join(','));
+  const csv = [headers.join(','), ...rows].join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);
+  a.download = 'PSOTS_Chhath_2026_Volunteers.csv';
+  a.click();
+  toast('📥 Volunteers CSV exported!', 'success');
+}
+
+/* ═══════════════════════════════════════════════════
+   RSVP MANAGEMENT
+═══════════════════════════════════════════════════ */
+function loadRSVPs() {
+  let rsvps = JSON.parse(localStorage.getItem('psots_rsvps') || '[]');
+
+  const url = getScriptUrl();
+  if (url && !url.includes('YOUR_APPS')) {
+    fetch(url + '?action=getRSVPs').then(r => r.json()).then(d => {
+      if (d.rsvps && d.rsvps.length > 0) {
+        rsvps = d.rsvps;
+        localStorage.setItem('psots_rsvps', JSON.stringify(rsvps));
+      }
+      renderRSVPs(rsvps);
+    }).catch(() => renderRSVPs(rsvps));
+  } else {
+    renderRSVPs(rsvps);
+  }
+}
+
+function renderRSVPs(rsvps) {
+  const totalPeople = rsvps.reduce((s,r) => s + (parseInt(r.family)||0), 0);
+  const totalKharna = rsvps.reduce((s,r) => s + (parseInt(r.kharnaPlates)||0), 0);
+  const totalThekua = rsvps.reduce((s,r) => s + (parseInt(r.thekuaPackets)||0), 0);
+
+  document.getElementById('r-total').textContent = rsvps.length;
+  document.getElementById('r-people').textContent = totalPeople;
+  document.getElementById('r-kharna').textContent = totalKharna;
+  document.getElementById('r-thekua').textContent = totalThekua;
+
+  const el = document.getElementById('rsvpList');
+  if (!rsvps.length) {
+    el.innerHTML = '<div style="color:var(--lbr);font-size:.84rem">No RSVPs yet. Share the volunteer page to collect RSVPs.</div>';
+    return;
+  }
+  el.innerHTML = `<div style="overflow-x:auto"><table class="con-table"><thead><tr><th>#</th><th>Name</th><th>Flat</th><th>Family</th><th>Kharna</th><th>Thekua</th></tr></thead><tbody>` +
+    rsvps.map((r,i) => `<tr><td>${i+1}</td><td>${r.name||'—'}</td><td>${r.flat||'—'}</td><td>${r.family||'—'}</td><td>${r.kharnaPlates||0}</td><td>${r.thekuaPackets||0}</td></tr>`).join('') +
+    `</tbody></table></div>`;
+}
+
+/* ═══════════════════════════════════════════════════
+   REMINDER SCHEDULER
+═══════════════════════════════════════════════════ */
+function loadReminders() {
+  const reminders = JSON.parse(localStorage.getItem('psots_reminders') || '[]');
+  renderReminders(reminders);
+  checkDueReminders(reminders);
+}
+
+function renderReminders(reminders) {
+  const el = document.getElementById('reminderList');
+  if (!reminders.length) {
+    el.innerHTML = '<div style="color:var(--lbr);font-size:.84rem;margin-bottom:.5rem">No reminders set. Add key dates below.</div>';
+    return;
+  }
+  const today = new Date().toISOString().split('T')[0];
+  el.innerHTML = reminders.map((r, i) => {
+    const isPast = r.date < today;
+    const isToday = r.date === today;
+    return `<div style="display:flex;align-items:center;gap:.8rem;padding:.65rem .9rem;background:${isToday?'#fff5e8':isPast?'#f5f0e8':'var(--warm)'};border:1px solid ${isToday?'rgba(232,92,0,.3)':'#f0d5b8'};border-radius:10px;margin-bottom:.4rem">
+      <div style="flex:1">
+        <div style="font-weight:600;font-size:.85rem;color:${isToday?'var(--or)':'var(--ink)'}">${isToday?'🔔 TODAY: ':''}${r.date} — ${r.template}</div>
+        ${r.note ? `<div style="font-size:.75rem;color:var(--lbr)">${r.note}</div>` : ''}
+      </div>
+      ${isToday ? `<button class="btn-primary" onclick="loadTemplate('${r.template.toLowerCase().replace(/[^a-z]/g,'')}')" style="font-size:.75rem;padding:.4rem .8rem">📲 Send Now</button>` : ''}
+      <button onclick="removeReminder(${i})" style="background:none;border:none;cursor:pointer;font-size:.85rem;color:var(--red)">🗑</button>
+    </div>`;
+  }).join('');
+}
+
+function addReminder() {
+  const date = document.getElementById('rem-date').value;
+  const template = document.getElementById('rem-template').selectedOptions[0].textContent;
+  const note = document.getElementById('rem-note').value.trim();
+  if (!date) return toast('Please select a date', 'error');
+  const reminders = JSON.parse(localStorage.getItem('psots_reminders') || '[]');
+  reminders.push({ date, template, note });
+  reminders.sort((a,b) => a.date.localeCompare(b.date));
+  localStorage.setItem('psots_reminders', JSON.stringify(reminders));
+  renderReminders(reminders);
+  document.getElementById('rem-date').value = '';
+  document.getElementById('rem-note').value = '';
+  toast('✅ Reminder added for ' + date, 'success');
+}
+
+function removeReminder(i) {
+  const reminders = JSON.parse(localStorage.getItem('psots_reminders') || '[]');
+  reminders.splice(i, 1);
+  localStorage.setItem('psots_reminders', JSON.stringify(reminders));
+  renderReminders(reminders);
+}
+
+function checkDueReminders(reminders) {
+  const today = new Date().toISOString().split('T')[0];
+  const due = reminders.filter(r => r.date === today);
+  if (due.length > 0) {
+    // Show alert on dashboard
+    const dashCard = document.querySelector('#tab-dashboard .admin-card:first-child');
+    if (dashCard) {
+      const alert = document.createElement('div');
+      alert.style.cssText = 'background:#fff5e8;border:1.5px solid rgba(232,92,0,.3);border-radius:12px;padding:.8rem 1rem;margin-top:.8rem;font-size:.85rem;color:var(--or);font-weight:600';
+      alert.innerHTML = `🔔 Reminder: ${due.map(d => d.template + (d.note ? ' — ' + d.note : '')).join(', ')} — <a href="#" onclick="switchTab('broadcast');return false" style="color:var(--or)">Send Broadcast →</a>`;
+      dashCard.appendChild(alert);
+    }
+  }
+}
 
 // Auto-check auth on load
 // Auth handled by window.addEventListener('load') above
