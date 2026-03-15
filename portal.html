@@ -6,6 +6,8 @@
   <title>PSOTS — My Portal · Chhath 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <!-- Central config (sets window.PSOTS) -->
+  <script src="config.js"></script>
   <!-- Google Sign-In -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
@@ -444,8 +446,8 @@ const C = {
   upiId:     '9482088904-3@ybl',
   payeeName: 'ChhathPuja2026PSOTS',
   waOrg:     '919482088904',
-  scriptUrl: localStorage.getItem('psots_script_url') || 'YOUR_APPS_SCRIPT_URL_HERE',
-  googleClientId: 'YOUR_GOOGLE_CLIENT_ID_HERE', // Get from console.cloud.google.com
+  scriptUrl: localStorage.getItem('psots_script_url') || (window.PSOTS && window.PSOTS.scriptUrl) || 'YOUR_APPS_SCRIPT_URL_HERE',
+  googleClientId: (window.PSOTS && window.PSOTS.googleClientId) || 'YOUR_GOOGLE_CLIENT_ID_HERE',
 };
 
 /* ═══════════════════════════════════════════════════

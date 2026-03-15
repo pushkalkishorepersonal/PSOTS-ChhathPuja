@@ -49,8 +49,8 @@ window.PSOTS = {
   },
 
   /* ── DOMAIN ───────────────────── */
-  domain:  'psots.in',
-  siteUrl: 'https://psots.in',
+  domain:  'chhath.psots.in',
+  siteUrl: 'https://chhath.psots.in',
 
   /* ══ FILL THESE AFTER SETUP ══════
      See README.md for exact steps.   */
