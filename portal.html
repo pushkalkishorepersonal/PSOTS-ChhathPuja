@@ -257,6 +257,7 @@
     </div>
     <div class="wb-right">
       <div class="wb-badge" id="wbBadge">🪔 Member</div>
+      <a id="adminLink" href="admin.html" style="display:none;margin-top:.4rem;background:#e85c00;color:#fff;border:none;border-radius:50px;padding:.3rem .85rem;font-size:.72rem;font-weight:600;text-decoration:none;cursor:pointer">⚙️ Admin</a>
     </div>
   </div>
 
@@ -537,6 +538,13 @@ function showPortal() {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('portalApp').style.display = 'block';
   document.getElementById('btnSignout').style.display = 'block';
+
+  // Check admin
+  const adminEmails = (window.PSOTS && window.PSOTS.adminEmails) || [];
+  if (currentUser && adminEmails.includes(currentUser.email)) {
+    document.getElementById('wbBadge').textContent = '⚙️ Admin';
+    document.getElementById('adminLink').style.display = 'inline-block';
+  }
 
   // Set avatar in nav
   const navAv = document.getElementById('navAvatar');
