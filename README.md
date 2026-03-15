@@ -158,9 +158,8 @@ Residents sign in with their existing Google/Gmail account — no new passwords 
    - Name: `PSOTS Chhath Web`
    - Authorized JavaScript origins — click **Add URI**, type:
      ```
-     https://psots.in
-     https://www.psots.in
-     https://funny-name-123.netlify.app
+     https://chhath.psots.in
+     https://chhathatpsots.netlify.app
      ```
    - Click **Create**
 5. A popup shows your **Client ID** — looks like:

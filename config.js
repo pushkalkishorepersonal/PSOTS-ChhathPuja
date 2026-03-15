@@ -49,13 +49,13 @@ window.PSOTS = {
   },
 
   /* ── DOMAIN ───────────────────── */
-  domain:  'psots.in',
-  siteUrl: 'https://psots.in',
+  domain:  'chhath.psots.in',
+  siteUrl: 'https://chhath.psots.in',
 
   /* ══ FILL THESE AFTER SETUP ══════
      See README.md for exact steps.   */
   scriptUrl:      '',   // Paste Apps Script URL here
-  googleClientId: '',   // Paste Google OAuth Client ID here
+  googleClientId: '681152691156-g1q8bmionkcim033fhjhtn57jbiq1nij.apps.googleusercontent.com',
 };
 
 /* Helpers */
