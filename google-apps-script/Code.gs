@@ -15,7 +15,6 @@
 // ─── Sheet Names ───
 const SHEET_CONTRIBUTIONS = 'Contributions';
 const SHEET_PROFILES      = 'Profiles';
-const SHEET_SETTINGS      = 'Settings';
 
 // ─── Column headers ───
 const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','Date','Status','AccountType','UserID','Year'];
@@ -60,20 +59,6 @@ function setupSheets() {
     prof.setFrozenRows(1);
   }
 
-  // Create Settings sheet
-  let settings = ss.getSheetByName(SHEET_SETTINGS);
-  if (!settings) {
-    settings = ss.insertSheet(SHEET_SETTINGS);
-    settings.appendRow(['Key', 'Value']);
-    settings.appendRow(['UPI_ID', '9482088904-3@ybl']);
-    settings.appendRow(['WhatsApp', '919482088904']);
-    settings.appendRow(['EventDate', '2026-10-26']);
-    settings.getRange(1, 1, 1, 2)
-            .setFontWeight('bold')
-            .setBackground('#333')
-            .setFontColor('#FFF');
-  }
-
   // Remove default Sheet1 if it exists and is empty
   const sheet1 = ss.getSheetByName('Sheet1');
   if (sheet1 && sheet1.getLastRow() <= 1) {
@@ -84,8 +69,7 @@ function setupSheets() {
     '✅ Setup Complete!\n\n' +
     'Sheets created:\n' +
     '• Contributions — stores all payment records\n' +
-    '• Profiles — stores user profiles from portal\n' +
-    '• Settings — admin settings\n\n' +
+    '• Profiles — stores user profiles from portal\n\n' +
     'Next step: Deploy as Web App\n' +
     '(Extensions → Apps Script → Deploy → New deployment)'
   );
