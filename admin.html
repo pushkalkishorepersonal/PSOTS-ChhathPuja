@@ -1068,6 +1068,24 @@ function updateAdminCountdown() {
 /* ═══════════════════════════════════════════════════
    FINANCE
 ═══════════════════════════════════════════════════ */
+function loadFinance() {
+  const saved = localStorage.getItem('psots_finance');
+  if (!saved) return;
+  try {
+    const f = JSON.parse(saved);
+    if (f.carry    != null) document.getElementById('f-carry').value    = f.carry;
+    if (f.collected!= null) document.getElementById('f-collected').value= f.collected;
+    if (f.budget   != null) document.getElementById('f-budget').value   = f.budget;
+    if (f.expenses != null) document.getElementById('f-expenses').value = f.expenses;
+    if (f.expTent    != null) document.getElementById('exp-tent').value     = f.expTent;
+    if (f.expKharna  != null) document.getElementById('exp-kharna').value   = f.expKharna;
+    if (f.expThekua  != null) document.getElementById('exp-thekua').value   = f.expThekua;
+    if (f.expAV      != null) document.getElementById('exp-av').value        = f.expAV;
+    if (f.expCultural!= null) document.getElementById('exp-cultural').value  = f.expCultural;
+    if (f.expMisc    != null) document.getElementById('exp-misc').value      = f.expMisc;
+  } catch(e) {}
+}
+
 function calcTotal() {
   const ids = ['exp-tent','exp-kharna','exp-thekua','exp-av','exp-cultural','exp-misc'];
   const total = ids.reduce((s,id) => s + (parseFloat(document.getElementById(id).value)||0), 0);
@@ -1286,6 +1304,7 @@ function setEntryType(type, el) {
 }
 
 document.addEventListener('DOMContentLoaded', () => {
+  loadFinance();
   document.getElementById('me-date').valueAsDate = new Date();
   document.getElementById('bulk-date').valueAsDate = new Date();
   document.getElementById('me-wa-send').addEventListener('change', waConfirmChange);
