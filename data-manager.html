@@ -268,10 +268,12 @@ Praveen Kumar	2172	5001	8-Oct" rows="10"></textarea>
       <div class="card-sub">All contribution records stored in the system. Shown per year.</div>
       <div id="historyView"><div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.85rem">No data imported yet. Use the import tool above.</div></div>
       <div style="display:flex;gap:.7rem;margin-top:.8rem;flex-wrap:wrap">
+        <button class="btn-primary" onclick="loadBaseSheet()" id="baseSheetBtn" style="background:linear-gradient(135deg,#2e7d32,#1b5e20)">📂 Load BaseSheet (2022–2025)</button>
         <button class="btn-secondary" onclick="syncToSheet()">☁️ Sync to Google Sheet</button>
         <button class="btn-danger" onclick="clearAllHistory()">🗑 Clear History</button>
         <button class="btn-danger" onclick="clearAllData()">🗑 Clear ALL Data (History + Directory)</button>
       </div>
+      <div id="baseSheetStatus" style="display:none;margin-top:.7rem;padding:.65rem 1rem;border-radius:10px;font-size:.83rem"></div>
     </div>
   </div>
 
@@ -536,7 +538,25 @@ function saveResidents(d) { localStorage.setItem('psots_residents', JSON.stringi
 /* ═══════════════════════════════
    INIT
 ═══════════════════════════════ */
-function initApp() {
+async function initApp() {
+  // Load global data from data/history.json if localStorage is empty
+  try {
+    const localH = getHistory();
+    if (localH.length === 0) {
+      const res = await fetch('data/history.json');
+      if (res.ok) {
+        const global = await res.json();
+        if (global.history && global.history.length > 0) {
+          saveHistory(global.history);
+          toast(`📥 Loaded ${global.history.length} records from global database`, 'success');
+        }
+        if (global.residents && global.residents.length > 0) {
+          saveResidents(global.residents);
+        }
+      }
+    }
+  } catch(e) { console.log('Global data fetch skipped:', e.message); }
+
   const fixed = fixDecimalAmounts();
   if (fixed > 0) toast(`🔧 Auto-fixed ${fixed} decimal amount${fixed>1?'s':''} to whole rupees`, 'success');
   updateStats();
@@ -802,6 +822,43 @@ function clearAllHistory() {
   localStorage.removeItem('psots_history');
   updateStats(); renderHistory();
   toast('🗑 History cleared', 'error');
+}
+
+async function loadBaseSheet() {
+  const status = document.getElementById('baseSheetStatus');
+  const btn = document.getElementById('baseSheetBtn');
+  const existing = getHistory();
+  if (existing.length > 0 && !confirm(`You already have ${existing.length} records. This will REPLACE all data with the original BaseSheet (429 records, 2022–2025).\n\nContinue?`)) return;
+  btn.disabled = true;
+  btn.textContent = '⏳ Loading…';
+  status.style.display = 'block';
+  status.style.background = '#fff8e1';
+  status.style.border = '1px solid #ffe082';
+  status.style.color = '#7a5000';
+  status.innerHTML = '<span class="sp"></span> Fetching BaseSheet data…';
+  try {
+    const res = await fetch('import_all.js');
+    if (!res.ok) throw new Error('File not found — merge the PR on GitHub first');
+    const text = await res.text();
+    const start = text.indexOf('var d = ') + 8;
+    const end = text.indexOf(';\n  localStorage');
+    const data = JSON.parse(text.substring(start, end));
+    localStorage.setItem('psots_history', JSON.stringify(data.history));
+    localStorage.setItem('psots_residents', JSON.stringify(data.residents));
+    status.style.background = '#f0fff4';
+    status.style.border = '1px solid #a5d6a7';
+    status.style.color = 'var(--green)';
+    status.innerHTML = `✅ Imported <strong>${data.history.length}</strong> records + <strong>${data.residents.length}</strong> residents from BaseSheet (2022–2025). Reloading…`;
+    toast('✅ BaseSheet loaded! ' + data.history.length + ' records', 'success');
+    setTimeout(() => location.reload(), 1500);
+  } catch(e) {
+    status.style.background = '#fff0f0';
+    status.style.border = '1px solid #ef9a9a';
+    status.style.color = 'var(--red)';
+    status.innerHTML = '❌ ' + e.message;
+    btn.disabled = false;
+    btn.textContent = '📂 Load BaseSheet (2022–2025)';
+  }
 }
 
 function clearAllData() {
