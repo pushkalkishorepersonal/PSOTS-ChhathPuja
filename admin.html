@@ -373,6 +373,18 @@
 
   <!-- ═══ BROADCAST TAB ═══ -->
   <div class="tab-panel" id="tab-broadcast">
+
+    <div class="admin-card">
+      <div class="ac-title">👥 WhatsApp Subscribers</div>
+      <div class="ac-sub">Residents who opted in to WhatsApp updates from their portal account. Use their numbers to create a WhatsApp broadcast list.</div>
+      <div style="display:flex;gap:.7rem;align-items:center;margin-bottom:1rem;flex-wrap:wrap">
+        <button class="btn-primary" onclick="loadSubscribers()" style="font-size:.85rem;padding:.5rem 1.1rem">🔄 Load from Sheet</button>
+        <button class="filter-chip" id="copyNumsBtn" onclick="copySubscriberNums()" style="display:none">📋 Copy Numbers</button>
+        <span id="subCount" style="font-size:.85rem;color:var(--lbr)"></span>
+      </div>
+      <div id="subList"></div>
+    </div>
+
     <div class="admin-card">
       <div class="ac-title">📲 WhatsApp Broadcast Message</div>
       <div class="ac-sub">Compose a message to send to your WhatsApp broadcast list. The message opens in WhatsApp ready to send — you select the broadcast list and hit send.</div>
@@ -1313,6 +1325,59 @@ const TEMPLATES = {
 
 function initBroadcast() {
   updatePreview();
+}
+
+async function loadSubscribers() {
+  const el    = document.getElementById('subList');
+  const count = document.getElementById('subCount');
+  const su    = localStorage.getItem('psots_script_url') || (window.PSOTS && window.PSOTS.scriptUrl) || '';
+  if (!su || su.includes('YOUR_APPS')) {
+    el.innerHTML = '<div style="color:var(--lbr);font-size:.85rem;padding:.5rem 0">Script URL not configured in Settings.</div>';
+    return;
+  }
+  el.innerHTML = '<div style="color:var(--lbr);font-size:.85rem">Loading…</div>';
+  try {
+    const res  = await fetch(su + '?action=getWaSubscribers');
+    const data = await res.json();
+    const subs = data.subscribers || [];
+    count.textContent = subs.length + ' subscriber' + (subs.length !== 1 ? 's' : '');
+    if (subs.length === 0) {
+      el.innerHTML = '<div style="color:var(--lbr);font-size:.85rem;padding:.5rem 0">No subscribers yet — they opt in from their portal account.</div>';
+      document.getElementById('copyNumsBtn').style.display = 'none';
+      return;
+    }
+    el.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.85rem">
+      <thead><tr style="background:#f5ece0;text-align:left">
+        <th style="padding:.5rem .7rem">#</th>
+        <th style="padding:.5rem .7rem">Name</th>
+        <th style="padding:.5rem .7rem">Flat</th>
+        <th style="padding:.5rem .7rem">WhatsApp</th>
+      </tr></thead>
+      <tbody>${subs.map((s,i)=>`<tr style="border-bottom:1px solid #f0e8dc">
+        <td style="padding:.45rem .7rem;color:var(--lbr)">${i+1}</td>
+        <td style="padding:.45rem .7rem">${s.name||'—'}</td>
+        <td style="padding:.45rem .7rem">${s.flat||'—'}</td>
+        <td style="padding:.45rem .7rem;font-family:monospace">${s.mobile||'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table></div>`;
+    document.getElementById('copyNumsBtn').style.display = 'inline-block';
+    window._subscribers = subs;
+  } catch(e) {
+    el.innerHTML = '<div style="color:#c0392b;font-size:.85rem">Error loading subscribers. Check script URL in Settings.</div>';
+  }
+}
+
+function copySubscriberNums() {
+  const subs = window._subscribers || [];
+  const nums = subs.filter(s => s.mobile).map(s => s.mobile).join(', ');
+  if (!nums) return toast('No numbers to copy', 'error');
+  navigator.clipboard.writeText(nums).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = nums; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy');
+    document.body.removeChild(ta);
+  }).finally ? null : null;
+  toast('📋 ' + subs.length + ' numbers copied to clipboard!', 'success');
 }
 
 function loadTemplate(key) {

@@ -714,6 +714,12 @@ async function fetchProfileFromSheet() {
     if (data.profile) {
       userProfile = { ...userProfile, ...data.profile };
       fillProfileUI();
+      // Sync WA banner and localStorage from server-sourced waOptIn
+      if (typeof data.profile.waOptIn === 'boolean') {
+        const waKey = 'psots_wa_' + currentUser.id;
+        localStorage.setItem(waKey, String(data.profile.waOptIn));
+        updateWABanner(data.profile.waOptIn);
+      }
     }
   } catch(e) {}
 }
@@ -875,7 +881,9 @@ function updateSummary(data) {
 ═══════════════════════════════════════════════════ */
 function loadWAStatus() {
   const key = 'psots_wa_' + currentUser.id;
-  const sub = localStorage.getItem(key) === 'true';
+  // Prefer profile.waOptIn (sheet-sourced); fall back to localStorage flag
+  const sub = userProfile.waOptIn === true || localStorage.getItem(key) === 'true';
+  localStorage.setItem(key, String(sub));
   updateWABanner(sub);
 }
 
@@ -903,27 +911,37 @@ function toggleWASub() {
   const key = 'psots_wa_' + currentUser.id;
   const cur = localStorage.getItem(key) === 'true';
   if (!cur) {
-    // Subscribe — send WhatsApp message to committee
-    const name   = userProfile.name || currentUser.name;
-    const flat   = userProfile.flat || '—';
-    const mobile = userProfile.mobile || '—';
-    const prefs  = getWAPrefs();
-    const msg = encodeURIComponent(
-      `🪔 *PSOTS Chhath 2026 — Subscribe for Updates*\n\n👤 ${name}\n🏠 Flat: ${flat}\n📱 ${mobile}\n\n` +
-      `Preferences:\n${prefs.map(p => '✅ ' + p).join('\n')}\n\nPlease add me to the broadcast list. 🙏`
-    );
-    window.open(`https://wa.me/${C.waOrg}?text=${msg}`, '_blank');
+    if (!userProfile.mobile) {
+      toast('⚠️ Add your WhatsApp number in Profile first', 'error');
+      return;
+    }
+    userProfile.waOptIn = true;
     localStorage.setItem(key, 'true');
     updateWABanner(true);
-    toast('📲 WhatsApp opened — hit send to subscribe!', 'success');
+    persistWAOptIn();
+    toast('✅ Subscribed! You\'ll receive WhatsApp updates.', 'success');
   } else {
     if (confirm('Unsubscribe from WhatsApp updates? You can re-subscribe any time.')) {
+      userProfile.waOptIn = false;
       localStorage.setItem(key, 'false');
       updateWABanner(false);
-      const msg = encodeURIComponent(`🔕 Please remove me from the PSOTS Chhath 2026 broadcast list.\n\n👤 ${userProfile.name||currentUser.name}\n🏠 Flat: ${userProfile.flat||'—'}`);
-      window.open(`https://wa.me/${C.waOrg}?text=${msg}`, '_blank');
-      toast('Unsubscribed', 'error');
+      persistWAOptIn();
+      toast('Unsubscribed from WhatsApp updates', 'error');
     }
+  }
+}
+
+async function persistWAOptIn() {
+  const key = 'psots_profile_' + currentUser.id;
+  localStorage.setItem(key, JSON.stringify(userProfile));
+  if (!C.scriptUrl.includes('YOUR_APPS_SCRIPT')) {
+    try {
+      await fetch(C.scriptUrl, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'saveProfile', ...userProfile }),
+      });
+    } catch(e) {}
   }
 }
 

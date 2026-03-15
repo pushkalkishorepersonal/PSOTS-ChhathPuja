@@ -20,7 +20,7 @@ const SHEET_ANNOUNCEMENTS = 'Announcements';
 
 // ─── Column headers ───
 const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','Date','Status','AccountType','UserID','Year'];
-const PROF_HEADERS = ['UserID','Name','Email','Flat','Mobile','IsVrati','Photo','LastUpdated'];
+const PROF_HEADERS = ['UserID','Name','Email','Flat','Mobile','IsVrati','Photo','LastUpdated','WaOptIn'];
 const FIN_HEADERS  = ['Key','Value'];
 const ANN_HEADERS  = ['Tag','Meta','Text'];
 
@@ -129,6 +129,9 @@ function doGet(e) {
       break;
     case 'getAnnouncements':
       result = actionGetAnnouncements();
+      break;
+    case 'getWaSubscribers':
+      result = actionGetWaSubscribers();
       break;
     case 'ping':
       result = { ok: true, message: 'PSOTS Backend is running!' };
@@ -337,13 +340,14 @@ function actionGetProfile(uid) {
     if (String(r[0]) === String(uid)) {
       return {
         profile: {
-          uid:    String(r[0]),
-          name:   String(r[1]),
-          email:  String(r[2]),
-          flat:   String(r[3]),
-          mobile: String(r[4]),
+          uid:     String(r[0]),
+          name:    String(r[1]),
+          email:   String(r[2]),
+          flat:    String(r[3]),
+          mobile:  String(r[4]),
           isVrati: String(r[5]) === 'true',
-          photo:  String(r[6])
+          photo:   String(r[6]),
+          waOptIn: String(r[8]) === 'true'
         }
       };
     }
@@ -376,6 +380,7 @@ function actionSaveProfile(body) {
         sheet.getRange(row, 6).setValue(String(body.isVrati || false));
         sheet.getRange(row, 7).setValue(body.photo || '');
         sheet.getRange(row, 8).setValue(new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
+        sheet.getRange(row, 9).setValue(String(body.waOptIn === true || body.waOptIn === 'true'));
         return { success: true, updated: true };
       }
     }
@@ -390,10 +395,28 @@ function actionSaveProfile(body) {
     body.mobile || '',
     String(body.isVrati || false),
     body.photo || '',
-    new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+    new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+    String(body.waOptIn === true || body.waOptIn === 'true')
   ]);
 
   return { success: true, created: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Get WhatsApp opt-in subscribers (admin GET)
+══════════════════════════════════════════════════════════ */
+function actionGetWaSubscribers() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROFILES);
+  if (!sheet || sheet.getLastRow() < 2) return { subscribers: [] };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, PROF_HEADERS.length).getValues();
+  const subscribers = [];
+  for (const r of data) {
+    if (String(r[8]) === 'true' && String(r[4]).trim()) {
+      subscribers.push({ name: String(r[1]), flat: String(r[3]), mobile: String(r[4]) });
+    }
+  }
+  return { subscribers, total: subscribers.length };
 }
 
 /* ══════════════════════════════════════════════════════════
