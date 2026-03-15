@@ -296,6 +296,9 @@
 
   <!-- ═══ PROFILE TAB ═══ -->
   <div class="portal-panel" id="tab-profile">
+    <div id="profileIncompleteBanner" style="display:none;background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:.85rem 1.1rem;margin-bottom:1rem;font-size:.82rem;color:#7a5000;line-height:1.6">
+      📱 <strong>One-time setup on this device</strong> — Your name syncs via Google automatically. Please add your <strong>Flat number</strong> and <strong>WhatsApp number</strong> below and tap Save — takes 10 seconds.
+    </div>
     <div class="pcard">
       <div class="pcard-title">👤 My Profile</div>
       <div class="pcard-sub">Your personal details are private — only you and committee admins can see them. They're used to pre-fill your payment form and send you confirmations.</div>
@@ -646,8 +649,13 @@ function loadProfile() {
   const saved = localStorage.getItem(key);
   if (saved) {
     userProfile = JSON.parse(saved);
-    fillProfileUI();
   }
+  // Always seed name/email from Google — works on any device without backend
+  if (!userProfile.name && currentUser?.name) userProfile.name = currentUser.name;
+  if (!userProfile.email && currentUser?.email) userProfile.email = currentUser.email;
+  // Auto-save the Google-seeded profile so it persists on this device
+  if (userProfile.name) localStorage.setItem(key, JSON.stringify(userProfile));
+  fillProfileUI();
   // Try to load from Sheet
   fetchProfileFromSheet();
 }
@@ -668,13 +676,17 @@ function fillProfileUI() {
     avEl.textContent = initials;
   }
 
-  // Profile form
-  if (p.name)    document.getElementById('p-name').value    = p.name;
+  // Profile form — name/email always from Google, rest from saved profile
+  document.getElementById('p-name').value   = p.name  || currentUser?.name  || '';
   if (p.flat)    document.getElementById('p-flat').value    = p.flat;
   if (p.mobile)  document.getElementById('p-mobile').value  = p.mobile;
   if (p.tower)   document.getElementById('p-tower').value   = p.tower;
   if (p.family)  document.getElementById('p-family').value  = p.family;
   if (p.vrati)   document.getElementById('p-vrati').value   = p.vrati;
+
+  // Show banner if flat/mobile not yet set on this device
+  const banner = document.getElementById('profileIncompleteBanner');
+  if (banner) banner.style.display = (!p.flat || !p.mobile) ? 'block' : 'none';
 
   // Profile email + avatar
   document.getElementById('profileEmail').textContent = currentUser?.email || '';
