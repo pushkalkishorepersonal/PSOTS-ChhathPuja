@@ -269,7 +269,8 @@ Praveen Kumar	2172	5001	8-Oct" rows="10"></textarea>
       <div id="historyView"><div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.85rem">No data imported yet. Use the import tool above.</div></div>
       <div style="display:flex;gap:.7rem;margin-top:.8rem;flex-wrap:wrap">
         <button class="btn-secondary" onclick="syncToSheet()">☁️ Sync to Google Sheet</button>
-        <button class="btn-danger" onclick="clearAllHistory()">🗑 Clear All History</button>
+        <button class="btn-danger" onclick="clearAllHistory()">🗑 Clear History</button>
+        <button class="btn-danger" onclick="clearAllData()">🗑 Clear ALL Data (History + Directory)</button>
       </div>
     </div>
   </div>
@@ -720,6 +721,14 @@ function clearAllHistory() {
   localStorage.removeItem('psots_history');
   updateStats(); renderHistory();
   toast('🗑 History cleared', 'error');
+}
+
+function clearAllData() {
+  if (!confirm('Clear ALL data — both imported history AND the resident directory?\n\nThis cannot be undone. Download a JSON backup first if needed.')) return;
+  localStorage.removeItem('psots_history');
+  localStorage.removeItem('psots_residents');
+  updateStats(); renderHistory(); renderResidents(); renderAllFlats();
+  toast('🗑 All data cleared — ready for fresh import', 'error');
 }
 
 /* ═══════════════════════════════
