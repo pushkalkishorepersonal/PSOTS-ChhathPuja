@@ -57,7 +57,7 @@ window.PSOTS = {
 
   /* ══ FILL THESE AFTER SETUP ══════
      See README.md for exact steps.   */
-  scriptUrl:      '',   // Paste Apps Script URL here
+  scriptUrl:      'https://script.google.com/macros/s/AKfycbymkxSxrJwLhjpzq9cQH83TtauHHmP0dtQOHLPINoPPt9F8JL4WowrTaOJ-j_MX49BT/exec',
   googleClientId: '681152691156-g1q8bmionkcim033fhjhtn57jbiq1nij.apps.googleusercontent.com',
 };
 

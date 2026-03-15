@@ -15,11 +15,12 @@
 // ─── Sheet Names ───
 const SHEET_CONTRIBUTIONS = 'Contributions';
 const SHEET_PROFILES      = 'Profiles';
-const SHEET_SETTINGS      = 'Settings';
+const SHEET_FINANCE       = 'Finance';
 
 // ─── Column headers ───
 const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','Date','Status','AccountType','UserID','Year'];
 const PROF_HEADERS = ['UserID','Name','Email','Flat','Mobile','IsVrati','Photo','LastUpdated'];
+const FIN_HEADERS  = ['Key','Value'];
 
 /* ══════════════════════════════════════════════════════════
    INITIAL SETUP — Run this ONCE
@@ -60,19 +61,22 @@ function setupSheets() {
     prof.setFrozenRows(1);
   }
 
-  // Create Settings sheet
-  let settings = ss.getSheetByName(SHEET_SETTINGS);
-  if (!settings) {
-    settings = ss.insertSheet(SHEET_SETTINGS);
-    settings.appendRow(['Key', 'Value']);
-    settings.appendRow(['AdminPassword', 'Y2hoaGF0aA==']);
-    settings.appendRow(['UPI_ID', '9482088904-3@ybl']);
-    settings.appendRow(['WhatsApp', '919482088904']);
-    settings.appendRow(['EventDate', '2026-10-26']);
-    settings.getRange(1, 1, 1, 2)
-            .setFontWeight('bold')
-            .setBackground('#333')
-            .setFontColor('#FFF');
+  // Create Finance sheet
+  let fin = ss.getSheetByName(SHEET_FINANCE);
+  if (!fin) {
+    fin = ss.insertSheet(SHEET_FINANCE);
+    fin.appendRow(FIN_HEADERS);
+    fin.appendRow(['carry',    '104670']);
+    fin.appendRow(['collected','0']);
+    fin.appendRow(['budget',   '282000']);
+    fin.appendRow(['expenses', '0']);
+    fin.appendRow(['expTent',  '0']);
+    fin.appendRow(['expKharna','0']);
+    fin.appendRow(['expThekua','0']);
+    fin.appendRow(['expAV',    '0']);
+    fin.appendRow(['expCultural','0']);
+    fin.appendRow(['expMisc',  '0']);
+    fin.getRange(1, 1, 1, 2).setFontWeight('bold').setBackground('#1A5276').setFontColor('#FFF');
   }
 
   // Remove default Sheet1 if it exists and is empty
@@ -85,8 +89,7 @@ function setupSheets() {
     '✅ Setup Complete!\n\n' +
     'Sheets created:\n' +
     '• Contributions — stores all payment records\n' +
-    '• Profiles — stores user profiles from portal\n' +
-    '• Settings — admin settings\n\n' +
+    '• Profiles — stores user profiles from portal\n\n' +
     'Next step: Deploy as Web App\n' +
     '(Extensions → Apps Script → Deploy → New deployment)'
   );
@@ -114,6 +117,9 @@ function doGet(e) {
     case 'getProfile':
       result = actionGetProfile(e.parameter.uid);
       break;
+    case 'getFinance':
+      result = actionGetFinance();
+      break;
     case 'ping':
       result = { ok: true, message: 'PSOTS Backend is running!' };
       break;
@@ -139,6 +145,10 @@ function doPost(e) {
       result = actionUpdateStatus(body.flat, body.year, body.newStatus);
     } else if (body.action === 'deleteEntry') {
       result = actionDeleteEntry(body.flat, body.year, body.amount);
+    } else if (body.action === 'updateFinance') {
+      result = actionUpdateFinance(body);
+    } else if (body.action === 'bulkImport') {
+      result = actionBulkImport(body.records || []);
     } else {
       // Default: new contribution
       result = actionAddContribution(body);
@@ -372,6 +382,79 @@ function actionSaveProfile(body) {
   ]);
 
   return { success: true, created: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Get finance data (public GET)
+══════════════════════════════════════════════════════════ */
+function actionGetFinance() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_FINANCE);
+  if (!sheet || sheet.getLastRow() < 2) return { finance: {} };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues();
+  const finance = {};
+  data.forEach(r => { if (r[0]) finance[String(r[0])] = String(r[1]); });
+  return { finance };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Update finance data (admin POST)
+══════════════════════════════════════════════════════════ */
+function actionUpdateFinance(body) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_FINANCE);
+  if (!sheet) return { error: 'Finance sheet not found. Run setupSheets() first.' };
+
+  const keys = ['carry','collected','budget','expenses','expTent','expKharna','expThekua','expAV','expCultural','expMisc'];
+  const data = sheet.getLastRow() >= 2
+    ? sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues()
+    : [];
+
+  keys.forEach(key => {
+    if (body[key] === undefined) return;
+    const idx = data.findIndex(r => String(r[0]) === key);
+    if (idx >= 0) {
+      sheet.getRange(idx + 2, 2).setValue(String(body[key]));
+    } else {
+      sheet.appendRow([key, String(body[key])]);
+    }
+  });
+
+  return { success: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Bulk import historical records (data-manager POST)
+══════════════════════════════════════════════════════════ */
+function actionBulkImport(records) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
+  if (!sheet) return { error: 'Contributions sheet not found' };
+
+  // Build a set of existing records to avoid duplicates (flat+year+amount)
+  const existing = new Set();
+  if (sheet.getLastRow() >= 2) {
+    const rows = sheet.getRange(2, 1, sheet.getLastRow() - 1, CON_HEADERS.length).getValues();
+    rows.forEach(r => existing.add(`${r[2]}_${r[10]}_${r[4]}`));
+  }
+
+  const toAdd = records.filter(r => !existing.has(`${r.flat}_${r.year || ''}_${r.amount || 0}`));
+  if (toAdd.length === 0) return { success: true, added: 0, skipped: records.length };
+
+  const rows = toAdd.map(r => [
+    r.date || r.ts || '',
+    r.name  || '',
+    r.flat  || '',
+    r.mobile|| '',
+    Math.round(Number(r.amount) || 0),
+    r.method|| 'UPI',
+    r.date  || '',
+    r.status|| '✅ Received',
+    r.accountType || 'Historical Import',
+    r.userId|| '',
+    r.year  || new Date().getFullYear()
+  ]);
+
+  sheet.getRange(sheet.getLastRow() + 1, 1, rows.length, CON_HEADERS.length).setValues(rows);
+  return { success: true, added: toAdd.length, skipped: records.length - toAdd.length };
 }
 
 /* ══════════════════════════════════════════════════════════
