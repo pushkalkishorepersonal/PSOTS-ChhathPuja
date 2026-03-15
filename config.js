@@ -52,6 +52,9 @@ window.PSOTS = {
   domain:  'chhath.psots.in',
   siteUrl: 'https://chhath.psots.in',
 
+  /* ── ADMIN EMAILS ─────────────── */
+  adminEmails: ['pushkalkishore@gmail.com'],
+
   /* ══ FILL THESE AFTER SETUP ══════
      See README.md for exact steps.   */
   scriptUrl:      '',   // Paste Apps Script URL here
