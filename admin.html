@@ -569,14 +569,27 @@ function getAdminEmails() {
 }
 
 window.addEventListener('load', () => {
-  // Auto-login if valid session exists
-  const saved = localStorage.getItem('psots_admin_user');
-  if (saved) {
-    const u = JSON.parse(saved);
-    if (getAdminEmails().includes(u.email)) { enterAdmin(u); return; }
+  const adminEmails = getAdminEmails();
+
+  // 1. Already logged into admin session
+  const adminSaved = localStorage.getItem('psots_admin_user');
+  if (adminSaved) {
+    const u = JSON.parse(adminSaved);
+    if (adminEmails.includes(u.email)) { enterAdmin(u); return; }
     localStorage.removeItem('psots_admin_user');
   }
-  // Render Google button
+
+  // 2. Already logged into portal — reuse session, no second login needed
+  const portalSaved = localStorage.getItem('psots_user');
+  if (portalSaved) {
+    const u = JSON.parse(portalSaved);
+    if (adminEmails.includes(u.email)) {
+      localStorage.setItem('psots_admin_user', JSON.stringify(u));
+      enterAdmin(u); return;
+    }
+  }
+
+  // 3. Not logged in anywhere — show Google button
   google.accounts.id.initialize({
     client_id: (window.PSOTS && window.PSOTS.googleClientId) || '',
     callback: handleAdminLogin,
