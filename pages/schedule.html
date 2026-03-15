@@ -42,9 +42,9 @@
 </div>
 <div class="page-content">
   <div class="arghya-highlight">
-    <div class="ah-item"><div class="ah-icon">🌇</div><div><div class="ah-label">संध्या अर्घ्य — Evening Arghya</div><div class="ah-time">5:45 PM</div><div class="ah-date">Nov 3, 2026 · Society Ghat</div></div></div>
+    <div class="ah-item"><div class="ah-icon">🌇</div><div><div class="ah-label">संध्या अर्घ्य — Evening Arghya</div><div class="ah-time" id="eve-time">5:45 PM</div><div class="ah-date" id="eve-date">Nov 3, 2026 · Society Ghat</div></div></div>
     <div style="width:1px;height:50px;background:#f0d5b8"></div>
-    <div class="ah-item"><div class="ah-icon">🌅</div><div><div class="ah-label">उषा अर्घ्य — Morning Arghya</div><div class="ah-time">6:15 AM</div><div class="ah-date">Nov 4, 2026 · Society Ghat</div></div></div>
+    <div class="ah-item"><div class="ah-icon">🌅</div><div><div class="ah-label">उषा अर्घ्य — Morning Arghya</div><div class="ah-time" id="morn-time">6:15 AM</div><div class="ah-date" id="morn-date">Nov 4, 2026 · Society Ghat</div></div></div>
   </div>
   <div class="day-card">
     <div class="day-head"><div><div class="day-num">01</div><div class="day-month">Nov 2026</div></div><div class="day-icon">🌊</div></div>
@@ -71,5 +71,16 @@
     </div>
   </div>
 </div>
+<script>
+const su=(window.PSOTS&&window.PSOTS.scriptUrl)||localStorage.getItem('psots_script_url')||'';
+if(su){fetch(su+'?action=getFinance').then(r=>r.json()).then(d=>{const f=d.finance||{};
+  function fmtTime(t){if(!t)return null;const[h,m]=t.split(':');const hr=parseInt(h);return(hr>12?hr-12:hr||12)+':'+(m||'00')+' '+(hr>=12?'PM':'AM');}
+  function fmtDate(dt,loc){if(!dt)return null;const d=new Date(dt);const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mo[d.getMonth()]+' '+d.getDate()+', '+d.getFullYear()+(loc?' · '+loc:'');}
+  if(f.timEveTime){const t=fmtTime(f.timEveTime);if(t)document.getElementById('eve-time').textContent=t;}
+  if(f.timEveDate||f.timEveLoc){const s=fmtDate(f.timEveDate,f.timEveLoc);if(s)document.getElementById('eve-date').textContent=s;}
+  if(f.timMornTime){const t=fmtTime(f.timMornTime);if(t)document.getElementById('morn-time').textContent=t;}
+  if(f.timMornDate||f.timMornLoc){const s=fmtDate(f.timMornDate,f.timMornLoc);if(s)document.getElementById('morn-date').textContent=s;}
+}).catch(()=>{});}
+</script>
 </body>
 </html>

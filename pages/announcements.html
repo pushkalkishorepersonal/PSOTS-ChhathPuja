@@ -5,6 +5,7 @@
   <title>Announcements — PSOTS Chhath 2026</title>
   <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:ital,wght@0,700;0,900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css"/>
+  <script src="../config.js"></script>
   <style>
   .ann{background:rgba(255,130,0,.05);border:1px solid rgba(255,194,0,.12);border-left:3px solid var(--saff);border-radius:0 12px 12px 0;padding:1.1rem 1.3rem;margin-bottom:.9rem;transition:background .2s}
   .ann:hover{background:rgba(255,130,0,.09)}
@@ -26,16 +27,33 @@
   <div class="ph-sub">Latest updates from the PSOTS Chhath 2026 Committee</div>
 </div>
 <div class="page-content">
-  <div class="ann"><div class="ann-meta">Oct 2026 — Grand Celebration</div><div class="ann-tag">🎊 5th Year</div><p>This year marks our <b>पंच वर्ष महोत्सव!</b> Grander ghat decoration, extended cultural programme, and prasad for all 200+ families. We carry forward <b>₹1,04,670</b> from 2025 to make this extra special.</p></div>
-  <div class="ann"><div class="ann-meta">Oct 2026 — Prasad Details</div><div class="ann-tag">🙏 Prasad</div><p>दो बार प्रसाद की व्यवस्था — <b>Nov 2</b> खरना प्रसाद for all PSOTS residents (Dinner at Community Hall) and <b>Nov 4</b> ठेकुआ प्रसाद after Usha Arghya at the Ghat. योगदान सिर्फ सिमित लोगों के लिए है — आपका सहयोग बहुत महत्वपूर्ण होगा।</p></div>
-  <div class="ann"><div class="ann-meta">Oct 2026 — Volunteers</div><div class="ann-tag">🤝 Volunteer</div><p>Volunteers needed for ghat decoration and lighting setup on November 2nd. Contact the committee to join the 5th-year grand team. <b>Breakfast will be provided</b> for all volunteers on the day.</p></div>
-  <div class="ann"><div class="ann-meta">Oct 2026 — Payment Deadline</div><div class="ann-tag">⏰ Important</div><p>Contribution portal is now open. Please complete your payment before <b>October 25, 2026</b> to be included in the prasad list. Pay easily via UPI — no QR scanning, just tap and pay from your phone.</p></div>
-  <div class="ann"><div class="ann-meta">Oct 2026 — Parking</div><div class="ann-tag">🚗 Logistics</div><p>Parking arrangements will be confirmed at Gate 2 for all residents during the 4-day event. Residents are requested to use society vehicles responsibly. Detailed parking plan will be shared closer to the event.</p></div>
+  <div id="ann-list">
+    <!-- Fallback static announcements shown until dynamic data loads -->
+    <div class="ann"><div class="ann-meta">Oct 2026 — Grand Celebration</div><div class="ann-tag">🎊 5th Year</div><p>This year marks our <b>पंच वर्ष महोत्सव!</b> Grander ghat decoration, extended cultural programme, and prasad for all 200+ families. We carry forward <b>₹1,04,670</b> from 2025 to make this extra special.</p></div>
+    <div class="ann"><div class="ann-meta">Oct 2026 — Prasad Details</div><div class="ann-tag">🙏 Prasad</div><p>दो बार प्रसाद की व्यवस्था — <b>Nov 2</b> खरना प्रसाद for all PSOTS residents (Dinner at Community Hall) and <b>Nov 4</b> ठेकुआ प्रसाद after Usha Arghya at the Ghat.</p></div>
+    <div class="ann"><div class="ann-meta">Oct 2026 — Volunteers</div><div class="ann-tag">🤝 Volunteer</div><p>Volunteers needed for ghat decoration and lighting setup on November 2nd. Contact the committee to join. <b>Breakfast will be provided</b> for all volunteers.</p></div>
+    <div class="ann"><div class="ann-meta">Oct 2026 — Payment Deadline</div><div class="ann-tag">⏰ Important</div><p>Contribution portal is now open. Please complete your payment before <b>October 25, 2026</b> to be included in the prasad list.</p></div>
+  </div>
   <div class="card" style="text-align:center;margin-top:1.5rem">
     <div class="card-title" style="justify-content:center">📲 Get Updates on WhatsApp</div>
     <p style="font-size:.85rem;color:var(--br);margin:.5rem 0 1rem">Subscribe to receive future announcements, event reminders and prasad timings directly on WhatsApp.</p>
     <a href="subscribe.html" style="text-decoration:none"><button class="btn-wa">📲 Subscribe to Updates</button></a>
   </div>
 </div>
+<script>
+const su=(window.PSOTS&&window.PSOTS.scriptUrl)||localStorage.getItem('psots_script_url')||'';
+if(su){
+  fetch(su+'?action=getAnnouncements').then(r=>r.json()).then(d=>{
+    const list=d.announcements||[];
+    if(!list.length)return;
+    document.getElementById('ann-list').innerHTML=list.map(a=>`
+      <div class="ann">
+        <div class="ann-meta">${a.meta||''}</div>
+        <div class="ann-tag">${a.tag||''}</div>
+        <p>${(a.text||'').replace(/\*([^*]+)\*/g,'<b>$1</b>')}</p>
+      </div>`).join('');
+  }).catch(()=>{});
+}
+</script>
 </body>
 </html>

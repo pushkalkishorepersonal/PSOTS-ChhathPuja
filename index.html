@@ -208,8 +208,8 @@
     <div class="h-puja">Puja</div>
     <div class="h-sub">PSOTS · Prestige Song of the South · 2026</div>
     <div class="arghya-strip">
-      <div class="ac"><div class="ac-icon">🌇</div><div><div class="ac-label">संध्या अर्घ्य — Evening</div><div class="ac-time">5:45 PM</div><div class="ac-date">Nov 3, 2026 · Society Ghat</div></div></div>
-      <div class="ac"><div class="ac-icon">🌅</div><div><div class="ac-label">उषा अर्घ्य — Morning</div><div class="ac-time">6:15 AM</div><div class="ac-date">Nov 4, 2026 · Society Ghat</div></div></div>
+      <div class="ac"><div class="ac-icon">🌇</div><div><div class="ac-label">संध्या अर्घ्य — Evening</div><div class="ac-time" id="eve-time">5:45 PM</div><div class="ac-date" id="eve-date">Nov 3, 2026 · Society Ghat</div></div></div>
+      <div class="ac"><div class="ac-icon">🌅</div><div><div class="ac-label">उषा अर्घ्य — Morning</div><div class="ac-time" id="morn-time">6:15 AM</div><div class="ac-date" id="morn-date">Nov 4, 2026 · Society Ghat</div></div></div>
     </div>
     <div class="h-cd" id="countdown">
       <div class="cdb"><span class="cbn" id="cd-d">--</span><span class="cbl">Days</span></div>
@@ -255,8 +255,8 @@
       <div class="sb">
         <div class="sr"><div class="sd"><div class="sdn">01</div><div class="sdm">Nov</div></div><div class="si"><div class="snm">Nahay Khay</div><div class="shi">नहाय खाय</div></div><div class="stm">5:30 AM</div></div>
         <div class="sr"><div class="sd"><div class="sdn">02</div><div class="sdm">Nov</div></div><div class="si"><div class="snm">Kharna</div><div class="shi">खरना</div></div><div class="stm">7:00 PM</div></div>
-        <div class="sr"><div class="sd"><div class="sdn">03</div><div class="sdm">Nov</div></div><div class="si"><div class="snm">Sandhya Arghya</div><div class="shi">संध्या अर्घ्य</div></div><div class="stm stm-hi">5:45 PM 🌇</div></div>
-        <div class="sr"><div class="sd"><div class="sdn">04</div><div class="sdm">Nov</div></div><div class="si"><div class="snm">Usha Arghya</div><div class="shi">उषा अर्घ्य</div></div><div class="stm stm-hi">6:15 AM 🌅</div></div>
+        <div class="sr"><div class="sd"><div class="sdn">03</div><div class="sdm">Nov</div></div><div class="si"><div class="snm">Sandhya Arghya</div><div class="shi">संध्या अर्घ्य</div></div><div class="stm stm-hi" id="sch-eve-time">5:45 PM 🌇</div></div>
+        <div class="sr"><div class="sd"><div class="sdn">04</div><div class="sdm">Nov</div></div><div class="si"><div class="snm">Usha Arghya</div><div class="shi">उषा अर्घ्य</div></div><div class="stm stm-hi" id="sch-morn-time">6:15 AM 🌅</div></div>
       </div>
       <span class="ta">View Full Schedule →</span>
     </a>
@@ -327,9 +327,18 @@ function tick(){const d=evt-new Date();if(d<=0){document.getElementById('countdo
 tick();setInterval(tick,1000);
 const ob=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){const b=document.getElementById('tfBar');if(b)b.style.width=b.dataset.pct+'%'}})},{threshold:.3});
 const ds=document.querySelector('.dashboard');if(ds)ob.observe(ds);
-const su=localStorage.getItem('psots_script_url')||'';
+const su=(window.PSOTS&&window.PSOTS.scriptUrl)||localStorage.getItem('psots_script_url')||'';
 async function loadPrev(){const el=document.getElementById('conPreview'),bd=document.getElementById('conBadge');if(!su||su.includes('YOUR_APPS')){try{const res=await fetch('data/history.json');if(res.ok){const g=await res.json(),h=g.history||[];const y2025=h.filter(r=>r.year===2025).slice(0,4);if(y2025.length>0){bd.textContent=h.filter(r=>r.year===2025).length+'';el.innerHTML=y2025.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat||'-'}</div></div><div class="cra">₹${(c.amount||0).toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');return;}}catch(e){}}if(!su||su.includes('YOUR_APPS')){const demo=[{name:'Pushkal Kishore',flat:'15167',amount:5001},{name:'Ratnesh Singh',flat:'15165',amount:1100},{name:'Rekha Sinha',flat:'9045',amount:11000}];bd.textContent='demo';el.innerHTML=demo.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat}</div></div><div class="cra">₹${c.amount.toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');return;}try{const r=await fetch(su+'?action=list'),d=await r.json(),l=(d.contributors||[]).slice(0,4);bd.textContent=(d.contributors||[]).length+'';el.innerHTML=l.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat}</div></div><div class="cra">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');}catch(e){el.innerHTML='<div class="crl">Tap to view →</div>';}}
 loadPrev();
+// Load live arghya timings from Google Sheet
+if(su){fetch(su+'?action=getFinance').then(r=>r.json()).then(d=>{const f=d.finance||{};
+  function fmtTime(t){if(!t)return null;const[h,m]=t.split(':');const hr=parseInt(h);return(hr>12?hr-12:hr||12)+':'+(m||'00')+' '+(hr>=12?'PM':'AM');}
+  function fmtDate(d,loc){if(!d)return null;const dt=new Date(d);const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mo[dt.getMonth()]+' '+(dt.getDate())+', '+(dt.getFullYear())+(loc?' · '+loc:'');}
+  if(f.timEveTime){const t=fmtTime(f.timEveTime);if(t){document.getElementById('eve-time').textContent=t;const el=document.getElementById('sch-eve-time');if(el)el.textContent=t+' 🌇';}}
+  if(f.timEveDate||f.timEveLoc){const s=fmtDate(f.timEveDate,f.timEveLoc);if(s)document.getElementById('eve-date').textContent=s;}
+  if(f.timMornTime){const t=fmtTime(f.timMornTime);if(t){document.getElementById('morn-time').textContent=t;const el=document.getElementById('sch-morn-time');if(el)el.textContent=t+' 🌅';}}
+  if(f.timMornDate||f.timMornLoc){const s=fmtDate(f.timMornDate,f.timMornLoc);if(s)document.getElementById('morn-date').textContent=s;}
+}).catch(()=>{});}
 // Portal tile — show personalised view when already signed in
 (function(){
   try {
