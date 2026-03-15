@@ -74,13 +74,11 @@ async function loadList(){
   const el=document.getElementById('conList');
   el.innerHTML='<div class="loading">🪔 Loading…</div>';
   if(!su||su.includes('YOUR_APPS')){
+    try{const gRes=await fetch('data/history.json');if(gRes.ok){const g=await gRes.json();const h=g.history||[];const y2025=h.filter(r=>r.year===2025);allData=y2025.map(r=>({name:r.name,flat:r.flat||'—',amount:r.amount||0,status:r.status||'✅ Received',accountType:'Historical'}));renderList(allData);return;}}catch(e){}
     allData=[
       {name:'Pushkal Kishore',flat:'15167',amount:5001,status:'✅ Received',accountType:'Portal 🔐'},
       {name:'Ratnesh Singh',flat:'15165',amount:1100,status:'✅ Received',accountType:'Guest 👤'},
       {name:'Praveen Kumar',flat:'2172',amount:5001,status:'✅ Received',accountType:'Portal 🔐'},
-      {name:'Rekha Sinha',flat:'9045',amount:11000,status:'✅ Received',accountType:'Portal 🔐'},
-      {name:'Anupam Rai',flat:'5143',amount:1001,status:'Pending Verification',accountType:'Guest 👤'},
-      {name:'Anonymous Donor',flat:'—',amount:501,status:'✅ Received',accountType:'Admin Entry'},
     ];
     renderList(allData);return;
   }

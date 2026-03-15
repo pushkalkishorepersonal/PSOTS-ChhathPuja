@@ -763,21 +763,39 @@ async function loadContributions() {
   const el = document.getElementById('contribHistory');
   el.innerHTML = '<div class="loading">🪔 Loading your contribution history…</div>';
 
+  // Try loading from global data/history.json first
+  const flat = userProfile.flat || '';
+  const mobile = userProfile.mobile || '';
+
+  // Try global JSON data (works for all users)
+  try {
+    const gRes = await fetch('data/history.json');
+    if (gRes.ok) {
+      const g = await gRes.json();
+      const allH = g.history || [];
+      let myContribs = [];
+      if (flat) myContribs = allH.filter(r => String(r.flat) === String(flat));
+      if (myContribs.length === 0 && mobile) myContribs = allH.filter(r => String(r.mobile) === String(mobile));
+      if (myContribs.length > 0) {
+        renderContributions(myContribs.map(r => ({
+          year: r.year, amount: r.amount, method: r.method || '', date: r.date || '', status: r.status || '✅ Received'
+        })));
+        return;
+      }
+    }
+  } catch(e) { /* fall through to Apps Script or demo */ }
+
   if (C.scriptUrl.includes('YOUR_APPS_SCRIPT')) {
-    // Demo data
-    renderContributions([
-      { year:2026, amount:5001, method:'GPay', date:'15/10/2026', status:'Pending Verification' },
-      { year:2025, amount:5001, method:'GPay', date:'05/10/2025', status:'✅ Received' },
-      { year:2024, amount:2100, method:'PhonePe', date:'12/10/2024', status:'✅ Received' },
-      { year:2023, amount:1001, method:'PayTM', date:'18/10/2023', status:'✅ Received' },
-      { year:2022, amount:501, method:'GPay', date:'20/10/2022', status:'✅ Received' },
-    ]);
+    if (!flat && !mobile) {
+      el.innerHTML = '<div class="no-contrib"><div class="nc-icon">👤</div><p>Complete your profile with your flat number to see your contribution history.</p><br/><button class="btn-primary" onclick="switchTab(\'profile\')">Set Up Profile →</button></div>';
+      return;
+    }
+    // No data found in global JSON, show empty state
+    renderContributions([]);
     return;
   }
 
   try {
-    const flat = userProfile.flat || '';
-    const mobile = userProfile.mobile || '';
     if (!flat && !mobile) {
       el.innerHTML = '<div class="no-contrib"><div class="nc-icon">👤</div><p>Complete your profile with your flat number to see your contribution history.</p><br/><button class="btn-primary" onclick="switchTab(\'profile\')">Set Up Profile →</button></div>';
       return;

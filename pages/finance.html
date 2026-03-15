@@ -84,7 +84,7 @@
 const ob=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.querySelectorAll('.ebar-fill').forEach(b=>b.style.width=b.dataset.pct+'%')})},{threshold:.3});
 const ec=document.getElementById('expCard');if(ec)ob.observe(ec);
 const su=localStorage.getItem('psots_script_url')||'';
-async function loadLive(){if(!su||su.includes('YOUR_APPS')){document.getElementById('live-collected').textContent='Connect sheet to see live';return;}try{const r=await fetch(su+'?action=list'),d=await r.json();const total=(d.contributors||[]).reduce((s,c)=>s+(parseFloat(c.amount)||0),0);document.getElementById('live-collected').textContent='₹'+total.toLocaleString('en-IN');}catch(e){document.getElementById('live-collected').textContent='—';}}
+async function loadLive(){if(!su||su.includes('YOUR_APPS')){try{const gRes=await fetch('data/history.json');if(gRes.ok){const g=await gRes.json();const total=(g.history||[]).filter(r=>r.year===2025).reduce((s,r)=>s+(r.amount||0),0);document.getElementById('live-collected').textContent='₹'+total.toLocaleString('en-IN');return;}}catch(e){}document.getElementById('live-collected').textContent='Connect sheet to see live';return;}try{const r=await fetch(su+'?action=list'),d=await r.json();const total=(d.contributors||[]).reduce((s,c)=>s+(parseFloat(c.amount)||0),0);document.getElementById('live-collected').textContent='₹'+total.toLocaleString('en-IN');}catch(e){document.getElementById('live-collected').textContent='—';}}
 loadLive();
 </script>
 </body>
