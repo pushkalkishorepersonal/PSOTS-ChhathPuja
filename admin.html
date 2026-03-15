@@ -1840,22 +1840,25 @@ function renderVolunteers() {
     return;
   }
 
-  tbody.innerHTML = filtered.map((v, i) => `
+  tbody.innerHTML = filtered.map((v, i) => {
+    const idx = allVolunteers.indexOf(v);
+    return `
     <tr>
       <td>${i+1}</td>
       <td style="font-weight:600">${v.name||'—'}</td>
       <td>${v.flat||'—'}</td>
       <td style="font-size:.78rem">${v.mobile||'—'}</td>
       <td style="font-size:.75rem">${v.days||'—'}</td>
-      <td style="font-size:.75rem;max-width:160px">${v.tasks||'—'}</td>
+      <td style="font-size:.75rem;max-width:160px">${v.assignedTask ? '<b>'+v.assignedTask+'</b>' : (v.tasks||'—')}</td>
       <td><span class="status-badge ${v.status==='Confirmed'?'verified':v.checkedIn?'verified':'pending'}">${v.checkedIn?'📍 Checked In':v.status||'Registered'}</span></td>
       <td>
         <div class="action-btns">
-          <button class="btn-success" onclick="confirmVolunteer(${i})" title="Confirm">✅</button>
+          <button class="btn-success" onclick="confirmVolunteer(${idx})" title="Confirm">✅</button>
+          <button class="btn-icon" onclick="showAssignDialog(${idx})" title="Assign Task">📋</button>
           ${v.mobile ? `<button class="btn-icon" onclick="window.open('https://wa.me/91${v.mobile}','_blank')" title="WhatsApp">📲</button>` : ''}
         </div>
       </td>
-    </tr>`).join('');
+    </tr>`}).join('');
 }
 
 function filterVolunteers() { renderVolunteers(); }
@@ -1873,9 +1876,52 @@ function confirmVolunteer(i) {
   }
 }
 
+function showAssignDialog(i) {
+  const v = allVolunteers[i];
+  const tasks = ['Ghat Setup','Decoration','Prasad Prep','Prasad Distribution','Cultural Program','Audio/Visuals','Photography','Cleanup','Registration Desk','Crowd Management'];
+  const current = v.assignedTask || '';
+  const html = `<div style="position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:999;display:flex;align-items:center;justify-content:center" id="assignOverlay" onclick="if(event.target===this)this.remove()">
+    <div style="background:var(--warm);border-radius:16px;padding:1.5rem;max-width:380px;width:90%">
+      <div style="font-weight:700;font-size:1rem;margin-bottom:.3rem">Assign Task — ${v.name}</div>
+      <div style="font-size:.78rem;color:var(--lbr);margin-bottom:1rem">Preferred: ${v.tasks||'Not specified'}</div>
+      <select id="assignTaskSelect" style="width:100%;padding:.55rem .8rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.85rem;margin-bottom:.5rem;background:#fff">
+        <option value="">Select a task…</option>
+        ${tasks.map(t => `<option value="${t}" ${t===current?'selected':''}>${t}</option>`).join('')}
+      </select>
+      <input type="text" id="assignTaskCustom" placeholder="Or type a custom task…" value="${current && !tasks.includes(current)?current:''}" style="width:100%;padding:.55rem .8rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.85rem;margin-bottom:1rem;background:#fff"/>
+      <div style="display:flex;gap:.6rem">
+        <button class="btn-primary" onclick="assignTask(${i})" style="flex:1">Assign</button>
+        <button class="btn-secondary" onclick="document.getElementById('assignOverlay').remove()">Cancel</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.insertAdjacentHTML('beforeend', html);
+}
+
+function assignTask(i) {
+  const sel = document.getElementById('assignTaskSelect').value;
+  const custom = document.getElementById('assignTaskCustom').value.trim();
+  const task = custom || sel;
+  if (!task) return toast('Please select or type a task', 'error');
+
+  allVolunteers[i].assignedTask = task;
+  allVolunteers[i].status = 'Confirmed';
+  localStorage.setItem('psots_volunteers', JSON.stringify(allVolunteers));
+  document.getElementById('assignOverlay').remove();
+  renderVolunteers();
+  toast('📋 Task assigned: ' + task, 'success');
+
+  // Offer to notify via WhatsApp
+  const v = allVolunteers[i];
+  if (v.mobile && confirm(`Send WhatsApp to ${v.name} about their assignment?`)) {
+    const msg = encodeURIComponent(`📋 *Task Assigned — Chhath 2026*\n\nHi ${v.name}!\n\nYou've been assigned:\n🔧 *${task}*\n📅 ${v.days||'TBD'}\n\nReporting time will be shared closer to the event. Meals provided for all volunteers!\n\nThank you! 🙏\n— PSOTS Chhath Committee`);
+    window.open(`https://wa.me/91${v.mobile}?text=${msg}`, '_blank');
+  }
+}
+
 function exportVolunteersCSV() {
-  const headers = ['Name','Flat','Mobile','Days','Tasks','Status','Note'];
-  const rows = allVolunteers.map(v => [v.name,v.flat,v.mobile,v.days,v.tasks,v.status,v.note].map(f=>`"${(f||'').replace(/"/g,'""')}"`).join(','));
+  const headers = ['Name','Flat','Mobile','Days','Preferred Tasks','Assigned Task','Status','Note'];
+  const rows = allVolunteers.map(v => [v.name,v.flat,v.mobile,v.days,v.tasks,v.assignedTask||'',v.status,v.note].map(f=>`"${(f||'').replace(/"/g,'""')}"`).join(','));
   const csv = [headers.join(','), ...rows].join('\n');
   const a = document.createElement('a');
   a.href = 'data:text/csv;charset=utf-8,' + encodeURI(csv);

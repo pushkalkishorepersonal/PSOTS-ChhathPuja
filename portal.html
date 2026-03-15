@@ -1226,16 +1226,112 @@ function shareReceipt() {
 }
 
 function downloadReceipt() {
-  // Simple approach: open receipt card in new window for screenshot
   const card = document.getElementById('receiptCard');
   if (!card) return toast('No receipt to download', 'error');
-  const win = window.open('', '_blank');
-  win.document.write(`<html><head><title>Chhath Puja 2026 Receipt</title>
-    <style>body{margin:0;display:flex;align-items:center;justify-content:center;min-height:100vh;background:#1a0800;font-family:'DM Sans',sans-serif}
-    *{box-sizing:border-box;margin:0;padding:0}</style></head><body>${card.outerHTML}
-    <script>setTimeout(()=>{window.print()},500)<\/script></body></html>`);
-  win.document.close();
-  toast('📸 Print or save as PDF', 'success');
+
+  // Extract data from the receipt card
+  const name = card.querySelector('.rc-name')?.textContent || '';
+  const flat = card.querySelector('.rc-flat')?.textContent || '';
+  const amount = card.querySelector('.rc-amount')?.textContent || '';
+  const label = card.querySelector('.rc-label')?.textContent || '';
+
+  // Draw receipt on canvas
+  const W = 600, H = 800;
+  const cvs = document.createElement('canvas');
+  cvs.width = W; cvs.height = H;
+  const ctx = cvs.getContext('2d');
+
+  // Background gradient
+  const bg = ctx.createLinearGradient(0, 0, W * 0.4, H);
+  bg.addColorStop(0, '#1a0800');
+  bg.addColorStop(1, '#3d1200');
+  ctx.fillStyle = bg;
+  ctx.roundRect(0, 0, W, H, 20);
+  ctx.fill();
+
+  // Glow circle at top
+  const glow = ctx.createRadialGradient(W/2, 100, 0, W/2, 100, 200);
+  glow.addColorStop(0, 'rgba(255,194,0,0.12)');
+  glow.addColorStop(1, 'transparent');
+  ctx.fillStyle = glow;
+  ctx.fillRect(0, 0, W, 300);
+
+  // Soop/sunrise icon
+  ctx.font = '48px serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('🌅', W/2, 100);
+
+  // Title
+  ctx.font = '900 26px "DM Sans", sans-serif';
+  ctx.fillStyle = '#ffc200';
+  ctx.fillText('PSOTS Chhath Puja 2026', W/2, 160);
+
+  // Subtitle
+  ctx.font = '13px "DM Sans", sans-serif';
+  ctx.fillStyle = 'rgba(255,220,120,0.7)';
+  ctx.fillText('पंच वर्ष महोत्सव · Thank You Certificate', W/2, 188);
+
+  // Verified badge
+  ctx.fillStyle = 'rgba(46,125,50,0.25)';
+  const badgeW = 180, badgeH = 28;
+  ctx.beginPath();
+  ctx.roundRect(W/2 - badgeW/2, 215, badgeW, badgeH, 14);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(46,125,50,0.4)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.font = '700 13px "DM Sans", sans-serif';
+  ctx.fillStyle = '#81c784';
+  ctx.fillText('✅ Verified Contributor', W/2, 234);
+
+  // Name
+  ctx.font = '900 36px "DM Sans", sans-serif';
+  ctx.fillStyle = '#ffc200';
+  ctx.fillText(name, W/2, 310);
+
+  // Flat
+  ctx.font = '15px "DM Sans", sans-serif';
+  ctx.fillStyle = 'rgba(255,220,120,0.8)';
+  ctx.fillText(flat, W/2, 340);
+
+  // Amount
+  ctx.font = '900 52px "DM Sans", sans-serif';
+  ctx.fillStyle = '#ffffff';
+  ctx.fillText(amount, W/2, 430);
+
+  // Payment label
+  ctx.font = '13px "DM Sans", sans-serif';
+  ctx.fillStyle = 'rgba(255,220,120,0.65)';
+  ctx.fillText(label, W/2, 460);
+
+  // Divider line
+  ctx.strokeStyle = 'rgba(255,194,0,0.15)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(80, 510);
+  ctx.lineTo(W - 80, 510);
+  ctx.stroke();
+
+  // Footer text
+  ctx.font = '14px "DM Sans", sans-serif';
+  ctx.fillStyle = 'rgba(255,220,120,0.5)';
+  ctx.fillText('Nov 1–4, 2026 · Society Ghat · Bengaluru', W/2, 545);
+  ctx.fillText('Prestige Song of the South', W/2, 568);
+  ctx.font = '20px "Yatra One", serif';
+  ctx.fillStyle = 'rgba(255,194,0,0.7)';
+  ctx.fillText('जय छठ मइया! 🙏', W/2, 610);
+
+  // Website
+  ctx.font = '12px "DM Sans", sans-serif';
+  ctx.fillStyle = 'rgba(255,220,120,0.4)';
+  ctx.fillText('chhath.psots.in', W/2, 750);
+
+  // Download as PNG
+  const link = document.createElement('a');
+  link.download = `Chhath_2026_Receipt_${name.replace(/\s+/g,'_')}.png`;
+  link.href = cvs.toDataURL('image/png');
+  link.click();
+  toast('📸 Receipt saved as image!', 'success');
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1254,17 +1350,25 @@ function loadVolunteerStatus() {
   if (myVol) {
     banner.className = 'vol-status registered';
     document.getElementById('volStatusText').textContent = '✅ You\'re registered as a volunteer!';
-    document.getElementById('volStatusSub').textContent = `Days: ${myVol.days || 'TBD'} · Tasks: ${myVol.tasks || 'TBD'}`;
+    const assignedTask = myVol.assignedTask || '';
+    document.getElementById('volStatusSub').textContent = assignedTask
+      ? `Assigned: ${assignedTask} · Days: ${myVol.days || 'TBD'}`
+      : `Days: ${myVol.days || 'TBD'} · Preferred: ${myVol.tasks || 'TBD'}`;
 
     const tasks = (myVol.tasks || '').split(', ').filter(Boolean);
     const days = (myVol.days || '').split(', ').filter(Boolean);
     taskList.innerHTML = `
-      <div style="font-size:.72rem;color:var(--lbr);font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">Your Assignment</div>
+      ${assignedTask ? `<div style="background:linear-gradient(135deg,rgba(46,125,50,.08),rgba(46,125,50,.04));border:1px solid rgba(46,125,50,.2);border-radius:12px;padding:1rem;margin-bottom:1rem">
+        <div style="font-size:.72rem;color:var(--green);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem">📋 Assigned Task</div>
+        <div style="font-weight:900;font-size:1.1rem;color:var(--ink)">${assignedTask}</div>
+        <div style="font-size:.78rem;color:var(--br);margin-top:.25rem">Status: ${myVol.status || 'Registered'}</div>
+      </div>` : ''}
+      <div style="font-size:.72rem;color:var(--lbr);font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">${assignedTask ? 'Schedule' : 'Your Volunteer Days'}</div>
       ${days.map(d => `
         <div class="vol-task-card assigned">
           <div style="font-weight:700;font-size:.88rem;color:var(--or);margin-bottom:.3rem">📅 ${d}</div>
-          <div style="font-size:.8rem;color:var(--br)">${tasks.join(' · ')}</div>
-          <div style="font-size:.7rem;color:var(--lbr);margin-top:.3rem">Status: ${myVol.status || 'Registered'} · Contact committee for timing</div>
+          <div style="font-size:.8rem;color:var(--br)">${assignedTask || tasks.join(' · ')}</div>
+          <div style="font-size:.7rem;color:var(--lbr);margin-top:.3rem">Contact committee for reporting time</div>
         </div>
       `).join('')}
       <p style="font-size:.75rem;color:var(--lbr);margin-top:.8rem">The committee will WhatsApp you reporting time and specific instructions before the event.</p>`;
