@@ -57,7 +57,7 @@ window.PSOTS = {
 
   /* ══ FILL THESE AFTER SETUP ══════
      See README.md for exact steps.   */
-  scriptUrl:      'https://script.google.com/macros/s/AKfycbx6ujb7miKv7jQZp8k9678tKeAsfczgwSlPEnA5czbPOmJD21F6nMM8_8LBt2XUw5jO/exec',
+  scriptUrl:      'https://script.google.com/macros/s/AKfycbymkxSxrJwLhjpzq9cQH83TtauHHmP0dtQOHLPINoPPt9F8JL4WowrTaOJ-j_MX49BT/exec',
   googleClientId: '681152691156-g1q8bmionkcim033fhjhtn57jbiq1nij.apps.googleusercontent.com',
 };
 
