@@ -59,7 +59,7 @@
       <div class="leg-item"><div class="leg-dot" style="background:#4caf50"></div>Verified by committee</div>
       <div class="leg-item"><div class="leg-dot" style="background:var(--gold)"></div>Pending verification</div>
     </div>
-    <div id="conList"><div class="loading">🪔 Loading contributors…</div></div>
+    <div id="conList"><div class="loading">🌅 Loading contributors…</div></div>
     <div class="total-bar"><span class="tb-l">Total Collected 2026</span><span class="tb-v" id="totalAmt">—</span></div>
     <div style="margin-top:.8rem;display:flex;gap:.7rem;flex-wrap:wrap">
       <a href="payment.html" style="text-decoration:none"><button class="btn-primary">💰 Contribute Now</button></a>
@@ -72,7 +72,7 @@ let allData=[],filterMode='all';
 const su=localStorage.getItem('psots_script_url')||'';
 async function loadList(){
   const el=document.getElementById('conList');
-  el.innerHTML='<div class="loading">🪔 Loading…</div>';
+  el.innerHTML='<div class="loading">🌅 Loading…</div>';
   if(!su||su.includes('YOUR_APPS')){
     try{const gRes=await fetch('data/history.json');if(gRes.ok){const g=await gRes.json();const h=g.history||[];const y2025=h.filter(r=>r.year===2025);allData=y2025.map(r=>({name:r.name,flat:r.flat||'—',amount:r.amount||0,status:r.status||'✅ Received',accountType:'Historical'}));renderList(allData);return;}}catch(e){}
     allData=[

@@ -81,7 +81,7 @@ function doSubscribe(){
   if(document.getElementById('p2').checked)prefs.push('Payment Confirmations');
   if(document.getElementById('p3').checked)prefs.push('Announcements');
   if(document.getElementById('p4').checked)prefs.push('Prasad Updates');
-  const msg=encodeURIComponent(`🪔 *PSOTS Chhath 2026 — Subscribe for Updates*\n\n👤 ${name}\n🏠 Flat: ${flat}\n📱 ${mobile}\n\n✅ Preferences:\n${prefs.map(p=>'• '+p).join('\n')}\n\nPlease add me to the broadcast list. 🙏`);
+  const msg=encodeURIComponent(`🌅 *PSOTS Chhath 2026 — Subscribe for Updates*\n\n👤 ${name}\n🏠 Flat: ${flat}\n📱 ${mobile}\n\n✅ Preferences:\n${prefs.map(p=>'• '+p).join('\n')}\n\nPlease add me to the broadcast list. 🙏`);
   window.open(`https://wa.me/${C.waOrg}?text=${msg}`,'_blank');
   localStorage.setItem('psots_wa_subscribed','true');
   document.getElementById('toast').textContent='📲 WhatsApp opened — tap Send to subscribe!';

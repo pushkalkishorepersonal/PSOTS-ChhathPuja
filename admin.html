@@ -200,7 +200,7 @@
 
   <!-- Nav -->
   <div class="admin-nav">
-    <div><div class="an-brand">🪔 PSOTS Admin</div><div class="an-sub">Chhath 2026 · Committee Panel</div></div>
+    <div><div class="an-brand">🌅 PSOTS Admin</div><div class="an-sub">Chhath 2026 · Committee Panel</div></div>
     <div class="an-actions">
       <a href="index.html" style="color:rgba(255,220,120,.7);font-size:.72rem;text-decoration:none;letter-spacing:.06em;text-transform:uppercase;padding:.38rem .9rem;border:1px solid rgba(255,255,255,.15);border-radius:50px;background:rgba(255,255,255,.08)">← View Site</a>
       <button class="btn-save-all" onclick="saveAll()">💾 Save All Changes</button>
@@ -394,7 +394,7 @@
       <div class="fg">
         <div class="ff" style="grid-column:1/-1">
           <label>Message</label>
-          <textarea id="broadMsg" rows="6" placeholder="Type your announcement or update here…" oninput="updatePreview()">🪔 *PSOTS Chhath Puja 2026 Update*
+          <textarea id="broadMsg" rows="6" placeholder="Type your announcement or update here…" oninput="updatePreview()">🌅 *PSOTS Chhath Puja 2026 Update*
 
 </textarea>
           <div class="char-count"><span id="charCount">0</span> characters</div>
@@ -991,7 +991,7 @@ function escAdm(s) { return String(s||'').replace(/'/g,"\\'"); }
 async function loadAdminCon() {
   const url = getScriptUrl();
   const tbody = document.getElementById('conTableBody');
-  tbody.innerHTML = '<tr><td colspan="9" class="loading-state">🪔 Loading from Google Sheets…</td></tr>';
+  tbody.innerHTML = '<tr><td colspan="9" class="loading-state">🌅 Loading from Google Sheets…</td></tr>';
 
   if (!url) {
     // Load from global data/history.json
@@ -1384,10 +1384,10 @@ async function saveTimings() {
    BROADCAST
 ═══════════════════════════════════════════════════ */
 const TEMPLATES = {
-  reminder: `🪔 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\nनमस्ते 🙏\n\nKindly contribute before *25th October 2026* to be included in the prasad list.\n\n💰 Pay via UPI: Visit psots.in\n📱 UPI: 9482088904-3@ybl\n\nDue dates:\n• Kharna Prasad: Nov 2\n• Thekua Prasad: Nov 4\n\nजय छठ मइया! 🪔`,
+  reminder: `🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\nनमस्ते 🙏\n\nKindly contribute before *25th October 2026* to be included in the prasad list.\n\n💰 Pay via UPI: Visit psots.in\n📱 UPI: 9482088904-3@ybl\n\nDue dates:\n• Kharna Prasad: Nov 2\n• Thekua Prasad: Nov 4\n\nजय छठ मइया! 🌅`,
   timing:   `🌇🌅 *PSOTS Chhath Puja 2026 — Arghya Timings*\n\n📅 Schedule:\n\n🌊 Nov 1 — Nahay Khay: 5:30 AM\n🍚 Nov 2 — Kharna Prasad: 7:00 PM\n🌇 Nov 3 — *Sandhya Arghya: 5:45 PM*\n🌅 Nov 4 — *Usha Arghya: 6:15 AM*\n\nVenue: Society Ghat — Prestige Song of the South\n\nजय छठ मइया! 🙏`,
-  prasad:   `🙏 *PSOTS Chhath Puja 2026 — Prasad Update*\n\nप्रसाद की व्यवस्था:\n\n🍚 *खरना प्रसाद* — Nov 2, 7:00 PM\n(Community Hall)\n\n🪄 *ठेकुआ प्रसाद* — Nov 4, After Arghya\n(Society Ghat)\n\nसभी PSOTS निवासियों का स्वागत है 🙏\nजय छठ मइया! 🪔`,
-  thankyou: `🎉🪔 *PSOTS Chhath Puja 2026 — Thank You!*\n\nप्रिय निवासी जी,\n\nहमारा छठ पूजा 2026 का पंच वर्ष महोत्सव आपके सहयोग से सफल रहा!\n\nThank you for your contribution and participation. May Chhath Maiya bless you and your family with health, happiness and prosperity. 🙏\n\nजय छठ मइया! 🪔\n— PSOTS Chhath Committee`
+  prasad:   `🙏 *PSOTS Chhath Puja 2026 — Prasad Update*\n\nप्रसाद की व्यवस्था:\n\n🍚 *खरना प्रसाद* — Nov 2, 7:00 PM\n(Community Hall)\n\n🪄 *ठेकुआ प्रसाद* — Nov 4, After Arghya\n(Society Ghat)\n\nसभी PSOTS निवासियों का स्वागत है 🙏\nजय छठ मइया! 🌅`,
+  thankyou: `🎉🌅 *PSOTS Chhath Puja 2026 — Thank You!*\n\nप्रिय निवासी जी,\n\nहमारा छठ पूजा 2026 का पंच वर्ष महोत्सव आपके सहयोग से सफल रहा!\n\nThank you for your contribution and participation. May Chhath Maiya bless you and your family with health, happiness and prosperity. 🙏\n\nजय छठ मइया! 🌅\n— PSOTS Chhath Committee`
 };
 
 function initBroadcast() {

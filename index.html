@@ -28,13 +28,21 @@
   .h-water{position:absolute;bottom:0;left:0;right:0;height:30%;background:linear-gradient(180deg,rgba(255,120,20,.28) 0%,#1a4060 22%,#0d2233 100%)}
   .h-water::after{content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);width:150px;height:100%;background:linear-gradient(180deg,rgba(255,200,60,.45) 0%,transparent 100%);filter:blur(10px);animation:wshine 3s ease-in-out infinite}
   @keyframes wshine{0%,100%{width:130px;opacity:.75}50%{width:200px;opacity:1}}
-  .h-diyas{position:absolute;bottom:3.5%;left:0;right:0;display:flex;justify-content:center;gap:clamp(1rem,3.5vw,2.8rem);pointer-events:none;z-index:5}
-  .hdy{display:flex;flex-direction:column;align-items:center;animation:bob ease-in-out infinite}
-  .hdy:nth-child(1){animation-duration:3.2s}.hdy:nth-child(2){animation-duration:3.8s;animation-delay:.4s}.hdy:nth-child(3){animation-duration:3.5s;animation-delay:.9s}.hdy:nth-child(4){animation-duration:4s;animation-delay:.2s}.hdy:nth-child(5){animation-duration:3.3s;animation-delay:.7s}
-  @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
-  .hdy-f{font-size:clamp(.7rem,2vw,1rem);filter:drop-shadow(0 0 5px rgba(255,140,0,.9));animation:ff 1.6s ease-in-out infinite}
-  @keyframes ff{0%,100%{transform:scale(1) rotate(-4deg)}50%{transform:scale(1.15) rotate(4deg)}}
-  .hdy-b{font-size:clamp(.6rem,1.6vw,.88rem)}
+  /* ── CHHATH GHAT SCENE ── */
+  .h-ghat{position:absolute;bottom:2%;left:0;right:0;display:flex;justify-content:center;align-items:flex-end;gap:clamp(.8rem,3vw,2.5rem);pointer-events:none;z-index:5;padding:0 1rem}
+  .ghat-item{display:flex;flex-direction:column;align-items:center;animation:ghatBob ease-in-out infinite}
+  .ghat-item:nth-child(1){animation-duration:3.5s}
+  .ghat-item:nth-child(2){animation-duration:4s;animation-delay:.3s}
+  .ghat-item:nth-child(3){animation-duration:3.2s;animation-delay:.6s}
+  .ghat-item:nth-child(4){animation-duration:3.8s;animation-delay:.2s}
+  .ghat-item:nth-child(5){animation-duration:3.6s;animation-delay:.5s}
+  @keyframes ghatBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+  .ghat-icon{filter:drop-shadow(0 2px 8px rgba(255,160,0,.6))}
+  .ghat-label{font-size:clamp(.5rem,1.2vw,.65rem);color:rgba(255,220,120,.8);font-weight:600;letter-spacing:.05em;margin-top:.2rem;text-align:center}
+  /* Vrati silhouette in water */
+  .h-vrati{position:absolute;bottom:10%;left:50%;transform:translateX(-50%);z-index:6;pointer-events:none;opacity:.35;display:flex;gap:2rem}
+  .vrati-fig{display:flex;flex-direction:column;align-items:center}
+  .vrati-fig svg{filter:drop-shadow(0 0 12px rgba(255,194,0,.4))}
   .h-content{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;padding:2rem 1.5rem 0;text-align:center;width:100%}
   .h-badge{display:inline-flex;align-items:center;gap:.5rem;background:rgba(0,0,0,.38);backdrop-filter:blur(8px);border:1px solid rgba(255,194,0,.35);padding:.32rem 1rem;border-radius:50px;margin-bottom:1rem;animation:fup 1s .3s both}
   .h-badge-v{font-family:'DM Sans',sans-serif;font-size:.9rem;color:var(--gold);font-weight:900}
@@ -199,10 +207,10 @@
 
 <nav>
   <div class="nb">
-    <span class="nd">🪔</span>
+    <span class="nd"><svg width="18" height="18" viewBox="0 0 24 24"><ellipse cx="12" cy="18" rx="10" ry="5" fill="#c68a3c" stroke="#8b5e1e" stroke-width=".8"/><path d="M2 18Q2 8 12 4Q22 8 22 18" fill="#d4a04a" stroke="#8b5e1e" stroke-width=".8"/><circle cx="9" cy="14" r="2.5" fill="#e85c00"/><circle cx="15" cy="14" r="2.5" fill="#2e7d32"/><circle cx="12" cy="11" r="2" fill="#ffc200"/></svg></span>
     <div><div class="nn">PSOTS छठ महापर्व 2026</div><div class="ns">पंच वर्ष महोत्सव</div></div>
   </div>
-  <a class="nav-portal-btn" href="portal.html">👤 My Account</a>
+  <a class="nav-portal-btn" href="portal.html" id="navPortalBtn">👤 My Account</a>
 </nav>
 
 <!-- Live Status Banner (shows on event days Nov 1-4) -->
@@ -214,12 +222,42 @@
 <section class="hero">
   <div class="h-sky"></div><div class="h-rays"></div><div class="h-sun"></div>
   <div class="h-water"></div>
-  <div class="h-diyas">
-    <div class="hdy"><span class="hdy-f">🔥</span><span class="hdy-b">🪔</span></div>
-    <div class="hdy"><span class="hdy-f">🔥</span><span class="hdy-b">🪔</span></div>
-    <div class="hdy"><span class="hdy-f">🔥</span><span class="hdy-b">🪔</span></div>
-    <div class="hdy"><span class="hdy-f">🔥</span><span class="hdy-b">🪔</span></div>
-    <div class="hdy"><span class="hdy-f">🔥</span><span class="hdy-b">🪔</span></div>
+  <!-- Vrati silhouettes offering arghya in water -->
+  <div class="h-vrati">
+    <div class="vrati-fig">
+      <svg width="40" height="65" viewBox="0 0 40 65" fill="none"><circle cx="20" cy="8" r="6" fill="rgba(255,220,120,.7)"/><path d="M20 14v15M12 20h16M8 50l12-21 12 21" stroke="rgba(255,220,120,.6)" stroke-width="2" fill="none"/><ellipse cx="20" cy="54" rx="14" ry="4" fill="rgba(255,220,120,.15)"/><path d="M28 22l8-6" stroke="rgba(255,194,0,.8)" stroke-width="1.5"/><circle cx="38" cy="14" r="3" fill="rgba(255,194,0,.5)"/></svg>
+    </div>
+    <div class="vrati-fig">
+      <svg width="40" height="65" viewBox="0 0 40 65" fill="none"><circle cx="20" cy="8" r="6" fill="rgba(255,220,120,.7)"/><path d="M20 14v15M12 20h16M8 50l12-21 12 21" stroke="rgba(255,220,120,.6)" stroke-width="2" fill="none"/><ellipse cx="20" cy="54" rx="14" ry="4" fill="rgba(255,220,120,.15)"/><path d="M12 18l-5-8" stroke="rgba(255,194,0,.8)" stroke-width="1.5"/><ellipse cx="5" cy="8" rx="5" ry="3" fill="rgba(255,194,0,.4)" transform="rotate(-10 5 8)"/></svg>
+    </div>
+  </div>
+  <!-- Ghat scene: Soop, Daura, Sugarcane, Thekua, Coconut -->
+  <div class="h-ghat">
+    <div class="ghat-item">
+      <!-- Soop (winnowing basket with fruits) -->
+      <svg class="ghat-icon" width="42" height="36" viewBox="0 0 42 36"><ellipse cx="21" cy="28" rx="18" ry="7" fill="#c68a3c" stroke="#8b5e1e" stroke-width="1"/><path d="M3 28Q3 14 21 8Q39 14 39 28" fill="#d4a04a" stroke="#8b5e1e" stroke-width="1"/><circle cx="14" cy="20" r="4" fill="#e85c00"/><circle cx="21" cy="17" r="3.5" fill="#ffc200"/><circle cx="28" cy="20" r="4" fill="#2e7d32"/><circle cx="21" cy="23" r="3" fill="#8b4513"/></svg>
+      <div class="ghat-label">सूप</div>
+    </div>
+    <div class="ghat-item">
+      <!-- Daura (bamboo basket) -->
+      <svg class="ghat-icon" width="32" height="38" viewBox="0 0 32 38"><path d="M4 10h24v20c0 4-5 7-12 7S4 34 4 30z" fill="#c68a3c" stroke="#8b5e1e" stroke-width="1"/><path d="M4 10c0-3 5-6 12-6s12 3 12 6" fill="#d4a04a" stroke="#8b5e1e" stroke-width="1"/><line x1="4" y1="17" x2="28" y2="17" stroke="#8b5e1e" stroke-width=".6"/><line x1="4" y1="24" x2="28" y2="24" stroke="#8b5e1e" stroke-width=".6"/><circle cx="12" cy="7" r="2.5" fill="#e85c00"/><circle cx="20" cy="6" r="2" fill="#ffc200"/></svg>
+      <div class="ghat-label">दउरा</div>
+    </div>
+    <div class="ghat-item">
+      <!-- Sugarcane -->
+      <svg class="ghat-icon" width="20" height="48" viewBox="0 0 20 48"><path d="M10 48V4" stroke="#2e7d32" stroke-width="3" stroke-linecap="round"/><path d="M10 8l-6-6M10 8l6-6M10 16l-5-4M10 16l5-4" stroke="#4caf50" stroke-width="1.5" fill="none"/><circle cx="10" cy="12" r="1" fill="#1b5e20"/><circle cx="10" cy="20" r="1" fill="#1b5e20"/><circle cx="10" cy="28" r="1" fill="#1b5e20"/><circle cx="10" cy="36" r="1" fill="#1b5e20"/></svg>
+      <div class="ghat-label">गन्ना</div>
+    </div>
+    <div class="ghat-item">
+      <!-- Thekua -->
+      <svg class="ghat-icon" width="34" height="28" viewBox="0 0 34 28"><ellipse cx="17" cy="22" rx="15" ry="5" fill="#c68a3c" stroke="#8b5e1e" stroke-width=".8"/><ellipse cx="10" cy="18" rx="6" ry="4" fill="#d4874a" stroke="#a0622a" stroke-width=".6"/><ellipse cx="24" cy="18" rx="6" ry="4" fill="#c87a3a" stroke="#a0622a" stroke-width=".6"/><ellipse cx="17" cy="14" rx="6" ry="4" fill="#d4944a" stroke="#a0622a" stroke-width=".6"/><circle cx="10" cy="17.5" r="1" fill="#8b5e1e"/><circle cx="17" cy="13.5" r="1" fill="#8b5e1e"/><circle cx="24" cy="17.5" r="1" fill="#8b5e1e"/></svg>
+      <div class="ghat-label">ठेकुआ</div>
+    </div>
+    <div class="ghat-item">
+      <!-- Coconut + Banana -->
+      <svg class="ghat-icon" width="36" height="32" viewBox="0 0 36 32"><circle cx="18" cy="18" r="10" fill="#8b4513" stroke="#5c3310" stroke-width="1"/><circle cx="15" cy="15" r="1.5" fill="#3e2109"/><circle cx="21" cy="15" r="1.5" fill="#3e2109"/><circle cx="18" cy="20" r="1.5" fill="#3e2109"/><path d="M2 14c2-4 4-8 6-2s3 8 1 6" fill="#ffc200" stroke="#e6a800" stroke-width=".6"/><path d="M28 10c2 4 4 8 2 6s-1-8 1-6" fill="#ffc200" stroke="#e6a800" stroke-width=".6"/></svg>
+      <div class="ghat-label">नारियल</div>
+    </div>
   </div>
   <div class="h-content">
     <div class="h-badge"><span class="h-badge-v">V</span><span class="h-badge-t">Fifth Year · पंच वर्ष महोत्सव</span></div>
@@ -258,7 +296,7 @@
       <div class="live"></div>
       <div class="pi">
         <div>
-          <div class="pi-ey">🪔 Contribution Open · Deadline Oct 25</div>
+          <div class="pi-ey">🌅 Contribution Open · Deadline Oct 25</div>
           <div class="pi-title">Contribute to Chhath Puja</div>
           <div class="pi-sub">Scan QR with any UPI app — GPay, PhonePe, Paytm, iMobile. Works for guests too. Sign in for a faster experience.</div>
         </div>
@@ -351,14 +389,15 @@
 </section>
 
 <footer>
-  <div class="ft-t">🪔 PSOTS — Chhath Puja 2026</div>
+  <div class="ft-t">🌅 PSOTS — छठ महापर्व 2026</div>
   <p>पंच वर्ष महोत्सव · Nov 1–4, 2026 · Society Ghat</p>
-  <p>WhatsApp: <span>9482088904</span> · <span>9902837002</span> · <span>psots.in</span></p>
+  <p>WhatsApp: <span>9482088904</span> · <span>9902837002</span> · <span>chhath.psots.in</span></p>
 </footer>
 
+<script src="config.js"></script>
 <script>
-const evt=new Date('2026-11-01T06:00:00');
-function tick(){const d=evt-new Date();if(d<=0){document.getElementById('countdown').innerHTML='<div style="font-family:\'Yatra One\',serif;font-size:1.3rem;color:var(--gold)">🪔 जय छठ मइया!</div>';return}const p=n=>String(Math.floor(n)).padStart(2,'0');document.getElementById('cd-d').textContent=p(d/864e5);document.getElementById('cd-h').textContent=p((d%864e5)/36e5);document.getElementById('cd-m').textContent=p((d%36e5)/6e4);document.getElementById('cd-s').textContent=p((d%6e4)/1e3)}
+const evt=new Date(window.PSOTS?PSOTS.eventStart:'2026-11-01T06:00:00');
+function tick(){const d=evt-new Date();if(d<=0){document.getElementById('countdown').innerHTML='<div style="font-family:\'Yatra One\',serif;font-size:1.3rem;color:var(--gold)">🌅 जय छठ मइया!</div>';return}const p=n=>String(Math.floor(n)).padStart(2,'0');document.getElementById('cd-d').textContent=p(d/864e5);document.getElementById('cd-h').textContent=p((d%864e5)/36e5);document.getElementById('cd-m').textContent=p((d%36e5)/6e4);document.getElementById('cd-s').textContent=p((d%6e4)/1e3)}
 tick();setInterval(tick,1000);
 const ob=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){const b=document.getElementById('tfBar');if(b)b.style.width=b.dataset.pct+'%'}})},{threshold:.3});
 const ds=document.querySelector('.dashboard');if(ds)ob.observe(ds);
@@ -396,12 +435,13 @@ if(su){fetch(su+'?action=getFinance').then(r=>r.json()).then(d=>{const f=d.finan
     }
   }
 })();
-// Portal tile — show personalised view when already signed in
+// Portal tile + nav — show personalised view when already signed in
 (function(){
   try {
     const u = JSON.parse(localStorage.getItem('psots_user') || localStorage.getItem('psots_admin_user') || 'null');
     if (!u || !u.name) return;
     const firstName = u.name.split(' ')[0];
+    // Update portal tile
     document.getElementById('portalTitle').textContent = 'Welcome, ' + firstName + '!';
     document.getElementById('portalSub').textContent = 'You\'re signed in. View your contributions, make a quick payment, or update your profile.';
     document.getElementById('portalBtn').textContent = 'Go to My Account →';
@@ -419,6 +459,15 @@ if(su){fetch(su+'?action=getFinance').then(r=>r.json()).then(d=>{const f=d.finan
       ico.appendChild(img);
     } else {
       document.getElementById('portalIco').textContent = u.name.charAt(0).toUpperCase();
+    }
+    // Update nav bar to show profile
+    const navBtn = document.getElementById('navPortalBtn');
+    if (navBtn) {
+      if (u.picture) {
+        navBtn.innerHTML = '<img src="' + u.picture + '" style="width:22px;height:22px;border-radius:50%;object-fit:cover;vertical-align:middle;border:1.5px solid rgba(255,194,0,.4)"/> ' + firstName;
+      } else {
+        navBtn.innerHTML = '<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:rgba(255,194,0,.2);color:var(--gold);font-size:.7rem;font-weight:700;vertical-align:middle">' + u.name.charAt(0).toUpperCase() + '</span> ' + firstName;
+      }
     }
   } catch(e) {}
 })();

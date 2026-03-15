@@ -89,7 +89,7 @@
 
   <!-- Mode selector -->
   <div class="card">
-    <div class="card-title">🪔 Pay via UPI — Scan &amp; Pay</div>
+    <div class="card-title">🌅 Pay via UPI — Scan &amp; Pay</div>
     <div class="card-sub">Enter amount → scan the QR in any UPI app (GPay, PhonePe, Paytm, BHIM, iMobile) — or copy the UPI ID to pay manually.</div>
 
     <!-- Guest / Signed-in toggle -->
@@ -304,13 +304,13 @@ async function submitForm(){
   document.getElementById('successTxt').textContent=`Your contribution of ₹${parseInt(amount).toLocaleString('en-IN')} has been recorded. The committee will verify and send you a WhatsApp confirmation within 24 hours. 🙏`;
   document.getElementById('successBox').scrollIntoView({behavior:'smooth',block:'center'});
   // Notify organiser
-  const waOrg=encodeURIComponent(`🪔 *Chhath 2026 — New Contribution*\n\n👤 ${name}  🏠 ${flat}\n📱 ${mobile}\n💰 ₹${parseInt(amount).toLocaleString('en-IN')}  📲 ${method||'UPI'}  📅 ${dateStr}\n🏷 ${isPortalUser?'Portal User 🔐':'Guest 👤'}`);
+  const waOrg=encodeURIComponent(`🌅 *Chhath 2026 — New Contribution*\n\n👤 ${name}  🏠 ${flat}\n📱 ${mobile}\n💰 ₹${parseInt(amount).toLocaleString('en-IN')}  📲 ${method||'UPI'}  📅 ${dateStr}\n🏷 ${isPortalUser?'Portal User 🔐':'Guest 👤'}`);
   setTimeout(()=>window.open(`https://wa.me/${C.waOrg}?text=${waOrg}`,'_blank'),1500);
 }
 
 function sendReceipt(){
   const{name,flat,mobile,amount,dateStr,method}=lastSubmit;
-  const msg=encodeURIComponent(`🪔 *जय छठ मइया!*\n\nनमस्ते ${name} जी 🙏\n\nYour contribution for *PSOTS Chhath Puja 2026* has been received!\n\n🏠 Flat: ${flat}\n💰 ₹${parseInt(amount).toLocaleString('en-IN')}\n📲 ${method}\n📅 ${dateStr}\n\nजय छठ मइया! 🪔\n— PSOTS Chhath Committee`);
+  const msg=encodeURIComponent(`🌅 *जय छठ मइया!*\n\nनमस्ते ${name} जी 🙏\n\nYour contribution for *PSOTS Chhath Puja 2026* has been received!\n\n🏠 Flat: ${flat}\n💰 ₹${parseInt(amount).toLocaleString('en-IN')}\n📲 ${method}\n📅 ${dateStr}\n\nजय छठ मइया! 🌅\n— PSOTS Chhath Committee`);
   window.open(`https://wa.me/91${mobile}?text=${msg}`,'_blank');
 }
 

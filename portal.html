@@ -229,7 +229,7 @@
 <!-- NAV -->
 <nav>
   <div class="nb">
-    <span class="nd">🪔</span>
+    <span class="nd">🌅</span>
     <div><div class="nn">PSOTS — My Portal</div><div class="ns">Chhath 2026</div></div>
   </div>
   <div class="nav-r">
@@ -242,7 +242,7 @@
 <!-- ════ LOGIN SCREEN ════ -->
 <div id="loginScreen">
   <div class="login-box">
-    <span class="login-icon">🪔</span>
+    <span class="login-icon">🌅</span>
     <div class="login-title">My PSOTS Portal</div>
     <div class="login-sub">Sign in to view your contributions, manage notifications and connect with the committee.</div>
     <div class="login-society">Prestige Song of the South · Chhath 2026</div>
@@ -279,7 +279,7 @@
       <div class="wb-sub">PSOTS Resident · Chhath 2026</div>
     </div>
     <div class="wb-right">
-      <div class="wb-badge" id="wbBadge">🪔 Member</div>
+      <div class="wb-badge" id="wbBadge">🌅 Member</div>
       <a id="adminLink" href="admin.html" style="display:none;margin-top:.4rem;background:#e85c00;color:#fff;border:none;border-radius:50px;padding:.3rem .85rem;font-size:.72rem;font-weight:600;text-decoration:none;cursor:pointer">⚙️ Admin</a>
     </div>
   </div>
@@ -314,7 +314,7 @@
     <div class="pcard">
       <div class="pcard-title">🗂 Year-wise History</div>
       <div class="pcard-sub">All your contributions across every Chhath Puja. Green dot = verified by committee.</div>
-      <div id="contribHistory"><div class="loading">🪔 Loading your contribution history…</div></div>
+      <div id="contribHistory"><div class="loading">🌅 Loading your contribution history…</div></div>
     </div>
 
   </div>
@@ -483,7 +483,7 @@
       </div>
 
       <div id="noReceiptMsg" style="display:none;text-align:center;padding:2rem">
-        <div style="font-size:2.5rem;margin-bottom:.6rem">🪔</div>
+        <div style="font-size:2.5rem;margin-bottom:.6rem">🌅</div>
         <p style="font-size:.88rem;color:var(--lbr)">No verified contribution found for 2026 yet.</p>
         <p style="font-size:.78rem;color:#c8a880;margin-top:.3rem">Your receipt will appear here after the committee verifies your payment.</p>
         <a href="#" onclick="switchTab('quickpay');return false" style="display:inline-block;margin-top:1rem;text-decoration:none"><button class="btn-primary">⚡ Contribute Now</button></a>
@@ -847,7 +847,7 @@ function deleteMyData() {
 ═══════════════════════════════════════════════════ */
 async function loadContributions() {
   const el = document.getElementById('contribHistory');
-  el.innerHTML = '<div class="loading">🪔 Loading your contribution history…</div>';
+  el.innerHTML = '<div class="loading">🌅 Loading your contribution history…</div>';
 
   // Try loading from global data/history.json first
   const flat = userProfile.flat || '';
@@ -897,7 +897,7 @@ async function loadContributions() {
 function renderContributions(data) {
   const el = document.getElementById('contribHistory');
   if (!data.length) {
-    el.innerHTML = '<div class="no-contrib"><div class="nc-icon">🪔</div><p>No contributions recorded yet for this account.<br/>Make your first contribution this year!</p><br/><a href="index.html#payment"><button class="btn-primary">Contribute Now →</button></a></div>';
+    el.innerHTML = '<div class="no-contrib"><div class="nc-icon">🌅</div><p>No contributions recorded yet for this account.<br/>Make your first contribution this year!</p><br/><a href="index.html#payment"><button class="btn-primary">Contribute Now →</button></a></div>';
     updateSummary([]);
     return;
   }
@@ -912,7 +912,7 @@ function renderContributions(data) {
     return `
       <div class="year-group">
         <div class="yg-head">
-          <span class="yg-year">🪔 ${yr}</span>
+          <span class="yg-year">🌅 ${yr}</span>
           <span class="yg-total">₹${total.toLocaleString('en-IN')}</span>
         </div>
         ${rows.map(r => {
@@ -1113,7 +1113,7 @@ function qpLaunch(app) {
     const name   = userProfile.name || currentUser.name;
     const flat   = userProfile.flat || '—';
     const mobile = userProfile.mobile || '—';
-    const wa = encodeURIComponent(`🪔 *Chhath 2026 — Payment Done*\n\n👤 ${name}  🏠 ${flat}\n📱 ${mobile}\n💰 ₹${parseInt(amt).toLocaleString('en-IN')}\n📲 ${['GPay','PhonePe','Paytm','BHIM'][['gpay','phonepe','paytm','bhim'].indexOf(app)]||'UPI'}\n\nPlease verify 🙏`);
+    const wa = encodeURIComponent(`🌅 *Chhath 2026 — Payment Done*\n\n👤 ${name}  🏠 ${flat}\n📱 ${mobile}\n💰 ₹${parseInt(amt).toLocaleString('en-IN')}\n📲 ${['GPay','PhonePe','Paytm','BHIM'][['gpay','phonepe','paytm','bhim'].indexOf(app)]||'UPI'}\n\nPlease verify 🙏`);
     window.open(`https://wa.me/${C.waOrg}?text=${wa}`, '_blank');
   }, 2500);
   return false;
@@ -1202,7 +1202,7 @@ function renderReceipt(name, flat, contribs) {
 
   el.innerHTML = `
     <div class="receipt-card" id="receiptCard">
-      <div class="rc-icon">🪔</div>
+      <div class="rc-icon">🌅</div>
       <div class="rc-title">PSOTS Chhath Puja 2026</div>
       <div class="rc-sub">पंच वर्ष महोत्सव · Thank You Certificate</div>
       <div class="rc-badge">✅ Verified Contributor</div>
@@ -1217,7 +1217,7 @@ function renderReceipt(name, flat, contribs) {
 function shareReceipt() {
   const name = userProfile.name || currentUser?.name || '';
   const flat = userProfile.flat || '';
-  const text = `🪔 *PSOTS Chhath Puja 2026 — पंच वर्ष महोत्सव*\n\nI've contributed to Chhath Puja at Prestige Song of the South! 🙏\n\n👤 ${name}\n🏠 Flat ${flat}\n\nJoin us: Nov 1-4, 2026 at Society Ghat\nContribute: ${(window.PSOTS && window.PSOTS.siteUrl) || 'chhath.psots.in'}\n\nजय छठ मइया! 🪔`;
+  const text = `🌅 *PSOTS Chhath Puja 2026 — पंच वर्ष महोत्सव*\n\nI've contributed to Chhath Puja at Prestige Song of the South! 🙏\n\n👤 ${name}\n🏠 Flat ${flat}\n\nJoin us: Nov 1-4, 2026 at Society Ghat\nContribute: ${(window.PSOTS && window.PSOTS.siteUrl) || 'chhath.psots.in'}\n\nजय छठ मइया! 🌅`;
   if (navigator.share) {
     navigator.share({ title: 'Chhath Puja 2026 — My Contribution', text }).catch(() => {});
   } else {
