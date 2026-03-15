@@ -65,7 +65,6 @@ function setupSheets() {
   if (!settings) {
     settings = ss.insertSheet(SHEET_SETTINGS);
     settings.appendRow(['Key', 'Value']);
-    settings.appendRow(['AdminPassword', 'Y2hoaGF0aA==']);
     settings.appendRow(['UPI_ID', '9482088904-3@ybl']);
     settings.appendRow(['WhatsApp', '919482088904']);
     settings.appendRow(['EventDate', '2026-10-26']);
