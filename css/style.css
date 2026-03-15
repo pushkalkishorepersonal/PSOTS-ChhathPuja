@@ -32,7 +32,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 }
 .page-nav-back {
   display: flex; align-items: center; gap: .5rem;
-  color: rgba(255,220,120,.7); font-size: .82rem; font-weight: 600;
+  color: rgba(255,220,120,.92); font-size: .82rem; font-weight: 600;
   text-decoration: none; letter-spacing: .04em;
   transition: color .2s;
 }
@@ -59,13 +59,13 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 }
 .ph-icon { font-size: 2.8rem; margin-bottom: .6rem; display: block; }
 .ph-title {
-  font-family: 'Playfair Display', serif; font-weight: 900; font-style: italic;
+  font-family: "DM Sans", sans-serif; font-weight: 900; font-style: italic;
   font-size: clamp(1.8rem, 5vw, 3rem); color: #fff;
   background: linear-gradient(180deg,#fff 0%,var(--gilt) 50%,var(--gold) 100%);
   -webkit-background-clip: text; -webkit-text-fill-color: transparent;
   margin-bottom: .3rem;
 }
-.ph-sub { font-size: .82rem; color: rgba(255,220,120,.55); }
+.ph-sub { font-size: .82rem; color: rgba(255,220,120,.88); }
 
 /* ── CONTENT WRAPPER ─── */
 .page-content { max-width: 860px; margin: 0 auto; padding: 2rem 1.2rem 4rem; }
@@ -77,22 +77,22 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
   margin-bottom: 1.3rem;
 }
 .card-title {
-  font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700;
+  font-family: "DM Sans", sans-serif; font-size: 1.1rem; font-weight: 700;
   color: var(--ink); margin-bottom: .3rem;
   display: flex; align-items: center; gap: .45rem;
 }
-.card-sub { font-size: .8rem; color: var(--lbr); margin-bottom: 1.2rem; line-height: 1.5; }
+.card-sub { font-size: .82rem; color: #6b3a18; margin-bottom: 1.2rem; line-height: 1.5; }
 
 /* ── FORMS ─── */
 .fg { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem; margin-bottom: .9rem; }
 @media(max-width:480px) { .fg { grid-template-columns: 1fr; } }
 .ff { display: flex; flex-direction: column; }
-.ff label { font-size: .62rem; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: #b08060; margin-bottom: .34rem; }
+.ff label { font-size: .75rem; font-weight: 600; letter-spacing: .08em; text-transform: uppercase; color: #6b3a18; margin-bottom: .34rem; }
 .ff input, .ff select, .ff textarea { padding: .68rem .95rem; border: 1.5px solid #f0d5b8; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: .9rem; color: var(--ink); background: var(--warm); outline: none; transition: border-color .2s; }
 .ff input:focus, .ff select:focus, .ff textarea:focus { border-color: var(--or); }
-.ff input::placeholder { color: #c8a880; }
-.ff .note { font-size: .65rem; color: #c8a880; margin-top: .2rem; }
-.ff .prefill-note { font-size: .62rem; color: var(--or); margin-top: .2rem; }
+.ff input::placeholder { color: #a07848; }
+.ff .note { font-size: .76rem; color: #7a5030; margin-top: .2rem; }
+.ff .prefill-note { font-size: .76rem; color: var(--or); margin-top: .2rem; }
 .req { color: var(--or); }
 
 /* ── BUTTONS ─── */
@@ -107,7 +107,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 .btn-icon { background: none; border: none; cursor: pointer; padding: .3rem; font-size: 1rem; }
 
 /* ── BADGES ─── */
-.badge { display: inline-block; font-size: .65rem; font-weight: 700; padding: .2rem .6rem; border-radius: 50px; letter-spacing: .08em; text-transform: uppercase; }
+.badge { display: inline-block; font-size: .72rem; font-weight: 700; padding: .2rem .6rem; border-radius: 50px; letter-spacing: .06em; text-transform: uppercase; }
 .badge-orange { background: #fff0e0; color: var(--or); }
 .badge-green  { background: #dcfce7; color: var(--green); }
 .badge-gold   { background: #fff8dc; color: #a07000; }

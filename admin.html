@@ -6,6 +6,8 @@
   <title>PSOTS Admin — Chhath 2026</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="config.js"></script>
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
   :root {
     --or:#e85c00; --gold:#ffc200; --ink:#1a0800; --cream:#fdf5e0;
@@ -28,7 +30,7 @@
     text-align: center;
   }
   .login-icon { font-size: 3rem; margin-bottom: .8rem; }
-  .login-title { font-family: 'Playfair Display', serif; font-size: 1.5rem; font-weight: 900; color: var(--ink); margin-bottom: .3rem; }
+  .login-title { font-family: 'DM Sans', sans-serif; font-size: 1.5rem; font-weight: 900; color: var(--ink); margin-bottom: .3rem; }
   .login-sub { font-size: .82rem; color: var(--lbr); margin-bottom: 2rem; }
   .login-input {
     width: 100%; padding: .82rem 1rem; border: 2px solid #f0d5b8; border-radius: 12px;
@@ -39,7 +41,7 @@
   .login-input:focus { border-color: var(--or); }
   .btn-login {
     width: 100%; background: linear-gradient(135deg, var(--or), #c93800); color: #fff;
-    font-family: 'Playfair Display', serif; font-weight: 700; font-style: italic;
+    font-family: 'DM Sans', sans-serif; font-weight: 700; font-style: italic;
     font-size: 1.1rem; padding: .9rem; border-radius: 12px; border: none; cursor: pointer;
     box-shadow: 0 4px 18px rgba(232,92,0,.4); transition: transform .2s;
   }
@@ -55,7 +57,7 @@
     padding: 0 1.5rem; position: sticky; top: 0; z-index: 100;
     box-shadow: 0 2px 12px rgba(0,0,0,.3);
   }
-  .an-brand { font-family: 'Playfair Display', serif; font-size: .95rem; color: var(--gold); }
+  .an-brand { font-family: 'DM Sans', sans-serif; font-size: .95rem; color: var(--gold); }
   .an-sub { font-size: .58rem; color: rgba(255,198,0,.45); letter-spacing: .12em; text-transform: uppercase; }
   .an-actions { display: flex; gap: .8rem; align-items: center; }
   .btn-save-all {
@@ -87,7 +89,7 @@
     background: var(--white); border-radius: 16px; padding: 1.6rem;
     box-shadow: var(--shadow); border: 1px solid rgba(200,100,0,.08); margin-bottom: 1.4rem;
   }
-  .ac-title { font-family: 'Playfair Display', serif; font-size: 1.1rem; font-weight: 700; color: var(--ink); margin-bottom: 1.2rem; display: flex; align-items: center; gap: .5rem; }
+  .ac-title { font-family: 'DM Sans', sans-serif; font-size: 1.1rem; font-weight: 700; color: var(--ink); margin-bottom: 1.2rem; display: flex; align-items: center; gap: .5rem; }
   .ac-sub { font-size: .78rem; color: var(--lbr); margin-bottom: 1.2rem; line-height: 1.5; }
 
   /* ── FORM ELEMENTS ────────────────── */
@@ -110,7 +112,7 @@
   .rupee-wrap { display: flex; border: 1.5px solid #f0d5b8; border-radius: 10px; overflow: hidden; background: var(--warm); transition: border-color .2s; }
   .rupee-wrap:focus-within { border-color: var(--or); }
   .rupee-pfx { background: #fff0e0; color: var(--or); font-weight: 700; padding: .7rem .8rem; display: flex; align-items: center; font-size: 1rem; border-right: 1px solid #f0d5b8; }
-  .rupee-inp { flex: 1; border: none; outline: none; font-family: 'Playfair Display', serif; font-size: 1rem; font-weight: 700; color: var(--ink); padding: .7rem .7rem; background: transparent; -moz-appearance: textfield; }
+  .rupee-inp { flex: 1; border: none; outline: none; font-family: 'DM Sans', sans-serif; font-size: 1rem; font-weight: 700; color: var(--ink); padding: .7rem .7rem; background: transparent; -moz-appearance: textfield; }
   .rupee-inp::-webkit-outer-spin-button,.rupee-inp::-webkit-inner-spin-button { -webkit-appearance: none; }
 
   /* ── BUTTONS ──────────────────────── */
@@ -147,7 +149,7 @@
   .status-badge.rejected { background: #ffe0e0; color: var(--red); }
   .con-name-cell { font-weight: 600; color: var(--ink); }
   .con-flat-cell { color: var(--lbr); }
-  .con-amt-cell  { font-family: 'Playfair Display', serif; font-weight: 700; color: var(--or); }
+  .con-amt-cell  { font-family: 'DM Sans', sans-serif; font-weight: 700; color: var(--or); }
   .action-btns { display: flex; gap: .4rem; }
   .con-search-bar { width: 100%; padding: .65rem 1rem; border: 1.5px solid #f0d5b8; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: .88rem; color: var(--ink); background: var(--warm); outline: none; margin-bottom: 1rem; }
   .con-search-bar:focus { border-color: var(--or); }
@@ -156,7 +158,7 @@
   .filter-chip.active { background: var(--or); color: #fff; border-color: var(--or); }
   .total-bar { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, var(--or), #c93800); border-radius: 10px; padding: .75rem 1rem; margin-top: .8rem; color: #fff; }
   .total-bar .tl { font-size: .76rem; opacity: .8; }
-  .total-bar .tv { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 700; }
+  .total-bar .tv { font-family: 'DM Sans', sans-serif; font-size: 1.05rem; font-weight: 700; }
 
   /* ── ANNOUNCEMENT EDITOR ──────────── */
   .ann-item-edit {
@@ -169,7 +171,7 @@
 
   /* ── ARGHYA TIMING EDITOR ─────────── */
   .arghya-edit-card { background: var(--warm); border-radius: 14px; padding: 1.4rem; border: 1px solid #f0d5b8; }
-  .arghya-edit-title { font-family: 'Playfair Display', serif; font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: .5rem; }
+  .arghya-edit-title { font-family: 'DM Sans', sans-serif; font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem; display: flex; align-items: center; gap: .5rem; }
 
   /* ── BROADCAST COMPOSER ───────────── */
   .broadcast-preview { background: #dcfce7; border: 1px solid #a5d6a7; border-radius: 12px; padding: 1rem; font-size: .84rem; line-height: 1.65; color: #1a3a1a; white-space: pre-wrap; font-family: monospace; min-height: 100px; margin-bottom: 1rem; }
@@ -178,7 +180,7 @@
   /* ── SUMMARY STATS ────────────────── */
   .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: .9rem; margin-bottom: 1.5rem; }
   .stat-card { background: var(--white); border-radius: 12px; padding: 1rem; border: 1px solid rgba(200,100,0,.1); text-align: center; }
-  .stat-val { font-family: 'Playfair Display', serif; font-size: 1.3rem; font-weight: 900; color: var(--or); }
+  .stat-val { font-family: 'DM Sans', sans-serif; font-size: 1.3rem; font-weight: 900; color: var(--or); }
   .stat-val.green { color: var(--green); }
   .stat-lbl { font-size: .62rem; color: var(--lbr); margin-top: .18rem; letter-spacing: .05em; }
 
@@ -190,18 +192,8 @@
 </head>
 <body>
 
-<!-- ════ LOGIN SCREEN ════ -->
-<div id="loginScreen">
-  <div class="login-box">
-    <div class="login-icon">🪔</div>
-    <div class="login-title">Admin Panel</div>
-    <div class="login-sub">PSOTS Chhath 2026 · Committee Access Only</div>
-    <input class="login-input" type="password" id="pwInput" placeholder="Enter admin password" onkeydown="if(event.key==='Enter')doLogin()"/>
-    <button class="btn-login" onclick="doLogin()">🔐 Login to Admin</button>
-    <div class="login-err" id="loginErr">❌ Incorrect password. Try again.</div>
-    <p style="font-size:.65rem;color:#c8a880;margin-top:1.2rem">Forgot password? Contact Pushkal — 9482088904</p>
-  </div>
-</div>
+<!-- ════ LOGIN SCREEN (redirects to portal) ════ -->
+<div id="loginScreen" style="display:none"></div>
 
 <!-- ════ ADMIN APP ════ -->
 <div id="adminApp">
@@ -243,7 +235,7 @@
 
     <div class="admin-card">
       <div class="ac-title">📅 Event Countdown</div>
-      <div style="font-family:'Playfair Display',serif;font-size:2rem;font-weight:900;color:var(--or)" id="adminCountdown">—</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:2rem;font-weight:900;color:var(--or)" id="adminCountdown">—</div>
       <div style="font-size:.8rem;color:var(--lbr);margin-top:.3rem">Days until Chhath Puja 2026 (Nov 1)</div>
     </div>
 
@@ -313,7 +305,7 @@
         <button class="btn-primary" onclick="saveFinance()">💾 Save Finance Data</button>
         <button class="btn-secondary" onclick="calcTotal()">🔢 Auto-Calculate Total</button>
       </div>
-      <div id="finance-total" style="margin-top:1rem;font-family:'Playfair Display',serif;font-size:1.1rem;font-weight:700;color:var(--or);display:none"></div>
+      <div id="finance-total" style="margin-top:1rem;font-family:'DM Sans',sans-serif;font-size:1.1rem;font-weight:700;color:var(--or);display:none"></div>
     </div>
 
     <div class="admin-card">
@@ -535,16 +527,6 @@
     </div>
 
     <div class="admin-card">
-      <div class="ac-title">🔐 Change Admin Password</div>
-      <div class="fg">
-        <div class="ff"><label>Current Password</label><input type="password" id="pw-current" placeholder="Current password"/></div>
-        <div class="ff"><label>New Password</label><input type="password" id="pw-new" placeholder="New password (min 8 chars)"/></div>
-        <div class="ff"><label>Confirm New Password</label><input type="password" id="pw-confirm" placeholder="Confirm new password"/></div>
-      </div>
-      <button class="btn-primary" onclick="changePw()">🔐 Update Password</button>
-    </div>
-
-    <div class="admin-card">
       <div class="ac-title">🗄 Data Management</div>
       <div style="display:flex;gap:.7rem;flex-wrap:wrap">
         <button class="btn-secondary" onclick="exportAll()">📥 Export All Data (JSON)</button>
@@ -562,45 +544,77 @@
 /* ═══════════════════════════════════════════════════
    CONFIG
 ═══════════════════════════════════════════════════ */
-// DEFAULT PASSWORD — change this after first login!
-// Password is stored as a simple hash in localStorage
-const DEFAULT_PW_HASH = btoa('chhath2026psots'); // change this!
-const SCRIPT_URL_KEY  = 'psots_script_url';
+const SCRIPT_URL_KEY = 'psots_script_url';
 
 let allConData = [];
 let filterMode = 'all';
 let announcements = [];
 
 /* ═══════════════════════════════════════════════════
-   AUTH
+   AUTH — Google Sign-In
 ═══════════════════════════════════════════════════ */
-function doLogin() {
-  const pw = document.getElementById('pwInput').value;
-  const stored = localStorage.getItem('psots_admin_pw') || DEFAULT_PW_HASH;
-  if (btoa(pw) === stored) {
-    localStorage.setItem('psots_auth', 'yes_' + Date.now());
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('adminApp').style.display = 'block';
-    initAdmin();
-  } else {
-    document.getElementById('loginErr').style.display = 'block';
-    document.getElementById('pwInput').value = '';
-    document.getElementById('pwInput').focus();
+function getAdminEmails() {
+  const base  = (window.PSOTS && window.PSOTS.adminEmails) || [];
+  const extra = JSON.parse(localStorage.getItem('psots_admins') || '[]');
+  return [...new Set([...base, ...extra])];
+}
+
+window.addEventListener('load', () => {
+  const adminEmails = getAdminEmails();
+
+  // 1. Already logged into admin session
+  const adminSaved = localStorage.getItem('psots_admin_user');
+  if (adminSaved) {
+    const u = JSON.parse(adminSaved);
+    if (adminEmails.includes(u.email)) { enterAdmin(u); return; }
+    localStorage.removeItem('psots_admin_user');
   }
+
+  // 2. Already logged into portal — reuse session
+  const portalSaved = localStorage.getItem('psots_user');
+  if (portalSaved) {
+    const u = JSON.parse(portalSaved);
+    if (adminEmails.includes(u.email)) {
+      localStorage.setItem('psots_admin_user', JSON.stringify(u));
+      enterAdmin(u); return;
+    }
+    // Logged in but not admin — send back to portal
+    window.location.href = 'portal.html';
+    return;
+  }
+
+  // 3. Not logged in at all — redirect to portal login
+  window.location.href = 'portal.html?next=admin';
+});
+
+function handleAdminLogin(response) {
+  const payload = JSON.parse(atob(response.credential.split('.')[1]));
+  if (!getAdminEmails().includes(payload.email)) {
+    document.getElementById('loginErr').style.display = 'block';
+    return;
+  }
+  const u = { name: payload.name, email: payload.email, picture: payload.picture };
+  localStorage.setItem('psots_admin_user', JSON.stringify(u));
+  enterAdmin(u);
+}
+
+function enterAdmin(u) {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminApp').style.display = 'block';
+  // Show user in nav
+  const nav = document.querySelector('.an-actions');
+  nav.insertAdjacentHTML('afterbegin', `
+    <div style="display:flex;align-items:center;gap:.5rem;margin-right:.5rem">
+      ${u.picture ? `<img src="${u.picture}" style="width:28px;height:28px;border-radius:50%;object-fit:cover"/>` : ''}
+      <span style="font-size:.75rem;color:rgba(255,255,255,.8)">${u.name}</span>
+    </div>`);
+  initAdmin();
 }
 
 function logout() {
-  localStorage.removeItem('psots_auth');
+  localStorage.removeItem('psots_admin_user');
+  if (typeof google !== 'undefined') google.accounts.id.disableAutoSelect();
   location.reload();
-}
-
-function checkAuth() {
-  const auth = localStorage.getItem('psots_auth');
-  if (auth && Date.now() - parseInt(auth.split('_')[1]) < 86400000) {
-    document.getElementById('loginScreen').style.display = 'none';
-    document.getElementById('adminApp').style.display = 'block';
-    initAdmin();
-  }
 }
 
 function changePw() {
@@ -831,7 +845,7 @@ function updatePendingList() {
         <span style="color:var(--lbr);font-size:.75rem;margin-left:.5rem">Flat ${r.flat}</span>
       </div>
       <div style="display:flex;align-items:center;gap:.6rem">
-        <span style="font-family:'Playfair Display',serif;font-weight:700;color:var(--or)">₹${parseInt(r.amount||0).toLocaleString('en-IN')}</span>
+        <span style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--or)">₹${parseInt(r.amount||0).toLocaleString('en-IN')}</span>
         <button class="btn-success" onclick="switchTab('contributors')">Verify →</button>
       </div>
     </div>`).join('') + (pending.length > 5 ? `<p style="font-size:.78rem;color:var(--lbr);margin-top:.4rem">+${pending.length-5} more pending…</p>` : '');
@@ -1162,7 +1176,7 @@ function loadManualEntries() {
         <span style="color:var(--lbr);font-size:.72rem;margin-left:.4rem">Flat ${r.flat||'—'}</span>
         <div style="font-size:.68rem;color:#c8a880;margin-top:.1rem">${r.date||'—'} · ${r.method?.split('(')[0]||'Cash'}</div>
       </div>
-      <span style="font-family:'Playfair Display',serif;font-weight:700;color:var(--or)">₹${parseInt(r.amount||0).toLocaleString('en-IN')}</span>
+      <span style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--or)">₹${parseInt(r.amount||0).toLocaleString('en-IN')}</span>
     </div>`).join('');
 }
 
@@ -1220,7 +1234,7 @@ document.addEventListener('DOMContentLoaded', () => {
 const origSwitch = switchTab;
 
 // Auto-check auth on load
-window.addEventListener('DOMContentLoaded', checkAuth);
+// Auth handled by window.addEventListener('load') above
 </script>
 </body>
 </html>

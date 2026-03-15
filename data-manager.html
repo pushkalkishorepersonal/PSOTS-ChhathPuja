@@ -16,13 +16,13 @@
   .login-box{background:var(--white);border-radius:24px;padding:2.5rem 2rem;width:min(400px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.4);text-align:center}
   .login-input{width:100%;padding:.82rem 1rem;border:2px solid #f0d5b8;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1rem;color:var(--ink);background:var(--warm);outline:none;margin-bottom:1rem;text-align:center;letter-spacing:.2em}
   .login-input:focus{border-color:var(--or)}
-  .btn-login{width:100%;background:linear-gradient(135deg,var(--or),#c93800);color:#fff;font-family:'Playfair Display',serif;font-weight:700;font-style:italic;font-size:1.1rem;padding:.9rem;border-radius:12px;border:none;cursor:pointer;box-shadow:0 4px 18px rgba(232,92,0,.4)}
+  .btn-login{width:100%;background:linear-gradient(135deg,var(--or),#c93800);color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-style:italic;font-size:1.1rem;padding:.9rem;border-radius:12px;border:none;cursor:pointer;box-shadow:0 4px 18px rgba(232,92,0,.4)}
   .login-err{color:var(--red);font-size:.82rem;margin-top:.6rem;display:none}
 
   /* ── APP ─── */
   #app{display:none}
   header{background:linear-gradient(135deg,#1a0800,#3d1200);padding:0 1.5rem;height:56px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 12px rgba(0,0,0,.3)}
-  .h-brand{font-family:'Playfair Display',serif;font-size:.95rem;color:var(--gold)}
+  .h-brand{font-family:'DM Sans',sans-serif;font-size:.95rem;color:var(--gold)}
   .h-sub{font-size:.55rem;color:rgba(255,198,0,.4);letter-spacing:.12em;text-transform:uppercase}
   .h-actions{display:flex;gap:.7rem;align-items:center}
   .btn-sm{background:rgba(255,255,255,.1);color:rgba(255,220,120,.7);border:1px solid rgba(255,255,255,.15);border-radius:50px;padding:.3rem .85rem;font-size:.68rem;cursor:pointer;font-family:'DM Sans',sans-serif}
@@ -41,7 +41,7 @@
 
   /* ── CARDS ─── */
   .card{background:var(--white);border-radius:16px;padding:1.5rem;box-shadow:var(--shadow);border:1px solid rgba(200,100,0,.08);margin-bottom:1.3rem}
-  .card-title{font-family:'Playfair Display',serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:.3rem;display:flex;align-items:center;gap:.45rem}
+  .card-title{font-family:'DM Sans',sans-serif;font-size:1.05rem;font-weight:700;color:var(--ink);margin-bottom:.3rem;display:flex;align-items:center;gap:.45rem}
   .card-sub{font-size:.78rem;color:var(--lbr);margin-bottom:1.2rem;line-height:1.55}
 
   /* ── FORM ─── */
@@ -82,13 +82,13 @@
   /* ── RESIDENT LOOKUP ─── */
   .lookup-box{background:linear-gradient(135deg,#fff5e8,#ffe8cc);border:1.5px solid rgba(232,92,0,.22);border-radius:14px;padding:1.2rem 1.4rem;margin-bottom:1.2rem}
   .lb-result{margin-top:.8rem;padding:.7rem .9rem;background:var(--white);border-radius:10px;border:1px solid #f0d5b8;font-size:.86rem;display:none}
-  .lb-result .rname{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--ink)}
+  .lb-result .rname{font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;color:var(--ink)}
   .lb-result .rdetail{color:var(--lbr);font-size:.78rem;margin-top:.15rem}
 
   /* ── STATS BAR ─── */
   .stats-row{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.8rem;margin-bottom:1.4rem}
   .stat{background:var(--white);border-radius:12px;padding:.9rem;border:1px solid rgba(200,100,0,.09);text-align:center}
-  .sv{font-family:'Playfair Display',serif;font-size:1.3rem;font-weight:900;color:var(--or)}
+  .sv{font-family:'DM Sans',sans-serif;font-size:1.3rem;font-weight:900;color:var(--or)}
   .sl{font-size:.62rem;color:var(--lbr);margin-top:.15rem}
 
   /* ── PROGRESS ─── */
@@ -118,7 +118,7 @@
 <div id="loginScreen">
   <div class="login-box">
     <div style="font-size:3rem;margin-bottom:.8rem">🪔</div>
-    <div style="font-family:'Playfair Display',serif;font-size:1.5rem;font-weight:900;color:var(--ink);margin-bottom:.3rem">Data Manager</div>
+    <div style="font-family:'DM Sans',sans-serif;font-size:1.5rem;font-weight:900;color:var(--ink);margin-bottom:.3rem">Data Manager</div>
     <div style="font-size:.82rem;color:var(--lbr);margin-bottom:2rem">PSOTS Chhath 2026 · Historical Import & Resident Directory</div>
     <input class="login-input" type="password" id="pwIn" placeholder="Admin password" onkeydown="if(event.key==='Enter')doLogin()"/>
     <button class="btn-login" onclick="doLogin()">🔐 Login</button>
@@ -286,7 +286,7 @@ Praveen Kumar	2172	5001	8-Oct" rows="10"></textarea>
       <div style="position:relative;margin-bottom:1rem">
         <input type="text" id="flatSearch" placeholder="Type flat number (e.g. 15167 or B-204)…"
           oninput="lookupFlat(this.value)"
-          style="width:100%;padding:.85rem 1rem;border:2px solid #f0d5b8;border-radius:12px;font-family:'Playfair Display',serif;font-size:1.2rem;font-weight:700;color:var(--ink);background:var(--warm);outline:none;transition:border-color .2s"
+          style="width:100%;padding:.85rem 1rem;border:2px solid #f0d5b8;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:1.2rem;font-weight:700;color:var(--ink);background:var(--warm);outline:none;transition:border-color .2s"
           onfocus="this.style.borderColor='var(--or)'" onblur="this.style.borderColor='#f0d5b8'"/>
       </div>
 
@@ -295,14 +295,14 @@ Praveen Kumar	2172	5001	8-Oct" rows="10"></textarea>
         <div style="background:linear-gradient(135deg,#fff5e8,#ffe8cc);border:1.5px solid rgba(232,92,0,.2);border-radius:14px;padding:1.3rem 1.4rem;margin-bottom:1rem">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;flex-wrap:wrap">
             <div>
-              <div style="font-family:'Playfair Display',serif;font-size:1.25rem;font-weight:700;color:var(--ink)" id="lr-name">—</div>
+              <div style="font-family:'DM Sans',sans-serif;font-size:1.25rem;font-weight:700;color:var(--ink)" id="lr-name">—</div>
               <div style="font-size:.8rem;color:var(--lbr);margin-top:.18rem">Flat <span id="lr-flat" style="color:var(--or);font-weight:600">—</span> · <span id="lr-tower">—</span></div>
               <div style="margin-top:.5rem;display:flex;gap:.6rem;flex-wrap:wrap">
                 <span style="font-size:.82rem;color:var(--br)">📱 <span id="lr-mobile">—</span></span>
               </div>
             </div>
             <div style="text-align:right">
-              <div style="font-family:'Playfair Display',serif;font-size:1.4rem;font-weight:900;color:var(--or)" id="lr-total">₹0</div>
+              <div style="font-family:'DM Sans',sans-serif;font-size:1.4rem;font-weight:900;color:var(--or)" id="lr-total">₹0</div>
               <div style="font-size:.65rem;color:var(--lbr)">Total contributed</div>
               <div style="font-size:.72rem;color:var(--lbr);margin-top:.2rem">Last: <span id="lr-last">—</span></div>
             </div>
@@ -533,7 +533,7 @@ function renderPreviewTable() {
       <td style="color:var(--lbr)">${i+1}</td>
       <td style="font-weight:500">${name}</td>
       <td>${flat}</td>
-      <td style="font-family:'Playfair Display',serif;font-weight:700;color:var(--or)">₹${amt.toLocaleString('en-IN')}</td>
+      <td style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--or)">₹${amt.toLocaleString('en-IN')}</td>
       <td style="color:var(--lbr);font-size:.78rem">${date}</td>
       <td style="color:var(--lbr);font-size:.78rem">${mobile}</td>
       <td><span class="tag ${valid?'tag-green':'tag-orange'}">${valid?'✅ OK':'⚠️ Check'}</span></td>
@@ -597,8 +597,8 @@ function renderHistory() {
     const total = rows.reduce((s,r) => s+(r.amount||0), 0);
     return `<div style="margin-bottom:1rem">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
-        <span style="font-family:'Playfair Display',serif;font-weight:700;color:var(--ink)">🪔 ${yr}</span>
-        <span style="font-family:'Playfair Display',serif;font-weight:700;color:var(--or)">₹${total.toLocaleString('en-IN')} · ${rows.length} records</span>
+        <span style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--ink)">🪔 ${yr}</span>
+        <span style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--or)">₹${total.toLocaleString('en-IN')} · ${rows.length} records</span>
       </div>
       <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,rows.length/2)}%"></div></div>
     </div>`;
@@ -661,7 +661,7 @@ function renderResidents(filter = '') {
       <td style="color:var(--or);font-weight:600">${r.flat}</td>
       <td style="font-size:.8rem;color:var(--lbr)">${r.mobile||'—'}</td>
       <td>${r.contributions?.length||'—'}</td>
-      <td style="font-family:'Playfair Display',serif;font-weight:700;color:var(--or)">₹${(r.total||0).toLocaleString('en-IN')}</td>
+      <td style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--or)">₹${(r.total||0).toLocaleString('en-IN')}</td>
       <td>${r.lastYear||'—'}</td>
       <td><button class="btn-sm" style="color:var(--or)" onclick="event.stopPropagation();editResidentRow('${r.flat}')">✏️</button></td>
     </tr>`).join('');
@@ -720,7 +720,7 @@ function lookupFlat(q) {
   document.getElementById('lr-history').innerHTML = h.length ? h.map(c => `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem .8rem;background:var(--warm);border-radius:8px;border:1px solid #f0dfc8;margin-bottom:.38rem;font-size:.82rem">
       <span style="color:var(--lbr)">🪔 ${c.year}</span>
-      <span style="font-family:'Playfair Display',serif;font-weight:700;color:var(--or)">₹${(c.amount||0).toLocaleString('en-IN')}</span>
+      <span style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--or)">₹${(c.amount||0).toLocaleString('en-IN')}</span>
       <span style="font-size:.7rem;color:var(--lbr)">${c.date||'—'}</span>
       <span class="tag tag-green" style="font-size:.6rem">✅ Verified</span>
     </div>`).join('') : '<div style="color:var(--lbr);font-size:.82rem;padding:.5rem 0">No historical contributions found for this flat.</div>';
