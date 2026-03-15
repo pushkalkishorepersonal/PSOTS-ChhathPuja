@@ -423,6 +423,34 @@ Praveen Kumar	2172	5001	8-Oct" rows="10"></textarea>
   </div>
 </div>
 
+<!-- EDIT RECORD MODAL -->
+<div id="editModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;padding:1rem">
+  <div style="background:#fff;border-radius:20px;padding:1.5rem;width:min(480px,96vw);max-height:92vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.3)">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1.2rem">
+      <div style="font-family:'DM Sans',sans-serif;font-weight:700;font-size:1rem;color:var(--ink)">✏️ Edit Contribution Record</div>
+      <button onclick="closeEditModal()" style="background:none;border:none;font-size:1.3rem;cursor:pointer;color:var(--lbr);line-height:1">×</button>
+    </div>
+    <input type="hidden" id="em-idx"/>
+    <div class="fg">
+      <div class="ff"><label>Full Name</label><input type="text" id="em-name" placeholder="Resident name"/></div>
+      <div class="ff"><label>Flat Number</label><input type="text" id="em-flat" placeholder="e.g. 15167"/></div>
+      <div class="ff"><label>Amount (₹)</label><input type="number" id="em-amount" placeholder="e.g. 1001" min="1" step="1"/></div>
+      <div class="ff"><label>Date</label><input type="text" id="em-date" placeholder="e.g. 3-Oct or 03/10/2025"/></div>
+      <div class="ff"><label>Mobile (optional)</label><input type="tel" id="em-mobile" placeholder="10-digit" maxlength="10"/></div>
+      <div class="ff"><label>Year</label>
+        <select id="em-year">
+          <option value="2022">2022</option><option value="2023">2023</option>
+          <option value="2024">2024</option><option value="2025">2025</option><option value="2026">2026</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex;gap:.7rem;margin-top:1rem;flex-wrap:wrap">
+      <button class="btn-primary" onclick="saveEditRecord()" style="flex:1">💾 Save Changes</button>
+      <button class="btn-secondary" onclick="closeEditModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
@@ -509,10 +537,24 @@ function saveResidents(d) { localStorage.setItem('psots_residents', JSON.stringi
    INIT
 ═══════════════════════════════ */
 function initApp() {
+  const fixed = fixDecimalAmounts();
+  if (fixed > 0) toast(`🔧 Auto-fixed ${fixed} decimal amount${fixed>1?'s':''} to whole rupees`, 'success');
   updateStats();
   renderHistory();
   renderTowerSummary();
   setScriptCode();
+}
+
+function fixDecimalAmounts() {
+  const h = getHistory();
+  let count = 0;
+  const cleaned = h.map(r => {
+    const rounded = Math.round(r.amount || 0);
+    if (rounded !== r.amount) { count++; return {...r, amount: rounded}; }
+    return r;
+  });
+  if (count > 0) saveHistory(cleaned);
+  return count;
 }
 
 function updateStats() {
@@ -593,7 +635,7 @@ function renderPreviewTable() {
   const year = document.getElementById('imp-year').value;
   tbody.innerHTML = parsedRows.slice(0, 20).map((r, i) => {
     const vals = parsedHeaders.map(h => r[h] || '');
-    const amt = parseFloat((vals[cm.amount] || '').replace(/[^\d.]/g, '')) || 0;
+    const amt = Math.round(parseFloat((vals[cm.amount] || '').replace(/[^\d.]/g, '')) || 0);
     const name = vals[cm.name] || '—';
     const flat = vals[cm.flat] || '—';
     const date = vals[cm.date] || '—';
@@ -624,7 +666,7 @@ function confirmImport() {
       year,
       name:   vals[cm.name]   || '',
       flat:   vals[cm.flat]   || '',
-      amount: parseFloat((vals[cm.amount] || '').replace(/[^\d.]/g, '')) || 0,
+      amount: Math.round(parseFloat((vals[cm.amount] || '').replace(/[^\d.]/g, '')) || 0),
       date:   vals[cm.date]   || '',
       mobile: cm.mobile >= 0 ? vals[cm.mobile] || '' : '',
       status: '✅ Received',
@@ -661,23 +703,62 @@ function renderHistory() {
   const all = getHistory();
   if (!all.length) {
     document.getElementById('historyView').innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.85rem">No data imported yet.</div>';
-    renderTowerSummary(); // hide tower card
+    renderTowerSummary();
     return;
   }
   const byYear = {};
-  all.forEach(r => (byYear[r.year] = byYear[r.year] || []).push(r));
+  all.forEach((r, i) => (byYear[r.year] = byYear[r.year] || []).push({...r, _idx: i}));
   document.getElementById('historyView').innerHTML = Object.keys(byYear).sort((a,b)=>b-a).map(yr => {
     const rows = byYear[yr];
     const total = rows.reduce((s,r) => s+(r.amount||0), 0);
-    return `<div style="margin-bottom:1rem">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.5rem">
+    const rowsHtml = rows.map(r => `
+      <tr>
+        <td style="color:var(--lbr);font-size:.72rem">${r._idx+1}</td>
+        <td style="font-weight:500;font-size:.82rem">${r.name||'—'}</td>
+        <td style="font-size:.8rem;color:var(--or);font-weight:600">${r.flat||'—'}</td>
+        <td style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--or);font-size:.82rem">₹${(r.amount||0).toLocaleString('en-IN')}</td>
+        <td style="font-size:.75rem;color:var(--lbr)">${r.date||'—'}</td>
+        <td style="font-size:.75rem;color:var(--lbr)">${r.mobile||'—'}</td>
+        <td style="white-space:nowrap">
+          <button onclick="openEditRecord(${r._idx})" style="background:#fff5e8;color:var(--or);border:1px solid rgba(232,92,0,.2);border-radius:7px;padding:.25rem .5rem;font-size:.7rem;cursor:pointer;margin-right:.3rem">✏️ Edit</button>
+          <button onclick="deleteHistoryRecord(${r._idx})" style="background:#fff0f0;color:var(--red);border:1px solid rgba(192,57,43,.2);border-radius:7px;padding:.25rem .5rem;font-size:.7rem;cursor:pointer">🗑</button>
+        </td>
+      </tr>`).join('');
+    return `<div style="margin-bottom:1.2rem">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem;flex-wrap:wrap;gap:.4rem">
         <span style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--ink)">🪔 ${yr}</span>
-        <span style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--or)">₹${total.toLocaleString('en-IN')} · ${rows.length} records</span>
+        <div style="display:flex;align-items:center;gap:.7rem">
+          <span style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--or)">₹${total.toLocaleString('en-IN')} · ${rows.length} records</span>
+          <button onclick="toggleYearRows('yr${yr}')" style="background:var(--warm);color:var(--or);border:1px solid rgba(232,92,0,.2);border-radius:50px;padding:.22rem .65rem;font-size:.68rem;cursor:pointer" id="yrBtn${yr}">▼ Show records</button>
+        </div>
       </div>
       <div class="progress-bar"><div class="progress-fill" style="width:${Math.min(100,rows.length/2)}%"></div></div>
+      <div id="yr${yr}" style="display:none;margin-top:.6rem;overflow-x:auto">
+        <table style="width:100%;border-collapse:collapse;font-size:.8rem">
+          <thead><tr style="background:var(--warm)">
+            <th style="padding:.4rem .6rem;text-align:left;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--lbr)">#</th>
+            <th style="padding:.4rem .6rem;text-align:left;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--lbr)">Name</th>
+            <th style="padding:.4rem .6rem;text-align:left;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--lbr)">Flat</th>
+            <th style="padding:.4rem .6rem;text-align:left;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--lbr)">Amount</th>
+            <th style="padding:.4rem .6rem;text-align:left;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--lbr)">Date</th>
+            <th style="padding:.4rem .6rem;text-align:left;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--lbr)">Mobile</th>
+            <th style="padding:.4rem .6rem;text-align:left;font-size:.6rem;letter-spacing:.08em;text-transform:uppercase;color:var(--lbr)">Actions</th>
+          </tr></thead>
+          <tbody>${rowsHtml}</tbody>
+        </table>
+      </div>
     </div>`;
   }).join('');
   renderTowerSummary();
+}
+
+function toggleYearRows(id) {
+  const el = document.getElementById(id);
+  const yr = id.replace('yr','');
+  const btn = document.getElementById('yrBtn'+yr);
+  const hidden = el.style.display === 'none';
+  el.style.display = hidden ? 'block' : 'none';
+  btn.textContent = hidden ? '▲ Hide records' : '▼ Show records';
 }
 
 function renderTowerSummary() {
@@ -730,6 +811,62 @@ function clearAllData() {
   updateStats(); renderHistory(); renderResidents(); renderAllFlats();
   toast('🗑 All data cleared — ready for fresh import', 'error');
 }
+
+/* ═══════════════════════════════
+   EDIT / DELETE HISTORY RECORDS
+═══════════════════════════════ */
+function openEditRecord(idx) {
+  const h = getHistory();
+  const r = h[idx];
+  if (!r) return;
+  document.getElementById('em-idx').value    = idx;
+  document.getElementById('em-name').value   = r.name   || '';
+  document.getElementById('em-flat').value   = r.flat   || '';
+  document.getElementById('em-amount').value = r.amount || '';
+  document.getElementById('em-date').value   = r.date   || '';
+  document.getElementById('em-mobile').value = r.mobile || '';
+  document.getElementById('em-year').value   = r.year   || 2025;
+  const modal = document.getElementById('editModal');
+  modal.style.display = 'flex';
+}
+
+function closeEditModal() {
+  document.getElementById('editModal').style.display = 'none';
+}
+
+function saveEditRecord() {
+  const idx    = parseInt(document.getElementById('em-idx').value);
+  const name   = document.getElementById('em-name').value.trim();
+  const flat   = document.getElementById('em-flat').value.trim();
+  const amount = Math.round(parseFloat(document.getElementById('em-amount').value) || 0);
+  const date   = document.getElementById('em-date').value.trim();
+  const mobile = document.getElementById('em-mobile').value.trim();
+  const year   = parseInt(document.getElementById('em-year').value);
+  if (!name || !flat || amount < 1) { toast('Name, flat and amount are required', 'error'); return; }
+  const h = getHistory();
+  h[idx] = { ...h[idx], name, flat, amount, date, mobile, year };
+  saveHistory(h);
+  closeEditModal();
+  updateStats(); renderHistory(); renderTowerSummary();
+  buildDirectoryFromHistory(true);
+  toast('✅ Record updated!', 'success');
+}
+
+function deleteHistoryRecord(idx) {
+  const h = getHistory();
+  const r = h[idx];
+  if (!confirm(`Delete this record?\n\n${r.name}  ·  Flat ${r.flat}  ·  ₹${r.amount}  ·  ${r.year}\n\nThis cannot be undone.`)) return;
+  h.splice(idx, 1);
+  saveHistory(h);
+  updateStats(); renderHistory(); renderTowerSummary();
+  buildDirectoryFromHistory(true);
+  toast('🗑 Record deleted', 'error');
+}
+
+// Close modal on backdrop click
+document.getElementById('editModal').addEventListener('click', function(e) {
+  if (e.target === this) closeEditModal();
+});
 
 /* ═══════════════════════════════
    RESIDENT DIRECTORY
