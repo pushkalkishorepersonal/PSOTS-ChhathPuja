@@ -99,14 +99,7 @@ function setupSheets() {
     try { ss.deleteSheet(sheet1); } catch(e) {}
   }
 
-  SpreadsheetApp.getUi().alert(
-    '✅ Setup Complete!\n\n' +
-    'Sheets created:\n' +
-    '• Contributions — stores all payment records\n' +
-    '• Profiles — stores user profiles from portal\n\n' +
-    'Next step: Deploy as Web App\n' +
-    '(Extensions → Apps Script → Deploy → New deployment)'
-  );
+  Logger.log('✅ setupSheets complete — Contributions, Profiles, Finance, Announcements sheets ready.');
 }
 
 /* ══════════════════════════════════════════════════════════
