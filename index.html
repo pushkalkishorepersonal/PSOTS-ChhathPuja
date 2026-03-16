@@ -487,7 +487,28 @@ if(su){
 (function(){
   try {
     const u = JSON.parse(localStorage.getItem('psots_user') || localStorage.getItem('psots_admin_user') || 'null');
-    if (!u || !u.name) return;
+
+    // Show 🔒 badge on gated tiles when NOT signed in
+    if (!u || !u.id) {
+      const gated = ['pages/payment.html','pages/finance.html','pages/contributors.html',
+                     'pages/announcements.html','pages/volunteer.html','pages/faq.html',
+                     'pages/gallery.html','pages/subscribe.html'];
+      document.querySelectorAll('a.tile[href]').forEach(tile => {
+        const href = tile.getAttribute('href');
+        if (gated.some(p => href && href.endsWith(p.replace('pages/','')))) {
+          const badge = document.createElement('div');
+          badge.title = 'Sign in to access';
+          badge.style.cssText = 'position:absolute;top:.55rem;right:.55rem;background:rgba(26,8,0,.55);' +
+            'color:#fff;font-size:.6rem;border-radius:50px;padding:.15rem .45rem;' +
+            'letter-spacing:.03em;pointer-events:none;backdrop-filter:blur(4px)';
+          badge.textContent = '🔒 Sign in';
+          tile.style.position = 'relative';
+          tile.appendChild(badge);
+        }
+      });
+      return;
+    }
+
     const firstName = u.name.split(' ')[0];
     // Update portal tile
     document.getElementById('portalTitle').textContent = 'Welcome, ' + firstName + '!';
