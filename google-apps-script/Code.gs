@@ -161,6 +161,12 @@ function doGet(e) {
     case 'ping':
       result = { ok: true, message: 'PSOTS Backend is running!' };
       break;
+    case 'sendOtp':
+      result = actionSendOtp(e.parameter.email);
+      break;
+    case 'verifyOtp':
+      result = actionVerifyOtp(e.parameter.email, e.parameter.otp);
+      break;
     default:
       result = { error: 'Unknown action: ' + action };
   }
@@ -429,6 +435,63 @@ function actionSaveProfile(body) {
   ]);
 
   return { success: true, created: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Send email OTP (non-Google login fallback)
+══════════════════════════════════════════════════════════ */
+function actionSendOtp(email) {
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, msg: 'Invalid email address' };
+  }
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+  PropertiesService.getScriptProperties().setProperty(
+    'otp_' + email,
+    JSON.stringify({ otp, expiry })
+  );
+  try {
+    MailApp.sendEmail({
+      to: email,
+      subject: 'PSOTS Chhath 2026 — Sign-in Code: ' + otp,
+      htmlBody: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
+        <h2 style="color:#e85c00;margin-bottom:.5rem">🌅 PSOTS Chhath Puja 2026</h2>
+        <p style="color:#333">Your one-time sign-in code for the PSOTS resident portal is:</p>
+        <div style="font-size:2.5rem;font-weight:900;letter-spacing:.3em;color:#e85c00;margin:1.5rem 0;font-family:monospace">${otp}</div>
+        <p style="color:#555">Valid for <strong>10 minutes</strong>. Do not share this code.</p>
+        <hr style="border:none;border-top:1px solid #f0d5b8;margin:1.5rem 0"/>
+        <p style="color:#999;font-size:.8rem">Prestige Song of the South · Bengaluru<br/>If you did not request this, please ignore.</p>
+      </div>`
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, msg: 'Could not send email: ' + err.message };
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Verify email OTP and return profile if exists
+══════════════════════════════════════════════════════════ */
+function actionVerifyOtp(email, code) {
+  if (!email || !code) return { ok: false, msg: 'Email and code are required' };
+  const key = 'otp_' + email;
+  const stored = PropertiesService.getScriptProperties().getProperty(key);
+  if (!stored) return { ok: false, msg: 'Code expired or not found. Please request a new one.' };
+  let parsed;
+  try { parsed = JSON.parse(stored); } catch(e) {
+    return { ok: false, msg: 'Invalid session. Please request a new code.' };
+  }
+  if (Date.now() > parsed.expiry) {
+    PropertiesService.getScriptProperties().deleteProperty(key);
+    return { ok: false, msg: 'Code expired. Please request a new one.' };
+  }
+  if (String(code).trim() !== parsed.otp) {
+    return { ok: false, msg: 'Incorrect code. Please try again.' };
+  }
+  PropertiesService.getScriptProperties().deleteProperty(key);
+  const userId = 'email_' + email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  const profileData = actionGetProfile(userId);
+  return { ok: true, userId, profile: profileData.profile };
 }
 
 /* ══════════════════════════════════════════════════════════
