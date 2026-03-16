@@ -87,6 +87,29 @@
   @media(max-width:680px){.t-sched,.t-fin,.t-portal,.t-wa,.t-contrib,.t-ann{grid-column:span 12}}
   @media(min-width:681px) and (max-width:860px){.t-contrib,.t-ann{grid-column:span 6}}
 
+  /* ── MOBILE HERO FIXES ── */
+  @media(max-width:480px){
+    /* Arghya cards: remove min-width so two cards fit side-by-side without overflowing */
+    .arghya-strip{gap:.45rem;padding:0 .5rem}
+    .ac{min-width:0;flex:1 1 0;max-width:none;padding:.8rem .8rem;gap:.55rem}
+    .ac-time{font-size:1.35rem}
+    .ac-icon{font-size:2rem}
+    .ac-label{font-size:.8rem}
+    .ac-date{font-size:.72rem}
+    /* Countdown: prevent SECS wrapping onto second row */
+    .h-cd{gap:.4rem;padding:0 .4rem;flex-wrap:nowrap}
+    .cdb{min-width:0;flex:1;padding:.6rem .4rem}
+    .cbn{font-size:1.65rem}
+    .cbl{font-size:.65rem}
+    /* Ghat icons: tighter gap so नारियल doesn't get clipped */
+    .h-ghat{gap:clamp(.35rem,1.8vw,1.8rem);padding:0 .4rem}
+  }
+  @media(max-width:360px){
+    .ac{padding:.7rem .65rem}
+    .ac-time{font-size:1.2rem}
+    .cbn{font-size:1.5rem}
+  }
+
   /* PAY TILE */
   .t-pay{background:linear-gradient(135deg,#c94000 0%,#e85c00 38%,#ff8c00 68%,#ffc200 100%);box-shadow:0 8px 40px rgba(201,64,0,.4);min-height:155px}
   .pi{display:grid;grid-template-columns:1fr auto;align-items:center;padding:1.8rem 2rem;gap:1.5rem;height:100%}
@@ -321,15 +344,15 @@
 
     <!-- FINANCE -->
     <a class="tile t-fin" href="pages/finance.html">
-      <div class="fh"><div class="fh-ey">Transparency · पारदर्शिता</div><div class="fh-title">💰 Finance & Budget</div></div>
+      <div class="fh"><div class="fh-ey">Transparency · पारदर्शिता</div><div class="fh-title">💰 Finance 2026</div></div>
       <div class="fg">
-        <div class="fs"><div class="fv">₹2,35,553</div><div class="fl">Collected 2025</div></div>
-        <div class="fs"><div class="fv">₹1,98,383</div><div class="fl">Expenses 2025</div></div>
-        <div class="fs"><div class="fv g">₹1,04,670</div><div class="fl">Carried to 2026 ✅</div></div>
-        <div class="fs"><div class="fv">141</div><div class="fl">Contributors 2025</div></div>
+        <div class="fs"><div class="fv g">₹1,04,670</div><div class="fl">Opening Balance ↑2025</div></div>
+        <div class="fs"><div class="fv" id="tf-collected">—</div><div class="fl">Collected 2026</div></div>
+        <div class="fs"><div class="fv" id="tf-count">—</div><div class="fl">Contributors 2026</div></div>
+        <div class="fs"><div class="fv" id="tf-budget">₹6,00,000</div><div class="fl">Budget 2026</div></div>
       </div>
-      <div class="fb"><div class="fbl"><span>2025 Budget Used</span><span style="color:var(--gold)">65%</span></div><div class="fbt"><div class="fbf" id="tfBar" data-pct="65"></div></div></div>
-      <span class="tad">Full Breakdown →</span>
+      <div class="fb"><div class="fbl"><span>2026 Collection vs Budget</span><span id="tf-pct" style="color:var(--gold)">0%</span></div><div class="fbt"><div class="fbf" id="tfBar" data-pct="0"></div></div></div>
+      <span class="tad">Full Year-wise Breakdown →</span>
     </a>
 
     <!-- CONTRIBUTORS -->
@@ -404,15 +427,32 @@ const ds=document.querySelector('.dashboard');if(ds)ob.observe(ds);
 const su=(window.PSOTS&&window.PSOTS.scriptUrl)||localStorage.getItem('psots_script_url')||'';
 async function loadPrev(){const el=document.getElementById('conPreview'),bd=document.getElementById('conBadge');if(!su||su.includes('YOUR_APPS')){try{const res=await fetch('data/history.json');if(res.ok){const g=await res.json(),h=g.history||[];const y2025=h.filter(r=>r.year===2025).slice(0,4);if(y2025.length>0){bd.textContent=h.filter(r=>r.year===2025).length+'';el.innerHTML=y2025.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat||'-'}</div></div><div class="cra">₹${(c.amount||0).toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');return;}}}catch(e){}}if(!su||su.includes('YOUR_APPS')){const demo=[{name:'Pushkal Kishore',flat:'15167',amount:5001},{name:'Ratnesh Singh',flat:'15165',amount:1100},{name:'Rekha Sinha',flat:'9045',amount:11000}];bd.textContent='demo';el.innerHTML=demo.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat}</div></div><div class="cra">₹${c.amount.toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');return;}try{const r=await fetch(su+'?action=list'),d=await r.json(),l=(d.contributors||[]).slice(0,4);bd.textContent=(d.contributors||[]).length+'';el.innerHTML=l.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat}</div></div><div class="cra">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');}catch(e){el.innerHTML='<div class="crl">Tap to view →</div>';}}
 loadPrev();
-// Load live arghya timings from Google Sheet
-if(su){fetch(su+'?action=getFinance').then(r=>r.json()).then(d=>{const f=d.finance||{};
-  function fmtTime(t){if(!t)return null;const[h,m]=t.split(':');const hr=parseInt(h);return(hr>12?hr-12:hr||12)+':'+(m||'00')+' '+(hr>=12?'PM':'AM');}
-  function fmtDate(d,loc){if(!d)return null;const dt=new Date(d);const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mo[dt.getMonth()]+' '+(dt.getDate())+', '+(dt.getFullYear())+(loc?' · '+loc:'');}
-  if(f.timEveTime){const t=fmtTime(f.timEveTime);if(t){document.getElementById('eve-time').textContent=t;const el=document.getElementById('sch-eve-time');if(el)el.textContent=t+' 🌇';}}
-  if(f.timEveDate||f.timEveLoc){const s=fmtDate(f.timEveDate,f.timEveLoc);if(s)document.getElementById('eve-date').textContent=s;}
-  if(f.timMornTime){const t=fmtTime(f.timMornTime);if(t){document.getElementById('morn-time').textContent=t;const el=document.getElementById('sch-morn-time');if(el)el.textContent=t+' 🌅';}}
-  if(f.timMornDate||f.timMornLoc){const s=fmtDate(f.timMornDate,f.timMornLoc);if(s)document.getElementById('morn-date').textContent=s;}
-}).catch(()=>{});}
+// Load live finance + arghya timings from Google Sheet
+if(su){
+  // Finance tile: 2026 collection progress
+  fetch(su+'?action=list_all').then(r=>r.json()).then(d=>{
+    const rows=(d.all||[]).filter(x=>Number(x.year)===2026);
+    const col=rows.reduce((s,c)=>s+(parseFloat(c.amount)||0),0);
+    const cnt=rows.length;
+    document.getElementById('tf-collected').textContent='₹'+col.toLocaleString('en-IN');
+    document.getElementById('tf-count').textContent=cnt||'0';
+  }).catch(()=>{});
+  fetch(su+'?action=getFinance').then(r=>r.json()).then(d=>{const f=d.finance||{};
+    // Update finance tile budget + progress bar
+    const bgt=f.budget&&Number(f.budget)>0?parseInt(f.budget):600000;
+    document.getElementById('tf-budget').textContent='₹'+bgt.toLocaleString('en-IN');
+    // We'll update pct once collected is known; approximate from collected vs budget
+    // (collected loaded separately above; just set bar to 0 until both resolve)
+    const tfBar=document.getElementById('tfBar');if(tfBar)tfBar.style.width='0%';
+    // Arghya timings
+    function fmtTime(t){if(!t)return null;const[h,m]=t.split(':');const hr=parseInt(h);return(hr>12?hr-12:hr||12)+':'+(m||'00')+' '+(hr>=12?'PM':'AM');}
+    function fmtDate(dd,loc){if(!dd)return null;const dt=new Date(dd);const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mo[dt.getMonth()]+' '+(dt.getDate())+', '+(dt.getFullYear())+(loc?' · '+loc:'');}
+    if(f.timEveTime){const t=fmtTime(f.timEveTime);if(t){document.getElementById('eve-time').textContent=t;const el=document.getElementById('sch-eve-time');if(el)el.textContent=t+' 🌇';}}
+    if(f.timEveDate||f.timEveLoc){const s=fmtDate(f.timEveDate,f.timEveLoc);if(s)document.getElementById('eve-date').textContent=s;}
+    if(f.timMornTime){const t=fmtTime(f.timMornTime);if(t){document.getElementById('morn-time').textContent=t;const el=document.getElementById('sch-morn-time');if(el)el.textContent=t+' 🌅';}}
+    if(f.timMornDate||f.timMornLoc){const s=fmtDate(f.timMornDate,f.timMornLoc);if(s)document.getElementById('morn-date').textContent=s;}
+  }).catch(()=>{});
+}
 // Live Status Banner — shows contextual message on event days
 (function(){
   const now=new Date();const y=now.getFullYear(),m=now.getMonth(),d=now.getDate(),h=now.getHours();
