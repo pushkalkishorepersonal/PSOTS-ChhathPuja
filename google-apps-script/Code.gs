@@ -180,6 +180,9 @@ function doGet(e) {
     case 'getVolunteers':
       result = actionGetVolunteers();
       break;
+    case 'getGalleryPhotos':
+      result = actionGetGalleryPhotos(e.parameter.year, e.parameter.status);
+      break;
     case 'ping':
       result = { ok: true, message: 'PSOTS Backend is running!' };
       break;
@@ -223,6 +226,8 @@ function doPost(e) {
       result = actionVolunteerCheckin(body);
     } else if (body.action === 'uploadPhoto') {
       result = actionUploadPhoto(body);
+    } else if (body.action === 'updateGalleryStatus') {
+      result = actionUpdateGalleryStatus(body);
     } else {
       // Default: new contribution
       result = actionAddContribution(body);
@@ -753,6 +758,55 @@ function actionVolunteerCheckin(body) {
     now
   ]);
   return { success: true, walkin: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Get gallery photos (public GET — only Approved ones by default)
+   Params: year (optional), status (optional, default 'Approved')
+══════════════════════════════════════════════════════════ */
+function actionGetGalleryPhotos(year, status) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_GALLERY);
+  if (!sheet || sheet.getLastRow() < 2) return { photos: [] };
+
+  const filterStatus = status || 'Approved';
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, GAL_HEADERS.length).getValues();
+
+  let photos = data
+    .filter(r => r[7] === filterStatus)                          // Status column
+    .filter(r => !year || String(r[3]) === String(year))         // Year filter (optional)
+    .filter(r => r[6] && !String(r[6]).startsWith('Drive upload failed')) // must have valid url
+    .map(r => ({
+      ts:      String(r[0]),
+      name:    String(r[1]),
+      flat:    String(r[2]),
+      year:    String(r[3]),
+      moment:  String(r[4]),
+      caption: String(r[5]),
+      url:     String(r[6]),
+      status:  String(r[7])
+    }));
+
+  // Newest first
+  photos.reverse();
+  return { photos };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Update gallery photo status (admin POST)
+   Body: { driveUrl, newStatus } where newStatus is 'Approved' | 'Rejected'
+══════════════════════════════════════════════════════════ */
+function actionUpdateGalleryStatus(body) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_GALLERY);
+  if (!sheet || sheet.getLastRow() < 2) return { error: 'No gallery submissions' };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, GAL_HEADERS.length).getValues();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][6]) === String(body.driveUrl)) {
+      sheet.getRange(i + 2, 8).setValue(body.newStatus);
+      return { success: true };
+    }
+  }
+  return { error: 'Photo not found' };
 }
 
 /* ══════════════════════════════════════════════════════════

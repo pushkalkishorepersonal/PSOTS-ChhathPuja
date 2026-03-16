@@ -191,12 +191,15 @@ const GALLERY_DATA = {
   }
 };
 
-function showYear(year, btn) {
+const _galCache = {};
+
+async function showYear(year, btn) {
   document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
   btn.classList.add('active');
   const d = GALLERY_DATA[year];
   const el = document.getElementById('yearContent');
 
+  // Render stats + caption immediately
   el.innerHTML = `
     <div class="year-stats">
       <div class="year-stat">👥 <strong>${d.stats.contributors}</strong> Contributors</div>
@@ -205,12 +208,49 @@ function showYear(year, btn) {
     </div>
     <p style="font-size:.88rem;color:var(--br);line-height:1.6;margin-bottom:1.5rem">${d.caption}</p>
     <div class="gallery-grid" id="galleryGrid">
-      ${d.photos.length > 0 ? d.photos.map((p,i) => `
+      ${d.photos.length > 0 ? d.photos.map(p => `
         <div class="gallery-item" onclick="openLightbox('${p.url}')">
           <img src="${p.url}" alt="${p.caption || 'Chhath Puja ' + year}" loading="lazy"/>
-        </div>
-      `).join('') : generatePlaceholders(year)}
+        </div>`).join('') : `<div style="grid-column:1/-1;text-align:center;padding:1.5rem;color:var(--lbr);font-size:.82rem">Loading photos…</div>`}
     </div>`;
+
+  // Fetch approved community photos from backend (cache per year)
+  const su = (window.PSOTS && window.PSOTS.scriptUrl) || '';
+  if (!su || su.includes('YOUR_APPS')) {
+    if (d.photos.length === 0) document.getElementById('galleryGrid').innerHTML = generatePlaceholders(year);
+    return;
+  }
+  if (_galCache[year] !== undefined) {
+    _renderApprovedPhotos(year, d, _galCache[year]);
+    return;
+  }
+  try {
+    const res = await fetch(`${su}?action=getGalleryPhotos&year=${year}&status=Approved`);
+    const data = await res.json();
+    _galCache[year] = data.photos || [];
+  } catch(e) {
+    _galCache[year] = [];
+  }
+  _renderApprovedPhotos(year, d, _galCache[year]);
+}
+
+function _renderApprovedPhotos(year, d, community) {
+  const grid = document.getElementById('galleryGrid');
+  if (!grid) return;
+  const staticPhotos = d.photos.map(p => `
+    <div class="gallery-item" onclick="openLightbox('${p.url}')">
+      <img src="${p.url}" alt="${p.caption || 'Chhath Puja ' + year}" loading="lazy"/>
+    </div>`).join('');
+  const communityPhotos = community.map(p => `
+    <div class="gallery-item" onclick="openLightbox('${p.url}')">
+      <img src="${p.url}" alt="${p.caption || p.moment + ' ' + p.year}" loading="lazy"/>
+      <div style="position:absolute;bottom:0;left:0;right:0;padding:.4rem .6rem;background:linear-gradient(transparent,rgba(0,0,0,.65));font-size:.65rem;color:#fff;line-height:1.3">
+        ${p.caption ? `<div>${p.caption}</div>` : ''}
+        <div style="opacity:.75">${p.name} · ${p.moment}</div>
+      </div>
+    </div>`).join('');
+  const combined = staticPhotos + communityPhotos;
+  grid.innerHTML = combined || generatePlaceholders(year);
 }
 
 function generatePlaceholders(year) {
@@ -247,7 +287,7 @@ function closeLightbox() {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
 // Load default year
-showYear(2025, document.querySelector('.year-tab.active'));
+showYear(2025, document.querySelector('.year-tab.active')).catch(() => {});
 
 // ── PHOTO UPLOAD ─────────────────────────────────────────
 let selectedImageBase64 = null;

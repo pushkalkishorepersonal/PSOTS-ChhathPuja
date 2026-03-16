@@ -220,6 +220,7 @@
     <button class="tab-btn" onclick="switchTab('volunteers')">🤝 Volunteers</button>
     <button class="tab-btn" onclick="switchTab('settings')">⚙️ Settings</button>
     <button class="tab-btn" onclick="switchTab('directory')">👥 Directory</button>
+    <button class="tab-btn" onclick="switchTab('gallery')">📸 Gallery</button>
     <a href="data-manager.html" class="tab-btn" style="text-decoration:none">📥 Import CSV</a>
   </div>
 
@@ -636,6 +637,38 @@
       <div id="dirCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.8rem"></div>
       <div id="dirEmpty" style="display:none;text-align:center;padding:2rem;color:var(--lbr);font-size:.85rem">
         No residents found. <a href="data-manager.html" style="color:var(--or)">Import historical data first →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ GALLERY REVIEW TAB ═══ -->
+  <div class="tab-panel" id="tab-gallery">
+    <div class="admin-card">
+      <div class="ac-title">📸 Gallery Photo Review</div>
+      <div class="ac-sub">Review photos submitted by residents and volunteers. Approve photos to make them visible in the gallery, or reject to hide them.</div>
+
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center">
+        <select id="galStatusFilter" onchange="loadGallerySubmissions()" style="padding:.45rem .85rem;border:1.5px solid #f0d5b8;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;background:var(--warm)">
+          <option value="Pending Review">⏳ Pending Review</option>
+          <option value="Approved">✅ Approved</option>
+          <option value="Rejected">❌ Rejected</option>
+        </select>
+        <select id="galYearFilter" onchange="loadGallerySubmissions()" style="padding:.45rem .85rem;border:1.5px solid #f0d5b8;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;background:var(--warm)">
+          <option value="">All Years</option>
+          <option value="2026">2026</option>
+          <option value="2025">2025</option>
+          <option value="2024">2024</option>
+          <option value="2023">2023</option>
+          <option value="2022">2022</option>
+        </select>
+        <button class="btn-primary" onclick="loadGallerySubmissions()" style="padding:.45rem 1rem;font-size:.8rem">🔄 Refresh</button>
+        <span id="galCount" style="font-size:.8rem;color:var(--lbr);margin-left:auto"></span>
+      </div>
+
+      <div id="galGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem">
+        <div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--lbr);font-size:.85rem">
+          Select a filter and click Refresh to load submissions.
+        </div>
       </div>
     </div>
   </div>
@@ -2053,6 +2086,93 @@ function checkDueReminders(reminders) {
 
 // Auto-check auth on load
 // Auth handled by window.addEventListener('load') above
+
+/* ═══════════════════════════════════════════════════
+   GALLERY PHOTO REVIEW
+═══════════════════════════════════════════════════ */
+let galSubmissions = [];
+
+async function loadGallerySubmissions() {
+  const url = getScriptUrl();
+  if (!url || url.includes('YOUR_APPS')) {
+    document.getElementById('galGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--lbr);font-size:.85rem">Please configure the Apps Script URL in Settings first.</div>';
+    return;
+  }
+  const status = document.getElementById('galStatusFilter').value;
+  const year   = document.getElementById('galYearFilter').value;
+  document.getElementById('galGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--lbr);font-size:.85rem">Loading…</div>';
+  try {
+    let apiUrl = `${url}?action=getGalleryPhotos&status=${encodeURIComponent(status)}`;
+    if (year) apiUrl += `&year=${encodeURIComponent(year)}`;
+    const data = await fetch(apiUrl).then(r => r.json());
+    galSubmissions = data.photos || [];
+    renderGalGrid();
+  } catch(e) {
+    document.getElementById('galGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:#c0392b;font-size:.85rem">Failed to load — check script URL and permissions.</div>';
+  }
+}
+
+function renderGalGrid() {
+  const grid = document.getElementById('galGrid');
+  document.getElementById('galCount').textContent = `${galSubmissions.length} photo${galSubmissions.length !== 1 ? 's' : ''}`;
+  if (!galSubmissions.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--lbr);font-size:.85rem">No submissions in this category.</div>';
+    return;
+  }
+  grid.innerHTML = galSubmissions.map((p, i) => {
+    const thumbUrl = p.url.includes('drive.google.com/uc') ? p.url + '&sz=w300' : p.url;
+    const statusColor = p.status === 'Approved' ? '#2e7d32' : p.status === 'Rejected' ? '#c0392b' : '#b08060';
+    const approveBtn = p.status !== 'Approved'
+      ? `<button onclick="updateGalStatus(${i},'Approved')" style="flex:1;padding:.38rem;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:7px;font-size:.72rem;font-weight:600;color:#2e7d32;cursor:pointer">✅ Approve</button>`
+      : '';
+    const rejectBtn = p.status !== 'Rejected'
+      ? `<button onclick="updateGalStatus(${i},'Rejected')" style="flex:1;padding:.38rem;background:#fdecea;border:1.5px solid #ef9a9a;border-radius:7px;font-size:.72rem;font-weight:600;color:#c0392b;cursor:pointer">❌ Reject</button>`
+      : '';
+    return `
+      <div id="galCard${i}" style="border:1.5px solid #f0d5b8;border-radius:14px;overflow:hidden;background:var(--warm)">
+        <div style="height:160px;background:#1a0800;display:flex;align-items:center;justify-content:center;overflow:hidden">
+          <img src="${thumbUrl}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+            loading="lazy" alt="${p.moment}"/>
+          <div style="display:none;flex-direction:column;align-items:center;gap:.4rem;color:#c8a880;font-size:.78rem">
+            <span style="font-size:1.4rem">📷</span>No preview
+            <a href="${p.url}" target="_blank" style="color:var(--or);font-size:.7rem">Open in Drive →</a>
+          </div>
+        </div>
+        <div style="padding:.75rem">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.35rem">
+            <div style="font-weight:700;font-size:.84rem;color:var(--ink)">${p.moment}</div>
+            <span style="font-size:.66rem;font-weight:600;color:${statusColor};background:${statusColor}18;border-radius:50px;padding:.1rem .5rem">${p.status}</span>
+          </div>
+          <div style="font-size:.75rem;color:var(--br);margin-bottom:.1rem">📅 ${p.year} &nbsp;·&nbsp; 👤 ${p.name} &nbsp;·&nbsp; 🏠 ${p.flat}</div>
+          ${p.caption ? `<div style="font-size:.73rem;color:var(--lbr);font-style:italic;margin:.3rem 0">"${p.caption}"</div>` : ''}
+          <div style="font-size:.65rem;color:#c8a880;margin-bottom:.55rem">${p.ts}</div>
+          <div style="display:flex;gap:.4rem">
+            <a href="${p.url}" target="_blank" style="flex:1;padding:.38rem;background:#fff8f0;border:1.5px solid #f0d5b8;border-radius:7px;font-size:.72rem;font-weight:600;color:var(--or);cursor:pointer;text-align:center;text-decoration:none">🔗 Open</a>
+            ${approveBtn}${rejectBtn}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function updateGalStatus(idx, newStatus) {
+  const p = galSubmissions[idx];
+  if (!p) return;
+  const url = getScriptUrl();
+  if (!url || url.includes('YOUR_APPS')) return;
+  try {
+    await fetch(url, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'updateGalleryStatus', driveUrl: p.url, newStatus })
+    });
+    galSubmissions[idx].status = newStatus;
+    renderGalGrid();
+    toast(`${newStatus === 'Approved' ? '✅ Photo approved!' : '❌ Photo rejected.'}`, newStatus === 'Approved' ? 'success' : '');
+  } catch(e) {
+    toast('Update failed', 'error');
+  }
+}
 </script>
 </body>
 </html>
