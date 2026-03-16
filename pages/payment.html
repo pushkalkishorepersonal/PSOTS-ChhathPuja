@@ -302,10 +302,17 @@ let currentUser=null,userProfile={},lastSubmit={};
 window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('f-date').valueAsDate=new Date();
   initLayout();
-  const pref=localStorage.getItem('psots_pref_app');if(pref)markPrefApp(pref);
   const u=localStorage.getItem('psots_user');
-  if(u){currentUser=JSON.parse(u);const p=localStorage.getItem('psots_profile_'+currentUser.id);if(p)userProfile=JSON.parse(p);loadUserMode();}
-  else setMode('guest');
+  if(u){
+    currentUser=JSON.parse(u);
+    const p=localStorage.getItem('psots_profile_'+currentUser.id);if(p)userProfile=JSON.parse(p);
+    loadUserMode();
+    // Prefer account-level pref, fall back to device-local
+    const pref=userProfile.prefApp||localStorage.getItem('psots_pref_app');if(pref)markPrefApp(pref);
+  } else {
+    setMode('guest');
+    const pref=localStorage.getItem('psots_pref_app');if(pref)markPrefApp(pref);
+  }
 });
 
 // Device-adaptive layout: mobile → app buttons primary; desktop → QR primary
@@ -421,7 +428,20 @@ function markPrefApp(appKey){
 function handleAppLink(el,appKey){
   const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if(!isMobile){toast('📱 Open this page on your phone to use app links');return false;}
-  if(appKey){localStorage.setItem('psots_pref_app',appKey);markPrefApp(appKey);}
+  if(appKey){
+    if(currentUser){
+      // Save to account profile — syncs cross-device via portal
+      userProfile.prefApp=appKey;
+      localStorage.setItem('psots_profile_'+currentUser.id,JSON.stringify(userProfile));
+      if(C.scriptUrl&&!C.scriptUrl.includes('YOUR_APPS')){
+        fetch(C.scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveProfile',...userProfile,userId:currentUser.id})}).catch(()=>{});
+      }
+    } else {
+      // Guest: device-local only
+      localStorage.setItem('psots_pref_app',appKey);
+    }
+    markPrefApp(appKey);
+  }
   return true;
 }
 
