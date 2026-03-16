@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>FAQ & Info — PSOTS Chhath 2026</title>
+  <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:ital,wght@0,700;0,900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script src="../config.js"></script>
+  <script src="../js/auth-gate.js"></script>
+  <style>
+  .faq-section { margin-bottom: 1.8rem; }
+  .faq-section-title {
+    font-family: 'Yatra One', serif;
+    font-size: .8rem; letter-spacing: .12em; text-transform: uppercase;
+    color: var(--or); margin-bottom: .75rem; padding-left: .2rem;
+    display: flex; align-items: center; gap: .5rem;
+  }
+  .faq-item {
+    background: #fff; border-radius: 14px; margin-bottom: .6rem;
+    border: 1px solid rgba(200,100,0,.1); overflow: hidden;
+    box-shadow: 0 2px 10px rgba(26,8,0,.06);
+  }
+  .faq-q {
+    width: 100%; background: none; border: none; cursor: pointer;
+    padding: 1rem 1.2rem; display: flex; align-items: center;
+    justify-content: space-between; gap: .8rem;
+    text-align: left; font-family: 'DM Sans', sans-serif;
+    font-size: .92rem; font-weight: 600; color: var(--ink);
+    transition: background .2s;
+  }
+  .faq-q:hover { background: rgba(232,92,0,.04); }
+  .faq-q.open { color: var(--or); }
+  .faq-chevron {
+    flex-shrink: 0; font-size: .75rem; color: var(--or);
+    transition: transform .25s; display: inline-block;
+  }
+  .faq-q.open .faq-chevron { transform: rotate(180deg); }
+  .faq-a {
+    display: none; padding: 0 1.2rem 1rem; font-size: .88rem;
+    color: var(--br); line-height: 1.7; border-top: 1px solid rgba(200,100,0,.1);
+  }
+  .faq-a.open { display: block; }
+  .faq-a p { margin-bottom: .5rem; }
+  .faq-a p:last-child { margin-bottom: 0; }
+  .faq-a ul { padding-left: 1.2rem; margin-top: .3rem; }
+  .faq-a ul li { margin-bottom: .3rem; }
+  .badge-safe { display: inline-block; background: #e8f5e9; color: #2e7d32; border-radius: 50px; padding: .15rem .65rem; font-size: .74rem; font-weight: 600; }
+  .badge-info { display: inline-block; background: #fff3e0; color: var(--or); border-radius: 50px; padding: .15rem .65rem; font-size: .74rem; font-weight: 600; }
+  .info-banner {
+    background: linear-gradient(135deg, #fff5e8, #ffe8d0);
+    border: 1.5px solid rgba(232,92,0,.2); border-radius: 14px;
+    padding: 1rem 1.2rem; margin-bottom: 1.2rem;
+    display: flex; gap: .9rem; align-items: flex-start;
+  }
+  .info-banner-icon { font-size: 1.8rem; flex-shrink: 0; }
+  .info-banner-text { font-size: .85rem; color: var(--br); line-height: 1.6; }
+  .info-banner-text strong { color: var(--ink); }
+  .contact-row {
+    display: flex; gap: .7rem; flex-wrap: wrap; margin-top: .8rem;
+  }
+  .contact-row a { text-decoration: none; }
+  </style>
+</head>
+<body>
+<nav class="page-nav">
+  <a class="page-nav-back" href="../index.html"><span class="page-nav-back-icon">←</span> Home</a>
+  <div class="page-nav-title">❓ FAQ & Info</div>
+  <div></div>
+</nav>
+
+<div class="page-hero">
+  <span class="ph-icon">❓</span>
+  <div class="ph-title">Frequently Asked Questions</div>
+  <div class="ph-sub">Answers for PSOTS residents · Chhath Puja 2026</div>
+</div>
+
+<div class="page-content">
+
+  <!-- ── QUICK GLANCE CARD ── -->
+  <div style="background:linear-gradient(135deg,#1a0800,#3d1200);border-radius:16px;padding:1.2rem 1.4rem;margin-bottom:1.4rem;color:#fff;box-shadow:0 4px 20px rgba(0,0,0,.2)">
+    <div style="font-family:'Yatra One',serif;font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:.9rem">🗓 Chhath Puja 2026 — Quick Reference</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.65rem">
+      <div style="background:rgba(255,255,255,.07);border-radius:10px;padding:.65rem .8rem">
+        <div style="font-size:.65rem;color:rgba(255,210,100,.7);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.2rem">Day 1 · Nov 1</div>
+        <div style="font-weight:700;font-size:.82rem">Nahay Khay</div>
+        <div style="font-size:.72rem;color:rgba(255,255,255,.65);margin-top:.1rem">नहाय खाय · Home</div>
+      </div>
+      <div style="background:rgba(255,255,255,.07);border-radius:10px;padding:.65rem .8rem">
+        <div style="font-size:.65rem;color:rgba(255,210,100,.7);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.2rem">Day 2 · Nov 2</div>
+        <div style="font-weight:700;font-size:.82rem">Kharna · 7:00 PM</div>
+        <div style="font-size:.72rem;color:rgba(255,255,255,.65);margin-top:.1rem">खरना · Community Hall</div>
+      </div>
+      <div style="background:rgba(232,92,0,.2);border:1px solid rgba(232,92,0,.4);border-radius:10px;padding:.65rem .8rem">
+        <div style="font-size:.65rem;color:rgba(255,210,100,.7);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.2rem">Day 3 · Nov 3 ⭐</div>
+        <div style="font-weight:700;font-size:.82rem">Sandhya Arghya · 5:45 PM</div>
+        <div style="font-size:.72rem;color:rgba(255,255,255,.65);margin-top:.1rem">संध्या अर्घ्य · Society Ghat</div>
+      </div>
+      <div style="background:rgba(255,194,0,.12);border:1px solid rgba(255,194,0,.25);border-radius:10px;padding:.65rem .8rem">
+        <div style="font-size:.65rem;color:rgba(255,210,100,.7);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.2rem">Day 4 · Nov 4 ⭐</div>
+        <div style="font-weight:700;font-size:.82rem">Usha Arghya · 6:15 AM</div>
+        <div style="font-size:.72rem;color:rgba(255,255,255,.65);margin-top:.1rem">उषा अर्घ्य · Society Ghat</div>
+      </div>
+    </div>
+    <div style="margin-top:.9rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center">
+      <span style="font-size:.75rem;color:rgba(255,255,255,.6)">📍 Venue: PSOTS Society Ghat &amp; Community Hall</span>
+      <a href="schedule.html" style="margin-left:auto;font-size:.72rem;color:var(--gold);text-decoration:none;font-weight:600">Full schedule →</a>
+    </div>
+  </div>
+
+  <div class="info-banner">
+    <div class="info-banner-icon">🙏</div>
+    <div class="info-banner-text">
+      <strong>Can't find your answer?</strong><br/>
+      Reach out to the committee on WhatsApp — we're happy to help you directly.
+      <div class="contact-row">
+        <a href="https://wa.me/919482088904"><button class="btn-primary" style="font-size:.8rem;padding:.5rem 1rem">💬 WhatsApp Pushkal</button></a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── ABOUT CHHATH PUJA ── -->
+  <div class="faq-section">
+    <div class="faq-section-title">🌅 What is Chhath Puja?</div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        What is Chhath Puja and why is it celebrated? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>Chhath Puja is one of the most ancient and sacred Vedic festivals of India, dedicated to <strong>Surya Dev (Sun God)</strong> and <strong>Chhathi Maiya</strong> — the goddess of life energy and fertility.</p>
+        <p>Unlike most Hindu festivals, Chhath has no idol worship. It is a direct offering to nature — to the sun and water — expressing gratitude for sustaining life on earth. Devotees pray for the well-being of their family, protection of children, recovery from illness, and fulfilment of heartfelt wishes.</p>
+        <p>It is observed primarily by communities from Bihar, Jharkhand, and Eastern Uttar Pradesh. PSOTS has celebrated Chhath since 2022, and 2026 marks our <strong>Panch Varsh Mahotsav (5th year)</strong>.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        What happens on each of the four days? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p><strong>Day 1 — Nahay Khay (नहाय खाय)</strong><br/>
+        Devotees (Vratis) take a purifying bath, wear clean clothes, and eat a simple sattvic meal — usually chana dal, lauki, and rice. The house is cleaned thoroughly. From this day, the Vrati observes strict purity.</p>
+
+        <p><strong>Day 2 — Kharna (खरना)</strong><br/>
+        A complete fast all day — no food, no water. In the evening the Vrati prepares खीर (rice kheer with jaggery) and रोटी as an offering to Surya Dev. After prayer, this prasad is distributed to family and neighbours. A 36-hour waterless fast then begins.</p>
+
+        <p><strong>Day 3 — Sandhya Arghya (संध्या अर्घ्य) ⭐</strong><br/>
+        The most significant moment — the Vrati stands in water at the ghat and offers Arghya (water + fruits + thekua) to the <em>setting</em> sun. The ghat fills with bamboo baskets (सूप), fruits, sugarcane, and diyas. Bhajans are sung by all.</p>
+
+        <p><strong>Day 4 — Usha Arghya (उषा अर्घ्य) ⭐</strong><br/>
+        Before dawn, the Vrati returns to the ghat and offers Arghya to the <em>rising</em> sun. After this final offering, the fast is broken and prasad — especially ठेकुआ — is distributed to everyone present.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        What is Thekua? What prasad will be offered? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p><strong>ठेकुआ (Thekua)</strong> is the most sacred prasad of Chhath — a crisp, sweet biscuit made from wheat flour, jaggery, and ghee, shaped by hand and fried. It is offered to Surya Dev and then distributed. Receiving thekua is considered auspicious.</p>
+        <p>Other offerings placed in the सूप (bamboo basket) include fresh fruits (banana, sugarcane, coconut, citrus), kheer, ginger root, turmeric, and diyas. All are prepared with complete purity — no tasting before offering, no non-vegetarian food in the household during these four days.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        Is Chhath Puja only for residents from Bihar / UP / Jharkhand? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>Not at all. <strong>All PSOTS residents</strong> regardless of state or religion are warmly invited to attend, witness, and accept prasad. Chhath is a festival of gratitude to the sun and nature — its blessings are for everyone.</p>
+        <p>Coming to the ghat and offering your respect is a way to be part of something deeply meaningful, and we are glad to share it with the entire PSOTS community.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── FIRST-TIME VISITORS ── -->
+  <div class="faq-section">
+    <div class="faq-section-title">👋 First Time at the Ghat?</div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        Where exactly is the Society Ghat? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>The Ghat is set up at the designated water body within the PSOTS society premises. The committee decorates it with lights, sugarcane, and diyas — it will be clearly visible. Look for announcements on WhatsApp for exact directions if you are unsure.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        What should I wear to the ghat? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>There is no strict dress code, but please dress modestly and respectfully — this is a sacred ritual space. Comfortable traditional wear (saree, kurta, salwar) is always appreciated. Avoid revealing clothing.</p>
+        <p>If you plan to stand in the water alongside Vratis, wear clothing you don't mind getting wet.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        Can I bring my children to the ghat? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>Yes, children are very welcome — Chhath is a family festival. Please keep young children supervised near the water. Children may accept prasad with both hands and participate in the bhajans.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        What should visitors keep in mind at the ghat? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>Chhath Puja is a deeply sacred and disciplined Puja. As a visitor or well-wisher, please be mindful:</p>
+        <ul>
+          <li><strong>Maintain silence and calm</strong> — avoid loud talking or laughter during Arghya</li>
+          <li><strong>No alcohol or non-vegetarian food</strong> in or near the ghat area</li>
+          <li><strong>Do not touch</strong> the offerings, baskets (सूप), or prasad without permission</li>
+          <li><strong>No smoking</strong> anywhere near the ghat</li>
+          <li><strong>Do not disturb Vratis</strong> — they are in a state of deep fasting and prayer</li>
+          <li><strong>Silence phone ringers</strong> during Arghya moments</li>
+          <li>You are warmly welcome to join the bhajans and accept prasad with both hands</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        Is food or refreshments arranged at the event? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>On <strong>Kharna evening (Nov 2)</strong>, community prasad (kheer + roti) is served at the Community Hall at 7:00 PM — open to all residents.</p>
+        <p>On <strong>Usha Arghya morning (Nov 4)</strong>, Thekua and other prasad is distributed at the ghat after the sunrise offering — this is a blessed moment and everyone is encouraged to be present.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PARTICIPATION ── -->
+  <div class="faq-section">
+    <div class="faq-section-title">🪔 Participation & Registration</div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        Who can participate in Chhath Puja? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>All residents of <strong>Prestige Song of the South (PSOTS)</strong> are welcome to participate — whether you are a Vrati (devotee observing the fast) or simply want to be part of the Puja as a family.</p>
+        <p>Non-Hindu residents are also warmly invited to witness and support this sacred festival.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        How do I register as a Vrati? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>Login to the <a href="../portal.html" style="color:var(--or)">Resident Portal</a>, go to your <strong>Profile</strong> tab, and mark yourself as a Vrati. This helps the committee plan ghat space, prasad quantities, and provide personalised support.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        Can I volunteer for the event? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>Yes! We welcome volunteers for ghat setup, prasad distribution, logistics, decoration, and more. Visit the <a href="volunteer.html" style="color:var(--or)">Volunteer Page</a> to register your interest and preferred tasks.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── CONTRIBUTIONS ── -->
+  <div class="faq-section">
+    <div class="faq-section-title">💰 Contributions & Payments</div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        How do I make a contribution? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>Go to the <a href="payment.html" style="color:var(--or)">Contribute Page</a>. You can pay via UPI (GPay, PhonePe, Paytm, BHIM) or cash. After paying, fill in the contribution form so the committee can verify and record it.</p>
+        <p>Cash payments can be handed directly to any committee member.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        Is there a minimum contribution amount? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>There is no minimum or maximum — contribute any amount you are comfortable with. Every contribution, big or small, is valued and goes entirely toward the Puja.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        My payment shows "Pending Verification" — is that normal? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>Yes, completely normal. After you submit the form, the committee manually checks the UPI transaction. This usually takes <strong>24–48 hours</strong>. Once verified, the status changes to <strong>Received/Verified</strong> and your name appears on the contributors list.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        Where does the collected money go? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>All funds go toward the Chhath Puja expenses, including:</p>
+        <ul>
+          <li>Ghat decoration, tent & lighting setup</li>
+          <li>Kharna community dinner</li>
+          <li>Thekua & prasad for all residents</li>
+          <li>Cultural programme (5th year special)</li>
+          <li>Miscellaneous logistics & supplies</li>
+        </ul>
+        <p>A full finance breakdown is published on the <a href="finance.html" style="color:var(--or)">Finance Page</a> for complete transparency.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        Can I see where last year's money was spent? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>Yes. The <a href="finance.html" style="color:var(--or)">Finance Page</a> shows year-wise expense breakdowns from 2022 to present. In 2025, ₹1,98,383 was collected from 141 families and every rupee is accounted for.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── DATA & PRIVACY ── -->
+  <div class="faq-section">
+    <div class="faq-section-title">🔒 Data Privacy & Security</div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        Is my personal data safe? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p><span class="badge-safe">✓ Safe for community use</span></p>
+        <p>Your data is stored securely on <strong>Google's servers</strong> with HTTPS encryption on all connections. We use the same infrastructure as Google Forms / Google Sheets — a standard used by millions of community organisations.</p>
+        <p>Only committee admins can access your full profile (name, flat, mobile). The public contributor list shows only name, flat, and amount.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        What data does this website collect about me? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>When you create a profile, we collect:</p>
+        <ul>
+          <li>Name, flat/unit number</li>
+          <li>WhatsApp mobile number</li>
+          <li>Email address (from Google login)</li>
+          <li>Vrati status (yes/no)</li>
+          <li>Contribution details (amount, payment method, date)</li>
+        </ul>
+        <p>We do <strong>not</strong> collect bank details, UPI PIN, payment credentials, or any other sensitive financial data.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        Who can see my mobile number and email? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>Only <strong>committee admins</strong> can see your mobile number and email. The public-facing contributors list and homepage never display your contact details.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        Can I delete my account and data? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>Yes. Login to the <a href="../portal.html" style="color:var(--or)">Resident Portal</a>, go to the <strong>Profile</strong> tab, and use the <em>Delete My Data</em> option. This removes your profile information from our records.</p>
+        <p>Contribution records may be retained anonymously for financial auditing purposes.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        Why do you need my Google login? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>Google login (OAuth) lets you sign in securely without creating a new password. <strong>We never see or store your Google password.</strong> Google handles the authentication and only shares your name, email, and profile photo with us — nothing else.</p>
+        <p>Don't have a Google account? You can also sign in using an <strong>Email OTP</strong> instead.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        Is my payment information stored on this website? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p><strong>No.</strong> All payments happen directly through your UPI app (GPay, PhonePe, etc.). This website only records the amount, date, and payment method you self-report in the contribution form — never your UPI PIN, bank account, or card details.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── PORTAL & APP ── -->
+  <div class="faq-section">
+    <div class="faq-section-title">📱 Portal & App</div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        Do I need to install an app? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>No installation needed. The website works on any smartphone browser. You can <strong>"Add to Home Screen"</strong> from your browser menu for an app-like experience on both Android and iPhone.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        I forgot my login / can't sign in. What do I do? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>If you use <strong>Google login</strong>, use the same Google account you registered with. If you use <strong>Email OTP</strong>, enter your email and request a fresh OTP — no password is needed.</p>
+        <p>Still stuck? Contact the committee on WhatsApp and we'll help you.</p>
+      </div>
+    </div>
+
+    <div class="faq-item">
+      <button class="faq-q" onclick="toggle(this)">
+        How do I get WhatsApp updates from the committee? <span class="faq-chevron">▼</span>
+      </button>
+      <div class="faq-a">
+        <p>Subscribe from the <a href="subscribe.html" style="color:var(--or)">Subscribe Page</a> or directly from your portal profile. Once subscribed, you'll receive announcements, reminders, and event updates on WhatsApp.</p>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- CTA -->
+  <div class="card" style="text-align:center;margin-top:.5rem">
+    <div class="card-title" style="justify-content:center">Still have questions?</div>
+    <p style="font-size:.88rem;color:var(--br);margin-bottom:1.2rem">The committee is just a message away on WhatsApp.</p>
+    <div style="display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap">
+      <a href="https://wa.me/919482088904" style="text-decoration:none"><button class="btn-primary">💬 WhatsApp Us</button></a>
+      <a href="../portal.html" style="text-decoration:none"><button class="btn-secondary">🪔 My Portal</button></a>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function toggle(btn) {
+  const answer = btn.nextElementSibling;
+  const isOpen = answer.classList.contains('open');
+  // close all
+  document.querySelectorAll('.faq-a.open').forEach(a => a.classList.remove('open'));
+  document.querySelectorAll('.faq-q.open').forEach(q => q.classList.remove('open'));
+  if (!isOpen) {
+    answer.classList.add('open');
+    btn.classList.add('open');
+  }
+}
+</script>
+</body>
+</html>

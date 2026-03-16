@@ -380,6 +380,14 @@
       <span style="display:inline-flex;align-items:center;gap:.4rem;font-size:.68rem;font-weight:600;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;border-top:1px solid rgba(255,194,0,.1);padding-top:.6rem">Sign Up & RSVP →</span>
     </a>
 
+    <!-- FAQ -->
+    <a class="tile" href="pages/faq.html" style="padding:1.4rem;background:linear-gradient(135deg,#fff8f0,#fdf0e0);border:1px solid rgba(200,100,0,.12)">
+      <div style="font-size:2rem;margin-bottom:.5rem">❓</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:1.02rem;font-weight:700;color:var(--ink);margin-bottom:.3rem">FAQ & Info</div>
+      <div style="font-size:.78rem;color:var(--lbr);line-height:1.5;margin-bottom:.8rem">Contributions, data privacy, event info — answers to common questions from residents.</div>
+      <span style="font-size:.68rem;font-weight:600;color:var(--or);letter-spacing:.06em;text-transform:uppercase">Read FAQ →</span>
+    </a>
+
     <!-- GALLERY -->
     <a class="tile t-gallery" href="pages/gallery.html" style="padding:1.4rem">
       <div style="font-size:2rem;margin-bottom:.5rem">📸</div>
@@ -479,7 +487,28 @@ if(su){
 (function(){
   try {
     const u = JSON.parse(localStorage.getItem('psots_user') || localStorage.getItem('psots_admin_user') || 'null');
-    if (!u || !u.name) return;
+
+    // Show 🔒 badge on gated tiles when NOT signed in
+    if (!u || !u.id) {
+      const gated = ['pages/payment.html','pages/finance.html','pages/contributors.html',
+                     'pages/announcements.html','pages/volunteer.html','pages/faq.html',
+                     'pages/gallery.html','pages/subscribe.html'];
+      document.querySelectorAll('a.tile[href]').forEach(tile => {
+        const href = tile.getAttribute('href');
+        if (gated.some(p => href && href.endsWith(p.replace('pages/','')))) {
+          const badge = document.createElement('div');
+          badge.title = 'Sign in to access';
+          badge.style.cssText = 'position:absolute;top:.55rem;right:.55rem;background:rgba(26,8,0,.55);' +
+            'color:#fff;font-size:.6rem;border-radius:50px;padding:.15rem .45rem;' +
+            'letter-spacing:.03em;pointer-events:none;backdrop-filter:blur(4px)';
+          badge.textContent = '🔒 Sign in';
+          tile.style.position = 'relative';
+          tile.appendChild(badge);
+        }
+      });
+      return;
+    }
+
     const firstName = u.name.split(' ')[0];
     // Update portal tile
     document.getElementById('portalTitle').textContent = 'Welcome, ' + firstName + '!';

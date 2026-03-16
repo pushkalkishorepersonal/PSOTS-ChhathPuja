@@ -244,10 +244,10 @@
   <div class="login-box">
     <span class="login-icon">🌅</span>
     <div class="login-title">My PSOTS Portal</div>
-    <div class="login-sub">Sign in to view your contributions, manage notifications and connect with the committee.</div>
+    <div id="loginSub" class="login-sub">Sign in to view your contributions, manage notifications and connect with the committee.</div>
     <div class="login-society">Prestige Song of the South · Chhath 2026</div>
 
-    <div class="login-benefits">
+    <div id="loginBenefits" class="login-benefits">
       <div class="lb-title">What you get access to</div>
       <div class="lb-item"><span class="lb-icon">📊</span>Your contribution history — all years in one place</div>
       <div class="lb-item"><span class="lb-icon">📲</span>Manage your WhatsApp update preferences</div>
@@ -258,6 +258,34 @@
 
     <!-- Google Sign-In button rendered here -->
     <div id="googleBtnWrap"></div>
+
+    <div class="login-divider">or sign in with email OTP</div>
+    <div id="otpSection">
+      <div id="otpStep1">
+        <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
+          <input type="email" id="otpEmail" placeholder="your@email.com"
+            style="flex:1;border:1.5px solid #f0d5b8;border-radius:10px;padding:.65rem .9rem;font-size:.92rem;font-family:'DM Sans',sans-serif;outline:none;color:var(--ink)"/>
+          <button onclick="sendOtp()" id="sendOtpBtn"
+            style="background:linear-gradient(135deg,var(--or),#c93800);color:#fff;border:none;border-radius:10px;padding:.65rem 1rem;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif">
+            Send OTP
+          </button>
+        </div>
+        <p class="login-note">A 6-digit code will be sent to your email — no Google account needed.</p>
+      </div>
+      <div id="otpStep2" style="display:none">
+        <p style="font-size:.82rem;color:#6b3a18;margin-bottom:.6rem">Enter the 6-digit code sent to <strong id="otpEmailShown"></strong></p>
+        <div style="display:flex;gap:.5rem;margin-bottom:.5rem">
+          <input type="number" id="otpCode" placeholder="000000" maxlength="6" inputmode="numeric"
+            style="flex:1;border:1.5px solid #f0d5b8;border-radius:10px;padding:.65rem .9rem;font-size:1.3rem;font-weight:700;letter-spacing:.25em;font-family:'DM Sans',sans-serif;outline:none;-moz-appearance:textfield;text-align:center"/>
+          <button onclick="verifyOtp()" id="verifyOtpBtn"
+            style="background:linear-gradient(135deg,var(--or),#c93800);color:#fff;border:none;border-radius:10px;padding:.65rem 1rem;font-size:.82rem;font-weight:700;cursor:pointer;white-space:nowrap;font-family:'DM Sans',sans-serif">
+            Verify
+          </button>
+        </div>
+        <button onclick="resendOtp()" style="background:none;border:none;color:var(--or);font-size:.78rem;cursor:pointer;padding:0;font-family:'DM Sans',sans-serif">↩ Send a new code</button>
+      </div>
+      <p id="otpErr" style="display:none;font-size:.8rem;color:#c03000;margin-top:.45rem"></p>
+    </div>
 
     <div class="login-divider">or continue as guest</div>
     <button class="btn-ghost" style="width:100%;justify-content:center" onclick="guestMode()">
@@ -558,6 +586,14 @@ const C = {
 ═══════════════════════════════════════════════════ */
 let currentUser = null;
 
+// Hide onboarding info for returning users on the login screen
+if (localStorage.getItem('psots_returning')) {
+  const b = document.getElementById('loginBenefits');
+  const s = document.getElementById('loginSub');
+  if (b) b.style.display = 'none';
+  if (s) s.textContent = 'Welcome back! Sign in to continue.';
+}
+
 window.addEventListener('load', () => {
   if (C.googleClientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
     // Demo mode — no real Google client ID yet
@@ -613,6 +649,7 @@ function handleGoogleLogin(response) {
     loginTime: Date.now(),
   };
   localStorage.setItem('psots_user', JSON.stringify(currentUser));
+  localStorage.setItem('psots_returning', '1');
   redirectIfAdmin() || showPortal();
 }
 
@@ -627,12 +664,93 @@ function demoLogin() {
     isDemo: true,
   };
   localStorage.setItem('psots_user', JSON.stringify(currentUser));
+  localStorage.setItem('psots_returning', '1');
   showPortal();
   toast('👋 Demo mode — set up Google Client ID for real login', '');
 }
 
 function guestMode() {
   window.location.href = 'index.html#payment';
+}
+
+/* ── Email OTP login ── */
+async function sendOtp() {
+  const email = document.getElementById('otpEmail').value.trim();
+  document.getElementById('otpErr').style.display = 'none';
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showOtpErr('Please enter a valid email address'); return;
+  }
+  if (C.scriptUrl.includes('YOUR_APPS_SCRIPT')) {
+    showOtpErr('Email login not configured yet. Please use Google sign-in or contact the admin.'); return;
+  }
+  const btn = document.getElementById('sendOtpBtn');
+  btn.disabled = true; btn.textContent = 'Sending…';
+  try {
+    const res = await fetch(`${C.scriptUrl}?action=sendOtp&email=${encodeURIComponent(email)}`);
+    const data = await res.json();
+    if (data.ok) {
+      document.getElementById('otpStep1').style.display = 'none';
+      document.getElementById('otpStep2').style.display = 'block';
+      document.getElementById('otpEmailShown').textContent = email;
+    } else {
+      showOtpErr(data.msg || 'Failed to send code. Try again.');
+      btn.disabled = false; btn.textContent = 'Send OTP';
+    }
+  } catch(e) {
+    showOtpErr('Network error. Please try again.');
+    btn.disabled = false; btn.textContent = 'Send OTP';
+  }
+}
+
+async function verifyOtp() {
+  const email = document.getElementById('otpEmail').value.trim();
+  const otp = document.getElementById('otpCode').value.trim();
+  document.getElementById('otpErr').style.display = 'none';
+  if (!/^\d{6}$/.test(otp)) { showOtpErr('Enter the 6-digit code from your email'); return; }
+  const btn = document.getElementById('verifyOtpBtn');
+  btn.disabled = true; btn.textContent = 'Verifying…';
+  try {
+    const res = await fetch(`${C.scriptUrl}?action=verifyOtp&email=${encodeURIComponent(email)}&otp=${encodeURIComponent(otp)}`);
+    const data = await res.json();
+    if (data.ok) {
+      currentUser = {
+        id: data.userId,
+        name: data.profile?.name || email.split('@')[0],
+        email: email,
+        picture: null,
+        provider: 'email',
+        loginTime: Date.now(),
+      };
+      localStorage.setItem('psots_user', JSON.stringify(currentUser));
+      localStorage.setItem('psots_returning', '1');
+      if (data.profile) {
+        userProfile = data.profile;
+        localStorage.setItem('psots_profile_' + currentUser.id, JSON.stringify(userProfile));
+      }
+      redirectIfAdmin() || showPortal();
+    } else {
+      showOtpErr(data.msg || 'Incorrect code. Please try again.');
+      btn.disabled = false; btn.textContent = 'Verify';
+    }
+  } catch(e) {
+    showOtpErr('Network error. Please try again.');
+    btn.disabled = false; btn.textContent = 'Verify';
+  }
+}
+
+function showOtpErr(msg) {
+  const el = document.getElementById('otpErr');
+  el.textContent = '⚠️ ' + msg;
+  el.style.display = 'block';
+}
+
+function resendOtp() {
+  document.getElementById('otpStep1').style.display = 'block';
+  document.getElementById('otpStep2').style.display = 'none';
+  document.getElementById('otpErr').style.display = 'none';
+  const btn = document.getElementById('sendOtpBtn');
+  btn.disabled = false; btn.textContent = 'Send OTP';
+  document.getElementById('otpCode').value = '';
 }
 
 function signOut() {

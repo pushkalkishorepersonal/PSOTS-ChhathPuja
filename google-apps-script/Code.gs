@@ -18,6 +18,7 @@ const SHEET_PROFILES      = 'Profiles';
 const SHEET_FINANCE       = 'Finance';
 const SHEET_ANNOUNCEMENTS = 'Announcements';
 const SHEET_VOLUNTEERS    = 'Volunteers';
+const SHEET_GALLERY       = 'GallerySubmissions';
 
 // ─── Column headers ───
 const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','Date','Status','AccountType','UserID','Year'];
@@ -25,6 +26,7 @@ const PROF_HEADERS = ['UserID','Name','Email','Flat','Mobile','IsVrati','Photo',
 const FIN_HEADERS  = ['Key','Value'];
 const ANN_HEADERS  = ['Tag','Meta','Text'];
 const VOL_HEADERS  = ['Timestamp','Name','Flat','Mobile','Days','Tasks','AssignedTask','Status','Note','CheckedIn','CheckinTime'];
+const GAL_HEADERS  = ['Timestamp','Name','Flat','Year','Moment','Caption','DriveUrl','Status'];
 
 /* ══════════════════════════════════════════════════════════
    INITIAL SETUP — Run this ONCE
@@ -115,13 +117,33 @@ function setupSheets() {
     vol.setColumnWidth(8, 110); // Status
   }
 
+  // Create Gallery Submissions sheet
+  let gal = ss.getSheetByName(SHEET_GALLERY);
+  if (!gal) {
+    gal = ss.insertSheet(SHEET_GALLERY);
+    gal.appendRow(GAL_HEADERS);
+    gal.getRange(1, 1, 1, GAL_HEADERS.length)
+       .setFontWeight('bold')
+       .setBackground('#5C3299')
+       .setFontColor('#FFFFFF');
+    gal.setFrozenRows(1);
+    gal.setColumnWidth(1, 160); // Timestamp
+    gal.setColumnWidth(2, 160); // Name
+    gal.setColumnWidth(3, 80);  // Flat
+    gal.setColumnWidth(4, 60);  // Year
+    gal.setColumnWidth(5, 160); // Moment
+    gal.setColumnWidth(6, 220); // Caption
+    gal.setColumnWidth(7, 280); // DriveUrl
+    gal.setColumnWidth(8, 120); // Status
+  }
+
   // Remove default Sheet1 if it exists and is empty
   const sheet1 = ss.getSheetByName('Sheet1');
   if (sheet1 && sheet1.getLastRow() <= 1) {
     try { ss.deleteSheet(sheet1); } catch(e) {}
   }
 
-  Logger.log('✅ setupSheets complete — Contributions, Profiles, Finance, Announcements sheets ready.');
+  Logger.log('✅ setupSheets complete — Contributions, Profiles, Finance, Announcements, Volunteers, GallerySubmissions sheets ready.');
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -158,8 +180,17 @@ function doGet(e) {
     case 'getVolunteers':
       result = actionGetVolunteers();
       break;
+    case 'getGalleryPhotos':
+      result = actionGetGalleryPhotos(e.parameter.year, e.parameter.status);
+      break;
     case 'ping':
       result = { ok: true, message: 'PSOTS Backend is running!' };
+      break;
+    case 'sendOtp':
+      result = actionSendOtp(e.parameter.email);
+      break;
+    case 'verifyOtp':
+      result = actionVerifyOtp(e.parameter.email, e.parameter.otp);
       break;
     default:
       result = { error: 'Unknown action: ' + action };
@@ -193,6 +224,10 @@ function doPost(e) {
       result = actionSaveVolunteers(body.data || []);
     } else if (body.action === 'volunteerCheckin') {
       result = actionVolunteerCheckin(body);
+    } else if (body.action === 'uploadPhoto') {
+      result = actionUploadPhoto(body);
+    } else if (body.action === 'updateGalleryStatus') {
+      result = actionUpdateGalleryStatus(body);
     } else {
       // Default: new contribution
       result = actionAddContribution(body);
@@ -432,6 +467,63 @@ function actionSaveProfile(body) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   ACTION: Send email OTP (non-Google login fallback)
+══════════════════════════════════════════════════════════ */
+function actionSendOtp(email) {
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, msg: 'Invalid email address' };
+  }
+  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
+  PropertiesService.getScriptProperties().setProperty(
+    'otp_' + email,
+    JSON.stringify({ otp, expiry })
+  );
+  try {
+    MailApp.sendEmail({
+      to: email,
+      subject: 'PSOTS Chhath 2026 — Sign-in Code: ' + otp,
+      htmlBody: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
+        <h2 style="color:#e85c00;margin-bottom:.5rem">🌅 PSOTS Chhath Puja 2026</h2>
+        <p style="color:#333">Your one-time sign-in code for the PSOTS resident portal is:</p>
+        <div style="font-size:2.5rem;font-weight:900;letter-spacing:.3em;color:#e85c00;margin:1.5rem 0;font-family:monospace">${otp}</div>
+        <p style="color:#555">Valid for <strong>10 minutes</strong>. Do not share this code.</p>
+        <hr style="border:none;border-top:1px solid #f0d5b8;margin:1.5rem 0"/>
+        <p style="color:#999;font-size:.8rem">Prestige Song of the South · Bengaluru<br/>If you did not request this, please ignore.</p>
+      </div>`
+    });
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, msg: 'Could not send email: ' + err.message };
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Verify email OTP and return profile if exists
+══════════════════════════════════════════════════════════ */
+function actionVerifyOtp(email, code) {
+  if (!email || !code) return { ok: false, msg: 'Email and code are required' };
+  const key = 'otp_' + email;
+  const stored = PropertiesService.getScriptProperties().getProperty(key);
+  if (!stored) return { ok: false, msg: 'Code expired or not found. Please request a new one.' };
+  let parsed;
+  try { parsed = JSON.parse(stored); } catch(e) {
+    return { ok: false, msg: 'Invalid session. Please request a new code.' };
+  }
+  if (Date.now() > parsed.expiry) {
+    PropertiesService.getScriptProperties().deleteProperty(key);
+    return { ok: false, msg: 'Code expired. Please request a new one.' };
+  }
+  if (String(code).trim() !== parsed.otp) {
+    return { ok: false, msg: 'Incorrect code. Please try again.' };
+  }
+  PropertiesService.getScriptProperties().deleteProperty(key);
+  const userId = 'email_' + email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  const profileData = actionGetProfile(userId);
+  return { ok: true, userId, profile: profileData.profile };
+}
+
+/* ══════════════════════════════════════════════════════════
    ACTION: Get WhatsApp opt-in subscribers (admin GET)
 ══════════════════════════════════════════════════════════ */
 function actionGetWaSubscribers() {
@@ -666,6 +758,105 @@ function actionVolunteerCheckin(body) {
     now
   ]);
   return { success: true, walkin: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Get gallery photos (public GET — only Approved ones by default)
+   Params: year (optional), status (optional, default 'Approved')
+══════════════════════════════════════════════════════════ */
+function actionGetGalleryPhotos(year, status) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_GALLERY);
+  if (!sheet || sheet.getLastRow() < 2) return { photos: [] };
+
+  const filterStatus = status || 'Approved';
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, GAL_HEADERS.length).getValues();
+
+  let photos = data
+    .filter(r => r[7] === filterStatus)                          // Status column
+    .filter(r => !year || String(r[3]) === String(year))         // Year filter (optional)
+    .filter(r => r[6] && !String(r[6]).startsWith('Drive upload failed')) // must have valid url
+    .map(r => ({
+      ts:      String(r[0]),
+      name:    String(r[1]),
+      flat:    String(r[2]),
+      year:    String(r[3]),
+      moment:  String(r[4]),
+      caption: String(r[5]),
+      url:     String(r[6]),
+      status:  String(r[7])
+    }));
+
+  // Newest first
+  photos.reverse();
+  return { photos };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Update gallery photo status (admin POST)
+   Body: { driveUrl, newStatus } where newStatus is 'Approved' | 'Rejected'
+══════════════════════════════════════════════════════════ */
+function actionUpdateGalleryStatus(body) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_GALLERY);
+  if (!sheet || sheet.getLastRow() < 2) return { error: 'No gallery submissions' };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, GAL_HEADERS.length).getValues();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][6]) === String(body.driveUrl)) {
+      sheet.getRange(i + 2, 8).setValue(body.newStatus);
+      return { success: true };
+    }
+  }
+  return { error: 'Photo not found' };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Upload photo to Drive + log to GallerySubmissions
+   Body fields: imageBase64, year, moment, name, flat, caption
+══════════════════════════════════════════════════════════ */
+function actionUploadPhoto(body) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_GALLERY);
+  if (!sheet) return { error: 'GallerySubmissions sheet not found. Run setupSheets() first.' };
+
+  const { imageBase64, year, moment, name, flat, caption } = body;
+  if (!imageBase64) return { error: 'No image data received' };
+  if (!name || !flat) return { error: 'Name and flat number are required' };
+
+  let driveUrl = '';
+  try {
+    // Strip data URL prefix and decode base64
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    const blob = Utilities.newBlob(
+      Utilities.base64Decode(base64Data),
+      'image/jpeg',
+      `${year || 'unknown'}_${moment || 'photo'}_${flat}_${Date.now()}.jpg`
+    );
+
+    // Find or create the gallery folder in Drive
+    const folderName = 'PSOTS Gallery Photos';
+    let folder;
+    const folderIter = DriveApp.getFoldersByName(folderName);
+    folder = folderIter.hasNext() ? folderIter.next() : DriveApp.createFolder(folderName);
+
+    // Create year sub-folder
+    const yearName = String(year || 'misc');
+    let yearFolder;
+    const yearIter = folder.getFoldersByName(yearName);
+    yearFolder = yearIter.hasNext() ? yearIter.next() : folder.createFolder(yearName);
+
+    // Save file
+    const file = yearFolder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    driveUrl = `https://drive.google.com/uc?id=${file.getId()}`;
+  } catch (err) {
+    // Log the submission even if Drive upload fails, for manual follow-up
+    driveUrl = 'Drive upload failed: ' + err.message;
+  }
+
+  const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+  const status = body.adminUpload === true ? 'Approved' : 'Pending Review';
+  sheet.appendRow([now, name, flat, year || '', moment || '', caption || '', driveUrl, status]);
+
+  return { success: true, driveUrl, status, message: body.adminUpload ? 'Photo published to gallery!' : 'Photo submitted for review!' };
 }
 
 /* ══════════════════════════════════════════════════════════

@@ -220,6 +220,7 @@
     <button class="tab-btn" onclick="switchTab('volunteers')">🤝 Volunteers</button>
     <button class="tab-btn" onclick="switchTab('settings')">⚙️ Settings</button>
     <button class="tab-btn" onclick="switchTab('directory')">👥 Directory</button>
+    <button class="tab-btn" onclick="switchTab('gallery')">📸 Gallery</button>
     <a href="data-manager.html" class="tab-btn" style="text-decoration:none">📥 Import CSV</a>
   </div>
 
@@ -636,6 +637,96 @@
       <div id="dirCards" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:.8rem"></div>
       <div id="dirEmpty" style="display:none;text-align:center;padding:2rem;color:var(--lbr);font-size:.85rem">
         No residents found. <a href="data-manager.html" style="color:var(--or)">Import historical data first →</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ GALLERY REVIEW TAB ═══ -->
+  <div class="tab-panel" id="tab-gallery">
+
+    <!-- Admin Upload -->
+    <div class="admin-card" style="margin-bottom:1rem">
+      <div class="ac-title">⬆️ Admin Upload <span style="font-size:.62rem;background:#e8f5e9;color:#2e7d32;border-radius:50px;padding:.1rem .5rem;margin-left:.35rem;font-weight:600">Auto-Approved</span></div>
+      <div class="ac-sub">Upload photos directly — they go straight to the gallery without needing review. Compress + organise with year, moment and caption.</div>
+
+      <div id="admDropZone" onclick="document.getElementById('admPhotoFile').click()"
+        style="border:2px dashed #f0d5b8;border-radius:12px;padding:1.4rem 1rem;text-align:center;cursor:pointer;transition:border-color .2s;background:var(--warm);margin-bottom:.9rem">
+        <input type="file" id="admPhotoFile" accept="image/*" multiple style="display:none" onchange="admOnFilesSelected(this)"/>
+        <div id="admDropHint">
+          <div style="font-size:1.8rem;margin-bottom:.3rem">📷</div>
+          <div style="font-weight:600;font-size:.85rem;color:var(--ink)">Click to select photos (or drag &amp; drop)</div>
+          <div style="font-size:.72rem;color:#c8a880;margin-top:.2rem">Multiple files supported · JPG/PNG/HEIC · Max 15 MB each</div>
+        </div>
+        <div id="admPreviewStrip" style="display:none;display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem">
+        <div>
+          <label style="font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b08060;margin-bottom:.25rem;display:block">📅 Year</label>
+          <select id="adm-year" style="width:100%;padding:.6rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;background:var(--warm);outline:none">
+            <option value="2026">2026 (This Year)</option>
+            <option value="2025" selected>2025</option>
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b08060;margin-bottom:.25rem;display:block">🎬 Moment</label>
+          <select id="adm-moment" style="width:100%;padding:.6rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;background:var(--warm);outline:none">
+            <option value="Sandhya Arghya">🌅 Sandhya Arghya (Sunset)</option>
+            <option value="Usha Arghya">🌄 Usha Arghya (Sunrise)</option>
+            <option value="Kharna Dinner">🍚 Kharna Dinner</option>
+            <option value="Thekua Making">🍪 Thekua Making</option>
+            <option value="Ghat Decoration">🎨 Ghat Setup & Decoration</option>
+            <option value="Nahay Khay">🛁 Nahay Khay</option>
+            <option value="Cultural Programme">🎤 Cultural Programme</option>
+            <option value="Community Gathering">👥 Community Gathering</option>
+            <option value="Other">📸 Other</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:.9rem">
+        <label style="font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b08060;margin-bottom:.25rem;display:block">📝 Caption <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#c8a880">(optional — applies to all photos in this batch)</span></label>
+        <input type="text" id="adm-caption" placeholder="e.g. Sunset Arghya at Society Ghat — 2025" style="width:100%;padding:.6rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;background:var(--warm);outline:none"/>
+      </div>
+
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <button id="admUploadBtn" onclick="admUploadAll()" class="btn-primary" style="flex:1" disabled>
+          ⬆️ Upload to Gallery
+        </button>
+        <div id="admUploadProgress" style="font-size:.78rem;color:var(--lbr);min-width:80px;text-align:right"></div>
+      </div>
+      <div id="admUploadDone" style="display:none;margin-top:.8rem;background:#f0fff4;border:1.5px solid #a5d6a7;border-radius:10px;padding:.8rem 1rem;font-size:.82rem;color:#2e7d32;font-weight:600;text-align:center"></div>
+    </div>
+
+    <!-- Review Submissions -->
+    <div class="admin-card">
+      <div class="ac-title">📋 Resident Submissions</div>
+      <div class="ac-sub">Review photos submitted by residents and volunteers. Approve to publish in the gallery or reject to hide.</div>
+
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center">
+        <select id="galStatusFilter" onchange="loadGallerySubmissions()" style="padding:.45rem .85rem;border:1.5px solid #f0d5b8;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;background:var(--warm)">
+          <option value="Pending Review">⏳ Pending Review</option>
+          <option value="Approved">✅ Approved</option>
+          <option value="Rejected">❌ Rejected</option>
+        </select>
+        <select id="galYearFilter" onchange="loadGallerySubmissions()" style="padding:.45rem .85rem;border:1.5px solid #f0d5b8;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;background:var(--warm)">
+          <option value="">All Years</option>
+          <option value="2026">2026</option>
+          <option value="2025">2025</option>
+          <option value="2024">2024</option>
+          <option value="2023">2023</option>
+          <option value="2022">2022</option>
+        </select>
+        <button class="btn-primary" onclick="loadGallerySubmissions()" style="padding:.45rem 1rem;font-size:.8rem">🔄 Refresh</button>
+        <span id="galCount" style="font-size:.8rem;color:var(--lbr);margin-left:auto"></span>
+      </div>
+
+      <div id="galGrid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1rem">
+        <div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--lbr);font-size:.85rem">
+          Select a filter and click Refresh to load submissions.
+        </div>
       </div>
     </div>
   </div>
@@ -2053,6 +2144,231 @@ function checkDueReminders(reminders) {
 
 // Auto-check auth on load
 // Auth handled by window.addEventListener('load') above
+
+/* ═══════════════════════════════════════════════════
+   GALLERY PHOTO REVIEW
+═══════════════════════════════════════════════════ */
+let galSubmissions = [];
+
+async function loadGallerySubmissions() {
+  const url = getScriptUrl();
+  if (!url || url.includes('YOUR_APPS')) {
+    document.getElementById('galGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--lbr);font-size:.85rem">Please configure the Apps Script URL in Settings first.</div>';
+    return;
+  }
+  const status = document.getElementById('galStatusFilter').value;
+  const year   = document.getElementById('galYearFilter').value;
+  document.getElementById('galGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--lbr);font-size:.85rem">Loading…</div>';
+  try {
+    let apiUrl = `${url}?action=getGalleryPhotos&status=${encodeURIComponent(status)}`;
+    if (year) apiUrl += `&year=${encodeURIComponent(year)}`;
+    const data = await fetch(apiUrl).then(r => r.json());
+    galSubmissions = data.photos || [];
+    renderGalGrid();
+  } catch(e) {
+    document.getElementById('galGrid').innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:#c0392b;font-size:.85rem">Failed to load — check script URL and permissions.</div>';
+  }
+}
+
+function renderGalGrid() {
+  const grid = document.getElementById('galGrid');
+  document.getElementById('galCount').textContent = `${galSubmissions.length} photo${galSubmissions.length !== 1 ? 's' : ''}`;
+  if (!galSubmissions.length) {
+    grid.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:2rem;color:var(--lbr);font-size:.85rem">No submissions in this category.</div>';
+    return;
+  }
+  grid.innerHTML = galSubmissions.map((p, i) => {
+    const thumbUrl = p.url.includes('drive.google.com/uc') ? p.url + '&sz=w300' : p.url;
+    const statusColor = p.status === 'Approved' ? '#2e7d32' : p.status === 'Rejected' ? '#c0392b' : '#b08060';
+    const approveBtn = p.status !== 'Approved'
+      ? `<button onclick="updateGalStatus(${i},'Approved')" style="flex:1;padding:.38rem;background:#e8f5e9;border:1.5px solid #a5d6a7;border-radius:7px;font-size:.72rem;font-weight:600;color:#2e7d32;cursor:pointer">✅ Approve</button>`
+      : '';
+    const rejectBtn = p.status !== 'Rejected'
+      ? `<button onclick="updateGalStatus(${i},'Rejected')" style="flex:1;padding:.38rem;background:#fdecea;border:1.5px solid #ef9a9a;border-radius:7px;font-size:.72rem;font-weight:600;color:#c0392b;cursor:pointer">❌ Reject</button>`
+      : '';
+    return `
+      <div id="galCard${i}" style="border:1.5px solid #f0d5b8;border-radius:14px;overflow:hidden;background:var(--warm)">
+        <div style="height:160px;background:#1a0800;display:flex;align-items:center;justify-content:center;overflow:hidden">
+          <img src="${thumbUrl}" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none';this.nextElementSibling.style.display='flex'"
+            loading="lazy" alt="${p.moment}"/>
+          <div style="display:none;flex-direction:column;align-items:center;gap:.4rem;color:#c8a880;font-size:.78rem">
+            <span style="font-size:1.4rem">📷</span>No preview
+            <a href="${p.url}" target="_blank" style="color:var(--or);font-size:.7rem">Open in Drive →</a>
+          </div>
+        </div>
+        <div style="padding:.75rem">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.35rem">
+            <div style="font-weight:700;font-size:.84rem;color:var(--ink)">${p.moment}</div>
+            <span style="font-size:.66rem;font-weight:600;color:${statusColor};background:${statusColor}18;border-radius:50px;padding:.1rem .5rem">${p.status}</span>
+          </div>
+          <div style="font-size:.75rem;color:var(--br);margin-bottom:.1rem">📅 ${p.year} &nbsp;·&nbsp; 👤 ${p.name} &nbsp;·&nbsp; 🏠 ${p.flat}</div>
+          ${p.caption ? `<div style="font-size:.73rem;color:var(--lbr);font-style:italic;margin:.3rem 0">"${p.caption}"</div>` : ''}
+          <div style="font-size:.65rem;color:#c8a880;margin-bottom:.55rem">${p.ts}</div>
+          <div style="display:flex;gap:.4rem">
+            <a href="${p.url}" target="_blank" style="flex:1;padding:.38rem;background:#fff8f0;border:1.5px solid #f0d5b8;border-radius:7px;font-size:.72rem;font-weight:600;color:var(--or);cursor:pointer;text-align:center;text-decoration:none">🔗 Open</a>
+            ${approveBtn}${rejectBtn}
+          </div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function updateGalStatus(idx, newStatus) {
+  const p = galSubmissions[idx];
+  if (!p) return;
+  const url = getScriptUrl();
+  if (!url || url.includes('YOUR_APPS')) return;
+  try {
+    await fetch(url, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'updateGalleryStatus', driveUrl: p.url, newStatus })
+    });
+    galSubmissions[idx].status = newStatus;
+    renderGalGrid();
+    toast(`${newStatus === 'Approved' ? '✅ Photo approved!' : '❌ Photo rejected.'}`, newStatus === 'Approved' ? 'success' : '');
+  } catch(e) {
+    toast('Update failed', 'error');
+  }
+}
+
+/* ═══════════════════════════════════════════════════
+   ADMIN PHOTO UPLOAD (auto-approved)
+═══════════════════════════════════════════════════ */
+let admQueue = []; // array of { file, base64 }
+
+// Drag-and-drop on admin drop zone
+(function() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const dz = document.getElementById('admDropZone');
+    if (!dz) return;
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.borderColor = 'var(--or)'; });
+    dz.addEventListener('dragleave', () => { dz.style.borderColor = '#f0d5b8'; });
+    dz.addEventListener('drop', e => {
+      e.preventDefault(); dz.style.borderColor = '#f0d5b8';
+      const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+      if (files.length) admAddFiles(files);
+    });
+  });
+})();
+
+function admOnFilesSelected(input) {
+  const files = [...input.files];
+  if (files.length) admAddFiles(files);
+}
+
+function admAddFiles(files) {
+  const strip = document.getElementById('admPreviewStrip');
+  document.getElementById('admDropHint').style.display = 'none';
+  strip.style.display = 'flex';
+
+  files.forEach(file => {
+    if (file.size > 15 * 1024 * 1024) { toast(`${file.name} too large (max 15 MB)`, 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      admCompress(e.target.result, 1400, 0.85).then(b64 => {
+        const idx = admQueue.length;
+        admQueue.push({ file, base64: b64 });
+
+        const thumb = document.createElement('div');
+        thumb.style.cssText = 'position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:2px solid #f0d5b8';
+        thumb.innerHTML = `
+          <img src="${b64}" style="width:100%;height:100%;object-fit:cover"/>
+          <button onclick="admRemoveFile(${idx})" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.65);border:none;color:#fff;font-size:.7rem;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center">×</button>`;
+        thumb.id = `admThumb${idx}`;
+        strip.appendChild(thumb);
+
+        document.getElementById('admUploadBtn').disabled = false;
+        document.getElementById('admUploadProgress').textContent = `${admQueue.filter(q=>q).length} photo${admQueue.filter(q=>q).length !== 1 ? 's' : ''} queued`;
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function admRemoveFile(idx) {
+  admQueue[idx] = null;
+  const thumb = document.getElementById(`admThumb${idx}`);
+  if (thumb) thumb.remove();
+  const remaining = admQueue.filter(q => q).length;
+  document.getElementById('admUploadProgress').textContent = remaining ? `${remaining} photo${remaining !== 1 ? 's' : ''} queued` : '';
+  if (!remaining) {
+    document.getElementById('admUploadBtn').disabled = true;
+    document.getElementById('admDropHint').style.display = 'block';
+    document.getElementById('admPreviewStrip').style.display = 'none';
+    admQueue = [];
+  }
+}
+
+function admCompress(dataUrl, maxDim, quality) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) { const r = Math.min(maxDim/w, maxDim/h); w = Math.round(w*r); h = Math.round(h*r); }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
+async function admUploadAll() {
+  const url = getScriptUrl();
+  if (!url || url.includes('YOUR_APPS')) { toast('Configure Apps Script URL in Settings first', 'error'); return; }
+
+  const year    = document.getElementById('adm-year').value;
+  const moment  = document.getElementById('adm-moment').value;
+  const caption = document.getElementById('adm-caption').value.trim();
+  const batch   = admQueue.filter(q => q);
+  if (!batch.length) return;
+
+  const btn = document.getElementById('admUploadBtn');
+  btn.disabled = true;
+  const prog = document.getElementById('admUploadProgress');
+
+  let done = 0, failed = 0;
+  for (const item of batch) {
+    prog.textContent = `Uploading ${done + 1} / ${batch.length}…`;
+    try {
+      await fetch(url, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'uploadPhoto',
+          imageBase64: item.base64,
+          year, moment, caption,
+          name: 'Admin',
+          flat: 'Admin',
+          adminUpload: true   // triggers auto-approve in Apps Script
+        })
+      });
+      done++;
+    } catch(e) {
+      failed++;
+    }
+  }
+
+  prog.textContent = '';
+  const doneEl = document.getElementById('admUploadDone');
+  doneEl.textContent = `✅ ${done} photo${done !== 1 ? 's' : ''} uploaded to gallery${failed ? ` · ${failed} failed` : ''}`;
+  doneEl.style.display = 'block';
+  toast(`📸 ${done} photo${done !== 1 ? 's' : ''} uploaded!`, 'success');
+
+  // Reset form
+  admQueue = [];
+  document.getElementById('admPreviewStrip').innerHTML = '';
+  document.getElementById('admPreviewStrip').style.display = 'none';
+  document.getElementById('admDropHint').style.display = 'block';
+  document.getElementById('adm-caption').value = '';
+  document.getElementById('admPhotoFile').value = '';
+  setTimeout(() => { doneEl.style.display = 'none'; }, 5000);
+
+  // Refresh the review grid if it's on Approved
+  if (document.getElementById('galStatusFilter').value === 'Approved') loadGallerySubmissions();
+}
 </script>
 </body>
 </html>
