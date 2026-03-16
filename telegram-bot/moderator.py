@@ -100,8 +100,10 @@ Flag this message if it clearly contains:
 3. Content completely irrelevant to society/community matters (e.g. forwarded jokes, stock tips, cricket news)
 
 Do NOT flag:
+- Festival greetings (Diwali, Holi, Eid, Christmas, Chhath Puja, etc.)
+- Birthday wishes, anniversary wishes, congratulations to residents
+- Social gathering invitations or community event announcements
 - Genuine society-related queries even if informal
-- Festival greetings related to community events
 - Maintenance complaints or queries
 - Normal conversation between residents about society matters
 

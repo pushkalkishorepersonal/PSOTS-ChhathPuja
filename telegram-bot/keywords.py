@@ -89,18 +89,58 @@ AD_KEYWORDS = [
     "here is contractor number", "i know a good plumber",
 ]
 
-# ── GOOD TO AVOID ──────────────────────────────────────────────────────────────
+# ── ALWAYS ALLOWED: Festivals, social gatherings, special occasions ────────────
+# These terms ALWAYS pass — festival greetings and community occasions are welcome
 
-# Social / personal milestone messages (mass-broadcast type)
+ALLOWED_FESTIVAL_TERMS = [
+    # Chhath Puja (primary festival for this society)
+    "chhath", "chhath puja", "surya puja", "arghya", "vrati",
+    # Hindu festivals
+    "diwali", "deepawali", "holi", "navratri", "durga puja", "ganesh chaturthi",
+    "ganpati", "ram navami", "janmashtami", "makar sankranti", "pongal",
+    "onam", "baisakhi", "rath yatra", "karva chauth", "dussehra", "vijayadashami",
+    "akshaya tritiya", "guru purnima", "hanuman jayanti", "maha shivratri",
+    # Muslim festivals
+    "eid", "eid mubarak", "eid ul fitr", "eid ul adha", "ramzan", "ramadan",
+    "muharram", "milad", "bakrid",
+    # Christian festivals
+    "christmas", "merry christmas", "easter", "good friday",
+    # Sikh festivals
+    "gurpurab", "baisakhi", "lohri", "guru nanak jayanti",
+    # Other widely celebrated
+    "new year", "happy new year", "independence day", "republic day",
+    "children's day", "teachers day", "mothers day", "fathers day",
+    "women's day",
+]
+
+ALLOWED_SOCIAL_OCCASIONS = [
+    # Personal milestones — community celebrations
+    "happy birthday", "birthday wishes", "wish you happy birthday",
+    "many happy returns", "birthday boy", "birthday girl",
+    "happy anniversary", "anniversary wishes", "wedding anniversary",
+    "congratulations", "congrats", "welcome baby", "new born",
+    "baby shower", "naming ceremony", "mundan", "thread ceremony",
+    # Community gatherings
+    "society gathering", "society event", "community event",
+    "get together", "get-together", "residents meet", "owners meet",
+    "society party", "pool party", "terrace party", "clubhouse event",
+    "society celebration", "flat owners meet", "annual day",
+    # Event invitations
+    "you are invited", "please join us", "join us for",
+    "cordially invited", "invitation for", "celebrating",
+    "we are celebrating",
+]
+
+# ── SPAM-ONLY: Only the genuinely spammy forward patterns are blocked ──────────
+# (NOT birthday wishes, NOT festival greetings — just chain-forward spam)
+
 SOCIAL_BROADCAST_KEYWORDS = [
-    "happy birthday", "wish you a very happy", "congratulations on your marriage",
-    "welcome new baby", "happy anniversary to",
+    "forward this to", "please forward this", "send to all groups",
+    "share this with everyone", "forward to all contacts",
+    "viral message", "share karo", "forward karo", "sabko bhejo",
     "good morning everyone", "good night everyone",
     "good morning friends", "good night friends",
     "have a great day everyone", "blessings to all",
-    "jai shri ram", "jai mata di",  # When used as mass-forward (context needed)
-    "forward this", "share this with everyone", "send to all groups",
-    "please forward", "viral message",
 ]
 
 # ── EXTERNAL LINKS ─────────────────────────────────────────────────────────────
@@ -128,12 +168,31 @@ def contains_whitelisted_context(text: str) -> bool:
     return matches >= 2
 
 
+def is_allowed_occasion(text: str) -> bool:
+    """
+    Return True if the message is about a festival, social gathering,
+    or special occasion — these are always allowed regardless of other flags.
+    """
+    text_lower = text.lower()
+    for term in ALLOWED_FESTIVAL_TERMS:
+        if term in text_lower:
+            return True
+    for term in ALLOWED_SOCIAL_OCCASIONS:
+        if term in text_lower:
+            return True
+    return False
+
+
 def check_keywords(text: str) -> tuple[bool, str, str]:
     """
     Stage 1 keyword check against all rule categories.
     Returns (flagged: bool, reason: str, category: str)
     """
     text_lower = text.lower()
+
+    # Festival / social occasion messages are ALWAYS allowed — skip all checks
+    if is_allowed_occasion(text_lower):
+        return False, "", ""
 
     # Society context overrides soft flags (ads, social, communal) but NOT hard flags
     has_society_context = contains_whitelisted_context(text_lower)
