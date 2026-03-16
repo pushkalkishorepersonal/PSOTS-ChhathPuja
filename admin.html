@@ -1863,9 +1863,22 @@ function renderVolunteers() {
 
 function filterVolunteers() { renderVolunteers(); }
 
+async function syncVolunteersToSheet() {
+  const url = getScriptUrl();
+  if (!url) return;
+  try {
+    await fetch(url, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveVolunteers', data: allVolunteers })
+    });
+  } catch(e) {}
+}
+
 function confirmVolunteer(i) {
   allVolunteers[i].status = 'Confirmed';
   localStorage.setItem('psots_volunteers', JSON.stringify(allVolunteers));
+  syncVolunteersToSheet();
   renderVolunteers();
   toast('✅ Volunteer confirmed!', 'success');
   // Send WhatsApp if mobile available
@@ -1907,6 +1920,7 @@ function assignTask(i) {
   allVolunteers[i].assignedTask = task;
   allVolunteers[i].status = 'Confirmed';
   localStorage.setItem('psots_volunteers', JSON.stringify(allVolunteers));
+  syncVolunteersToSheet();
   document.getElementById('assignOverlay').remove();
   renderVolunteers();
   toast('📋 Task assigned: ' + task, 'success');
