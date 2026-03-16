@@ -28,6 +28,11 @@
   .success-card{background:linear-gradient(135deg,#f0fff4,#dcfce7);border:1.5px solid #a5d6a7;border-radius:16px;padding:1.5rem;text-align:center;display:none}
   .success-card h3{color:var(--green);font-size:1.1rem;margin-bottom:.4rem}
   .success-card p{font-size:.85rem;color:#555;line-height:1.6}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(100px);background:#1a0800;color:#fff;padding:.65rem 1.4rem;border-radius:50px;font-size:.83rem;font-weight:500;z-index:9999;transition:transform .35s ease;white-space:nowrap}
+  #toast.show{transform:translateX(-50%) translateY(0)}
+  #toast.success{background:#2e7d32}
+  #toast.error{background:#c0392b}
   </style>
 </head>
 <body>
@@ -129,6 +134,83 @@
     </div>
   </div>
 
+  <!-- ═══ PHOTO UPLOAD ═══ -->
+  <div class="section-divider"><span>📸 Share Photos</span></div>
+  <div class="card" id="volUploadCard">
+    <div class="card-title">📸 Share Your Chhath Photos</div>
+    <p style="font-size:.84rem;color:var(--br);line-height:1.6;margin-bottom:1.2rem">
+      As a volunteer you're right in the middle of the action — share your photos! Add a short reference so we can organise them properly in the gallery.
+    </p>
+
+    <!-- Drop zone -->
+    <div id="volDropZone" onclick="document.getElementById('volPhotoFile').click()"
+      style="border:2px dashed #f0d5b8;border-radius:14px;padding:1.6rem 1rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--warm);margin-bottom:1rem">
+      <input type="file" id="volPhotoFile" accept="image/*" style="display:none" onchange="volOnFileSelected(this)"/>
+      <div id="volDropHint">
+        <div style="font-size:2rem;margin-bottom:.4rem">📷</div>
+        <div style="font-weight:600;font-size:.86rem;color:var(--ink)">Click to select a photo</div>
+        <div style="font-size:.72rem;color:#c8a880;margin-top:.2rem">JPG, PNG, HEIC · Max 15 MB · Auto-compressed</div>
+      </div>
+      <div id="volPreviewWrap" style="display:none">
+        <img id="volPhotoPreview" style="max-height:160px;max-width:100%;border-radius:10px;object-fit:contain;margin-bottom:.5rem"/>
+        <div id="volFileInfo" style="font-size:.72rem;color:var(--lbr)"></div>
+        <div style="font-size:.7rem;color:#c8a880;margin-top:.15rem">Tap to change</div>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem">
+      <div>
+        <label style="font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b08060;margin-bottom:.3rem;display:block">📅 Year</label>
+        <select id="vol-up-year" style="width:100%;padding:.62rem .9rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.86rem;color:var(--ink);background:var(--warm);outline:none">
+          <option value="2026">2026 (This Year)</option>
+          <option value="2025" selected>2025</option>
+          <option value="2024">2024</option>
+          <option value="2023">2023</option>
+          <option value="2022">2022</option>
+        </select>
+      </div>
+      <div>
+        <label style="font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b08060;margin-bottom:.3rem;display:block">🎬 Moment</label>
+        <select id="vol-up-moment" style="width:100%;padding:.62rem .9rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.86rem;color:var(--ink);background:var(--warm);outline:none">
+          <option value="Sandhya Arghya">🌅 Sandhya Arghya</option>
+          <option value="Usha Arghya">🌄 Usha Arghya</option>
+          <option value="Kharna Dinner">🍚 Kharna Dinner</option>
+          <option value="Thekua Making">🍪 Thekua Making</option>
+          <option value="Ghat Decoration">🎨 Ghat Setup & Decoration</option>
+          <option value="Nahay Khay">🛁 Nahay Khay</option>
+          <option value="Cultural Programme">🎤 Cultural Programme</option>
+          <option value="Community Gathering">👥 Community / Behind the Scenes</option>
+          <option value="Other">📸 Other</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem">
+      <div>
+        <label style="font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b08060;margin-bottom:.3rem;display:block">👤 Your Name</label>
+        <input type="text" id="vol-up-name" placeholder="Full name" style="width:100%;padding:.62rem .9rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.86rem;color:var(--ink);background:var(--warm);outline:none"/>
+      </div>
+      <div>
+        <label style="font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b08060;margin-bottom:.3rem;display:block">🏠 Flat No.</label>
+        <input type="text" id="vol-up-flat" placeholder="e.g. 15167" style="width:100%;padding:.62rem .9rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.86rem;color:var(--ink);background:var(--warm);outline:none"/>
+      </div>
+    </div>
+    <div style="margin-bottom:1.1rem">
+      <label style="font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b08060;margin-bottom:.3rem;display:block">📝 Caption <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#c8a880">(optional — what's happening in the photo?)</span></label>
+      <input type="text" id="vol-up-caption" placeholder="e.g. Setting up the ghat lights at 4 PM" style="width:100%;padding:.62rem .9rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.86rem;color:var(--ink);background:var(--warm);outline:none"/>
+    </div>
+
+    <button id="volUploadBtn" onclick="volSubmitPhoto()" class="btn-primary btn-block" disabled>
+      📸 Submit Photo
+    </button>
+    <div id="volUploadSuccess" style="display:none;margin-top:1rem;background:#f0fff4;border:1.5px solid #a5d6a7;border-radius:12px;padding:1rem;text-align:center">
+      <div style="font-size:1.6rem;margin-bottom:.3rem">🙏</div>
+      <div style="font-weight:700;color:#2e7d32;margin-bottom:.2rem">Photo submitted!</div>
+      <div style="font-size:.82rem;color:#555">Your photo will appear in the gallery after review.</div>
+      <button onclick="volResetUpload()" style="margin-top:.7rem;background:none;border:1.5px solid #a5d6a7;border-radius:8px;padding:.4rem 1rem;color:#2e7d32;font-size:.78rem;cursor:pointer;font-family:'DM Sans',sans-serif;font-weight:600">📸 Upload Another</button>
+    </div>
+    <div style="font-size:.7rem;color:#c8a880;margin-top:.7rem;text-align:center">Photos reviewed before publishing · Name &amp; flat used for credit only</div>
+  </div>
+
   <div class="card" style="text-align:center">
     <div class="card-title" style="justify-content:center">📞 Questions?</div>
     <p style="font-size:.85rem;color:var(--br);margin-bottom:1rem">Contact the organising committee</p>
@@ -164,8 +246,8 @@ function toggleTask(el) { el.classList.toggle('selected'); }
     const u = JSON.parse(localStorage.getItem('psots_user') || 'null');
     const pKey = u ? 'psots_profile_' + u.id : null;
     const p = pKey ? JSON.parse(localStorage.getItem(pKey) || '{}') : {};
-    if (p.name)   { document.getElementById('rsvp-name').value = p.name;  document.getElementById('vol-name').value = p.name; }
-    if (p.flat)   { document.getElementById('rsvp-flat').value = p.flat;  document.getElementById('vol-flat').value = p.flat; }
+    if (p.name)   { document.getElementById('rsvp-name').value = p.name;  document.getElementById('vol-name').value = p.name;  document.getElementById('vol-up-name').value = p.name; }
+    if (p.flat)   { document.getElementById('rsvp-flat').value = p.flat;  document.getElementById('vol-flat').value = p.flat;  document.getElementById('vol-up-flat').value = p.flat; }
     if (p.mobile) { document.getElementById('rsvp-mobile').value = p.mobile; document.getElementById('vol-mobile').value = p.mobile; }
     if (p.family) document.getElementById('rsvp-family').value = p.family;
   } catch(e) {}
@@ -237,6 +319,98 @@ async function submitVolunteer() {
     const msg = encodeURIComponent(`🤝 *Volunteer Sign-Up — Chhath 2026*\n\n👤 ${name}\n🏠 Flat ${flat}\n📱 ${mobile}\n📅 Days: ${days.join(', ')}\n🔧 Tasks: ${tasks.join(', ')}\n${note ? '📝 ' + note : ''}\n\nPlease confirm my assignment 🙏`);
     window.open(`https://wa.me/${wa}?text=${msg}`, '_blank');
   }, 1500);
+}
+
+// ── PHOTO UPLOAD (volunteer page) ────────────────────────
+let volImageBase64 = null;
+
+const vdz = document.getElementById('volDropZone');
+vdz.addEventListener('dragover', e => { e.preventDefault(); vdz.style.borderColor = 'var(--or)'; });
+vdz.addEventListener('dragleave', () => { vdz.style.borderColor = '#f0d5b8'; });
+vdz.addEventListener('drop', e => {
+  e.preventDefault(); vdz.style.borderColor = '#f0d5b8';
+  const f = e.dataTransfer.files[0];
+  if (f && f.type.startsWith('image/')) volProcessFile(f);
+});
+
+function volOnFileSelected(input) {
+  if (input.files[0]) volProcessFile(input.files[0]);
+}
+
+function volProcessFile(file) {
+  if (file.size > 15 * 1024 * 1024) { toast('Photo too large — max 15 MB', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    volCompressImage(e.target.result, 1200, 0.82).then(b64 => {
+      volImageBase64 = b64;
+      document.getElementById('volPhotoPreview').src = b64;
+      document.getElementById('volDropHint').style.display = 'none';
+      document.getElementById('volPreviewWrap').style.display = 'block';
+      const kb = Math.round((b64.length * 3/4) / 1024);
+      document.getElementById('volFileInfo').textContent = `${file.name} · ${kb} KB`;
+      document.getElementById('volUploadBtn').disabled = false;
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+function volCompressImage(dataUrl, maxDim, quality) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) { const r = Math.min(maxDim/w, maxDim/h); w = Math.round(w*r); h = Math.round(h*r); }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
+async function volSubmitPhoto() {
+  if (!volImageBase64) return;
+  const name    = document.getElementById('vol-up-name').value.trim();
+  const flat    = document.getElementById('vol-up-flat').value.trim();
+  const year    = document.getElementById('vol-up-year').value;
+  const moment  = document.getElementById('vol-up-moment').value;
+  const caption = document.getElementById('vol-up-caption').value.trim();
+
+  if (!name || !flat) { toast('Please enter your name and flat number', 'error'); return; }
+
+  const btn = document.getElementById('volUploadBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;width:12px;height:12px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:6px"></span>Uploading…';
+
+  const su = (window.PSOTS && window.PSOTS.scriptUrl) || '';
+  try {
+    if (su && !su.includes('YOUR_APPS')) {
+      await fetch(su, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'uploadPhoto', imageBase64: volImageBase64, year, moment, name, flat, caption })
+      });
+    }
+    document.getElementById('volUploadSuccess').style.display = 'block';
+    btn.style.display = 'none';
+    toast('📸 Photo submitted!', 'success');
+  } catch (e) {
+    btn.disabled = false; btn.textContent = '📸 Submit Photo';
+    toast('Upload failed — please try again', 'error');
+  }
+}
+
+function volResetUpload() {
+  volImageBase64 = null;
+  document.getElementById('volPhotoFile').value = '';
+  document.getElementById('volDropHint').style.display = 'block';
+  document.getElementById('volPreviewWrap').style.display = 'none';
+  document.getElementById('vol-up-caption').value = '';
+  document.getElementById('volUploadSuccess').style.display = 'none';
+  document.getElementById('volUploadBtn').style.display = 'block';
+  document.getElementById('volUploadBtn').disabled = true;
+  document.getElementById('volUploadBtn').textContent = '📸 Submit Photo';
 }
 </script>
 </body>

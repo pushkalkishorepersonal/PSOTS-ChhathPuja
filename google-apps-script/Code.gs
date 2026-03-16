@@ -18,6 +18,7 @@ const SHEET_PROFILES      = 'Profiles';
 const SHEET_FINANCE       = 'Finance';
 const SHEET_ANNOUNCEMENTS = 'Announcements';
 const SHEET_VOLUNTEERS    = 'Volunteers';
+const SHEET_GALLERY       = 'GallerySubmissions';
 
 // ─── Column headers ───
 const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','Date','Status','AccountType','UserID','Year'];
@@ -25,6 +26,7 @@ const PROF_HEADERS = ['UserID','Name','Email','Flat','Mobile','IsVrati','Photo',
 const FIN_HEADERS  = ['Key','Value'];
 const ANN_HEADERS  = ['Tag','Meta','Text'];
 const VOL_HEADERS  = ['Timestamp','Name','Flat','Mobile','Days','Tasks','AssignedTask','Status','Note','CheckedIn','CheckinTime'];
+const GAL_HEADERS  = ['Timestamp','Name','Flat','Year','Moment','Caption','DriveUrl','Status'];
 
 /* ══════════════════════════════════════════════════════════
    INITIAL SETUP — Run this ONCE
@@ -115,13 +117,33 @@ function setupSheets() {
     vol.setColumnWidth(8, 110); // Status
   }
 
+  // Create Gallery Submissions sheet
+  let gal = ss.getSheetByName(SHEET_GALLERY);
+  if (!gal) {
+    gal = ss.insertSheet(SHEET_GALLERY);
+    gal.appendRow(GAL_HEADERS);
+    gal.getRange(1, 1, 1, GAL_HEADERS.length)
+       .setFontWeight('bold')
+       .setBackground('#5C3299')
+       .setFontColor('#FFFFFF');
+    gal.setFrozenRows(1);
+    gal.setColumnWidth(1, 160); // Timestamp
+    gal.setColumnWidth(2, 160); // Name
+    gal.setColumnWidth(3, 80);  // Flat
+    gal.setColumnWidth(4, 60);  // Year
+    gal.setColumnWidth(5, 160); // Moment
+    gal.setColumnWidth(6, 220); // Caption
+    gal.setColumnWidth(7, 280); // DriveUrl
+    gal.setColumnWidth(8, 120); // Status
+  }
+
   // Remove default Sheet1 if it exists and is empty
   const sheet1 = ss.getSheetByName('Sheet1');
   if (sheet1 && sheet1.getLastRow() <= 1) {
     try { ss.deleteSheet(sheet1); } catch(e) {}
   }
 
-  Logger.log('✅ setupSheets complete — Contributions, Profiles, Finance, Announcements sheets ready.');
+  Logger.log('✅ setupSheets complete — Contributions, Profiles, Finance, Announcements, Volunteers, GallerySubmissions sheets ready.');
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -199,6 +221,8 @@ function doPost(e) {
       result = actionSaveVolunteers(body.data || []);
     } else if (body.action === 'volunteerCheckin') {
       result = actionVolunteerCheckin(body);
+    } else if (body.action === 'uploadPhoto') {
+      result = actionUploadPhoto(body);
     } else {
       // Default: new contribution
       result = actionAddContribution(body);
@@ -729,6 +753,55 @@ function actionVolunteerCheckin(body) {
     now
   ]);
   return { success: true, walkin: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Upload photo to Drive + log to GallerySubmissions
+   Body fields: imageBase64, year, moment, name, flat, caption
+══════════════════════════════════════════════════════════ */
+function actionUploadPhoto(body) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_GALLERY);
+  if (!sheet) return { error: 'GallerySubmissions sheet not found. Run setupSheets() first.' };
+
+  const { imageBase64, year, moment, name, flat, caption } = body;
+  if (!imageBase64) return { error: 'No image data received' };
+  if (!name || !flat) return { error: 'Name and flat number are required' };
+
+  let driveUrl = '';
+  try {
+    // Strip data URL prefix and decode base64
+    const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+    const blob = Utilities.newBlob(
+      Utilities.base64Decode(base64Data),
+      'image/jpeg',
+      `${year || 'unknown'}_${moment || 'photo'}_${flat}_${Date.now()}.jpg`
+    );
+
+    // Find or create the gallery folder in Drive
+    const folderName = 'PSOTS Gallery Photos';
+    let folder;
+    const folderIter = DriveApp.getFoldersByName(folderName);
+    folder = folderIter.hasNext() ? folderIter.next() : DriveApp.createFolder(folderName);
+
+    // Create year sub-folder
+    const yearName = String(year || 'misc');
+    let yearFolder;
+    const yearIter = folder.getFoldersByName(yearName);
+    yearFolder = yearIter.hasNext() ? yearIter.next() : folder.createFolder(yearName);
+
+    // Save file
+    const file = yearFolder.createFile(blob);
+    file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+    driveUrl = `https://drive.google.com/uc?id=${file.getId()}`;
+  } catch (err) {
+    // Log the submission even if Drive upload fails, for manual follow-up
+    driveUrl = 'Drive upload failed: ' + err.message;
+  }
+
+  const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+  sheet.appendRow([now, name, flat, year || '', moment || '', caption || '', driveUrl, 'Pending Review']);
+
+  return { success: true, driveUrl, message: 'Photo submitted for review!' };
 }
 
 /* ══════════════════════════════════════════════════════════
