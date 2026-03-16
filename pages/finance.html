@@ -2,26 +2,59 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Finance — PSOTS Chhath 2026</title>
+  <title>Finance — PSOTS Chhath</title>
   <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:ital,wght@0,700;0,900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css"/>
   <script src="../config.js"></script>
   <style>
-  .stat-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:.9rem;margin-bottom:1.5rem}
-  .sc{background:#fff;border-radius:14px;padding:1.1rem;border:1px solid rgba(200,100,0,.09);text-align:center;box-shadow:0 3px 14px rgba(26,8,0,.07)}
-  .sc-val{font-family:'DM Sans',sans-serif;font-size:1.3rem;font-weight:900;color:var(--or);line-height:1;margin-bottom:.2rem}
-  .sc-val.g{color:var(--green)}
-  .sc-lbl{font-size:.74rem;color:#6b3a18;font-weight:500}
-  .ebar{display:grid;grid-template-columns:130px 1fr 80px;align-items:center;gap:.8rem;margin-bottom:.75rem}
-  @media(max-width:460px){.ebar{grid-template-columns:90px 1fr 65px;gap:.5rem}}
-  .ebar-lbl{font-size:.78rem;color:var(--br);font-weight:500;text-align:right}
-  .ebar-track{height:10px;background:#f0d5b8;border-radius:50px;overflow:hidden}
+  /* ── Year tab strip ── */
+  .yr-tabs{display:flex;gap:.4rem;overflow-x:auto;padding:.1rem .05rem .6rem;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-bottom:1.1rem}
+  .yr-tabs::-webkit-scrollbar{display:none}
+  .yr-tab{flex-shrink:0;padding:.42rem 1.05rem;border-radius:50px;font-size:.82rem;font-weight:600;cursor:pointer;border:1.5px solid rgba(200,100,0,.22);background:transparent;color:var(--br);transition:all .2s;font-family:'DM Sans',sans-serif}
+  .yr-tab.active{background:var(--or);border-color:var(--or);color:#fff;box-shadow:0 3px 12px rgba(232,92,0,.3)}
+  .yr-tab.current::after{content:'';display:inline-block;width:5px;height:5px;background:var(--green);border-radius:50%;margin-left:.35rem;vertical-align:middle}
+
+  /* ── Year panels ── */
+  .yr-panel{display:none;animation:fadeIn .2s ease}
+  .yr-panel.active{display:block}
+  @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ── Finance row ── */
+  .fin-row{display:flex;justify-content:space-between;align-items:center;padding:.58rem 0;border-bottom:1px solid #f0d5b8;font-size:.84rem;color:var(--br);gap:.5rem}
+  .fin-row:last-child{border-bottom:none}
+  .fin-row strong{font-family:'DM Sans',sans-serif;font-weight:700;white-space:nowrap}
+  .fin-row.subtotal{border-top:1.5px dashed rgba(200,100,0,.25);padding-top:.65rem;margin-top:.2rem;font-weight:600;color:var(--ink);border-bottom:none}
+  .fin-row.total{border-top:2px solid rgba(200,100,0,.3);padding-top:.75rem;margin-top:.1rem;font-size:.9rem;font-weight:700;color:var(--ink);border-bottom:none}
+  .carry-row{display:flex;justify-content:space-between;align-items:center;padding:.65rem .85rem;background:linear-gradient(90deg,rgba(46,125,50,.07),rgba(46,125,50,.03));border:1px solid rgba(46,125,50,.2);border-radius:10px;margin-top:.6rem;font-size:.84rem;color:var(--br)}
+  .carry-row strong{font-family:'DM Sans',sans-serif;font-weight:700;color:var(--green)}
+
+  /* ── Expense bars ── */
+  .ebar{display:grid;grid-template-columns:110px 1fr 72px;align-items:center;gap:.7rem;margin-bottom:.65rem}
+  @media(max-width:400px){.ebar{grid-template-columns:85px 1fr 58px;gap:.4rem}}
+  .ebar-lbl{font-size:.76rem;color:var(--br);font-weight:500;text-align:right}
+  .ebar-track{height:9px;background:#f0d5b8;border-radius:50px;overflow:hidden}
   .ebar-fill{height:100%;border-radius:50px;background:linear-gradient(90deg,var(--or),var(--gold));transition:width 1.2s ease;width:0}
-  .ebar-amt{font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:700;color:var(--or)}
-  .yoy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.8rem;margin-bottom:.5rem}
-  .yc{background:#fff;border-radius:12px;padding:.9rem;border:1px solid rgba(200,100,0,.09);text-align:center}
-  .yc-yr{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:#6b3a18;font-weight:500;margin-bottom:.25rem}
-  .yc-val{font-family:'DM Sans',sans-serif;font-size:1.05rem;font-weight:700;color:var(--ink)}
+  .ebar-amt{font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;color:var(--or)}
+
+  /* ── Collection progress ── */
+  .prog-wrap{margin:.8rem 0 .4rem}
+  .prog-labels{display:flex;justify-content:space-between;font-size:.72rem;color:var(--br);margin-bottom:.3rem}
+  .prog-track{height:10px;background:#f0d5b8;border-radius:50px;overflow:hidden}
+  .prog-fill{height:100%;border-radius:50px;background:linear-gradient(90deg,#2e7d32,#81c784);transition:width 1.2s ease;width:0}
+
+  /* ── Stat chips ── */
+  .stat-chips{display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.65rem}
+  .chip{background:#fff;border:1px solid rgba(200,100,0,.12);border-radius:8px;padding:.5rem .85rem;font-size:.76rem;color:var(--br);flex:1;min-width:100px}
+  .chip strong{display:block;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;color:var(--ink);margin-bottom:.08rem}
+
+  /* ── Pills ── */
+  .pill{display:inline-block;font-size:.66rem;font-weight:600;padding:.14rem .5rem;border-radius:50px;letter-spacing:.03em;vertical-align:middle;margin-left:.3rem}
+  .pill-green{background:rgba(46,125,50,.1);color:var(--green)}
+  .pill-or{background:rgba(232,92,0,.1);color:var(--or)}
+  .pill-gold{background:rgba(255,194,0,.15);color:#a07000}
+
+  /* ── No-data notice ── */
+  .notice{font-size:.8rem;color:var(--br);line-height:1.65;background:#f9f4ee;border-radius:10px;padding:.75rem 1rem;margin-top:.75rem}
   </style>
 </head>
 <body>
@@ -30,89 +63,236 @@
   <div class="page-nav-title">💰 Finance</div>
   <div></div>
 </nav>
+
 <div class="page-hero" style="background:linear-gradient(135deg,#1a0800,#3d1200)">
   <span class="ph-icon">💰</span>
-  <div class="ph-title">Financial Snapshot</div>
-  <div class="ph-sub">Full transparency · पारदर्शिता · PSOTS Chhath 2025–2026</div>
+  <div class="ph-title">Financial Transparency</div>
+  <div class="ph-sub">पारदर्शिता · Each year stands on its own</div>
 </div>
+
 <div class="page-content">
-  <div class="stat-grid">
-    <div class="sc"><div class="sc-val">141</div><div class="sc-lbl">Contributors 2025</div></div>
-    <div class="sc"><div class="sc-val">15</div><div class="sc-lbl">Vratis 2025</div></div>
-    <div class="sc"><div class="sc-val">₹2,35,553</div><div class="sc-lbl">Total Collected</div></div>
-    <div class="sc"><div class="sc-val">₹1,98,383</div><div class="sc-lbl">Total Expenses</div></div>
-    <div class="sc" style="background:linear-gradient(135deg,#fff5e8,#ffe8cc);border-color:rgba(232,92,0,.25)"><div class="sc-val g">₹1,04,670</div><div class="sc-lbl">Carried to 2026 ✅</div></div>
-    <div class="sc"><div class="sc-val" id="stat-budget">…</div><div class="sc-lbl">2026 Budget Plan</div></div>
+
+  <!-- Year Tab Strip -->
+  <div class="yr-tabs" id="yrTabs">
+    <button class="yr-tab" data-yr="2022">2022</button>
+    <button class="yr-tab" data-yr="2023">2023</button>
+    <button class="yr-tab" data-yr="2024">2024</button>
+    <button class="yr-tab" data-yr="2025">2025</button>
+    <button class="yr-tab active current" data-yr="2026">2026</button>
   </div>
 
-  <div class="card" id="expCard">
-    <div class="card-title">📊 2025 Expense Breakdown</div>
-    <div class="card-sub">Where every rupee went — total expenses ₹1,98,383</div>
-    <div class="ebar"><div class="ebar-lbl">Tent &amp; Decor</div><div class="ebar-track"><div class="ebar-fill" data-pct="32"></div></div><div class="ebar-amt">₹62,801</div></div>
-    <div class="ebar"><div class="ebar-lbl">Kharna Prasad</div><div class="ebar-track"><div class="ebar-fill" data-pct="30"></div></div><div class="ebar-amt">₹60,201</div></div>
-    <div class="ebar"><div class="ebar-lbl">Thekua Prasad</div><div class="ebar-track"><div class="ebar-fill" data-pct="27"></div></div><div class="ebar-amt">₹52,908</div></div>
-    <div class="ebar"><div class="ebar-lbl">Miscellaneous</div><div class="ebar-track"><div class="ebar-fill" data-pct="11"></div></div><div class="ebar-amt">₹22,473</div></div>
-  </div>
+  <!-- ══════════════════════════════════════
+       2026 — CURRENT YEAR (live)
+       ══════════════════════════════════════ -->
+  <div class="yr-panel active" id="panel-2026">
 
-  <div class="card">
-    <div class="card-title">📈 Year on Year</div>
-    <div class="yoy-grid">
-      <div class="yc"><div class="yc-yr">2022</div><div class="yc-val">₹1,25,300</div></div>
-      <div class="yc"><div class="yc-yr">2023</div><div class="yc-val">₹1,83,630</div></div>
-      <div class="yc"><div class="yc-yr">2024</div><div class="yc-val">₹2,17,048</div></div>
-      <div class="yc"><div class="yc-yr">2025</div><div class="yc-val">₹1,98,383</div></div>
-      <div class="yc" style="background:linear-gradient(135deg,#fff5e8,#ffe8cc);border-color:rgba(232,92,0,.3)"><div class="yc-yr" style="color:var(--or)">2026 Budget</div><div class="yc-val" style="color:var(--or)" id="yoy-budget">…</div></div>
+    <div class="card" style="background:linear-gradient(135deg,#fff8f0,#fff0e0);border-color:rgba(232,92,0,.2)">
+      <div class="card-title">🌅 2026 · पंच वर्ष महोत्सव <span class="pill pill-or">Live</span></div>
+      <div class="card-sub" style="margin-bottom:1rem">Updates as contributions are verified by the committee</div>
+
+      <div class="fin-row">
+        <span>Opening Balance <span class="pill pill-green">carried from 2025</span></span>
+        <strong style="color:var(--green)">₹1,04,670</strong>
+      </div>
+      <div class="fin-row"><span>Collected 2026 (so far)</span><strong id="c26-collected" style="color:var(--or)">—</strong></div>
+      <div class="fin-row subtotal"><span>Total Available</span><strong id="c26-available" style="color:var(--or)">₹1,04,670</strong></div>
+      <div class="fin-row"><span>Expenses 2026 (so far)</span><strong id="c26-expenses">₹0</strong></div>
+      <div class="fin-row total"><span>Current Balance</span><strong id="c26-balance" style="color:var(--green)">₹1,04,670</strong></div>
+
+      <div class="prog-wrap">
+        <div class="prog-labels">
+          <span>Collection progress vs ₹<span id="c26-budget-sm">6,00,000</span> budget</span>
+          <span id="c26-pct" style="font-weight:600;color:var(--green)">0%</span>
+        </div>
+        <div class="prog-track"><div class="prog-fill" id="c26-bar"></div></div>
+      </div>
+
+      <div class="stat-chips">
+        <div class="chip"><strong id="c26-count">—</strong>Contributors</div>
+        <div class="chip"><strong id="c26-budget">₹6,00,000</strong>Budget</div>
+      </div>
+    </div>
+
+    <div class="card" id="exp26Card">
+      <div class="card-title">📊 2026 Expense Breakdown</div>
+      <div id="exp26-content">
+        <p class="notice">Expense breakdown will appear here once the committee starts recording expenses. Full details will be updated after the event.</p>
+      </div>
+    </div>
+
+    <div class="card">
+      <p style="font-size:.84rem;color:var(--br);line-height:1.7">🙏 <strong>Full transparency</strong> is a core value of our committee. Every rupee collected is accounted for. Detailed expense logs available from the committee on request.</p>
+      <div style="margin-top:1rem"><a href="payment.html" style="text-decoration:none"><button class="btn-primary">💰 Contribute to Chhath 2026</button></a></div>
+    </div>
+
+  </div><!-- /panel-2026 -->
+
+  <!-- ══════════════════════════════════════
+       2025 — DETAILED ACTUALS
+       ══════════════════════════════════════ -->
+  <div class="yr-panel" id="panel-2025">
+
+    <div class="card">
+      <div class="card-title">🌅 2025 · Final Summary <span class="pill pill-gold">Closed</span></div>
+
+      <div class="fin-row"><span>Total Collected</span><strong style="color:var(--or)">₹2,35,553</strong></div>
+      <div class="fin-row"><span>Total Expenses</span><strong>₹1,98,383</strong></div>
+      <div class="fin-row total"><span>Surplus</span><strong style="color:var(--green)">₹37,170</strong></div>
+
+      <div class="carry-row">
+        <span>✅ Carried forward to 2026</span>
+        <strong>₹1,04,670</strong>
+      </div>
+      <div style="font-size:.72rem;color:var(--br);margin-top:.5rem;padding-left:.25rem">* Surplus + prior balance = ₹1,04,670 total carry</div>
+
+      <div class="stat-chips" style="margin-top:.9rem">
+        <div class="chip"><strong>141</strong>Contributors</div>
+        <div class="chip"><strong>15</strong>Vratis</div>
+        <div class="chip"><strong>₹2,82,000</strong>Budget</div>
+      </div>
+    </div>
+
+    <div class="card" id="expCard25">
+      <div class="card-title">📊 2025 Expense Breakdown</div>
+      <div class="card-sub">Where every rupee went — total ₹1,98,383</div>
+      <div class="ebar"><div class="ebar-lbl">Tent &amp; Decor</div><div class="ebar-track"><div class="ebar-fill" data-pct="32"></div></div><div class="ebar-amt">₹62,801</div></div>
+      <div class="ebar"><div class="ebar-lbl">Kharna Prasad</div><div class="ebar-track"><div class="ebar-fill" data-pct="30"></div></div><div class="ebar-amt">₹60,201</div></div>
+      <div class="ebar"><div class="ebar-lbl">Thekua Prasad</div><div class="ebar-track"><div class="ebar-fill" data-pct="27"></div></div><div class="ebar-amt">₹52,908</div></div>
+      <div class="ebar"><div class="ebar-lbl">Miscellaneous</div><div class="ebar-track"><div class="ebar-fill" data-pct="11"></div></div><div class="ebar-amt">₹22,473</div></div>
+    </div>
+
+  </div><!-- /panel-2025 -->
+
+  <!-- ══════════════════════════════════════
+       2024
+       ══════════════════════════════════════ -->
+  <div class="yr-panel" id="panel-2024">
+    <div class="card">
+      <div class="card-title">🌅 2024 · Summary <span class="pill pill-gold">Closed</span></div>
+      <div class="fin-row"><span>Total Expenses</span><strong>₹2,17,048</strong></div>
+      <p class="notice">Detailed collection and expense records for 2024 are available from the committee on request.</p>
     </div>
   </div>
 
-  <div class="card" style="background:linear-gradient(135deg,#fff5e8,#ffe8d0);border-color:rgba(232,92,0,.18)">
-    <div class="card-title">🏦 2026 Collection Progress</div>
-    <div class="card-sub">Live — updates as contributions are verified by the committee</div>
-    <div style="font-size:.82rem;color:var(--br);line-height:1.7">
-      <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid #f0d5b8"><span>Carry forward from 2025</span><strong style="color:var(--green)">₹1,04,670</strong></div>
-      <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid #f0d5b8"><span>Collected 2026 (so far)</span><strong id="live-collected" style="color:var(--or)">Loading…</strong></div>
-      <div style="display:flex;justify-content:space-between;padding:.5rem 0;border-bottom:1px solid #f0d5b8"><span>2026 Budget</span><strong id="live-budget">…</strong></div>
-      <div style="display:flex;justify-content:space-between;padding:.5rem 0"><span>Expenses 2026 (so far)</span><strong id="live-expenses">₹0</strong></div>
+  <!-- ══════════════════════════════════════
+       2023
+       ══════════════════════════════════════ -->
+  <div class="yr-panel" id="panel-2023">
+    <div class="card">
+      <div class="card-title">🌅 2023 · Summary <span class="pill pill-gold">Closed</span></div>
+      <div class="fin-row"><span>Total Expenses</span><strong>₹1,83,630</strong></div>
+      <p class="notice">Detailed collection and expense records for 2023 are available from the committee on request.</p>
     </div>
   </div>
 
-  <div class="card">
-    <p style="font-size:.84rem;color:var(--br);line-height:1.7">🙏 <strong>Full transparency</strong> is a core value of our committee. Every rupee collected is accounted for. The 2025 committee spent ₹1,98,383 (65% of total funds), keeping a healthy surplus. Detailed expense logs available from the committee on request.</p>
-    <div style="margin-top:1rem"><a href="payment.html" style="text-decoration:none"><button class="btn-primary">💰 Make Your Contribution</button></a></div>
+  <!-- ══════════════════════════════════════
+       2022 — INAUGURAL YEAR
+       ══════════════════════════════════════ -->
+  <div class="yr-panel" id="panel-2022">
+    <div class="card">
+      <div class="card-title">🌅 2022 · Inaugural Year <span class="pill pill-gold">Closed</span></div>
+      <div class="card-sub" style="margin-bottom:.6rem">नया आगाज़ · The first Chhath Puja at PSOTS</div>
+      <div class="fin-row"><span>Total Expenses</span><strong>₹1,25,300</strong></div>
+      <p class="notice">Detailed collection and expense records for 2022 are available from the committee on request.</p>
+    </div>
   </div>
-</div>
+
+</div><!-- /page-content -->
+
 <script>
-const ob=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting)x.target.querySelectorAll('.ebar-fill').forEach(b=>b.style.width=b.dataset.pct+'%')})},{threshold:.3});
-const ec=document.getElementById('expCard');if(ec)ob.observe(ec);
-const su=(window.PSOTS&&window.PSOTS.scriptUrl)||localStorage.getItem('psots_script_url')||'';
-async function loadLive(){
-  if(!su){document.getElementById('live-collected').textContent='Connect sheet to see live';return;}
-  try{
-    // Load 2026 collected amount
-    const r=await fetch(su+'?action=list_all'),d=await r.json();
-    const total=(d.all||[]).filter(x=>Number(x.year)===2026).reduce((s,c)=>s+(parseFloat(c.amount)||0),0);
-    document.getElementById('live-collected').textContent='₹'+total.toLocaleString('en-IN');
-  }catch(e){document.getElementById('live-collected').textContent='—';}
-  try{
-    // Load admin-entered expenses from Finance sheet
-    const r2=await fetch(su+'?action=getFinance'),d2=await r2.json();
-    const f=d2.finance||{};
-    if(f.expenses&&Number(f.expenses)>0)
-      document.getElementById('live-expenses').textContent='₹'+parseInt(f.expenses).toLocaleString('en-IN');
-    const bVal=f.budget&&Number(f.budget)>0 ? parseInt(f.budget) : (window.PSOTS&&window.PSOTS.fin25&&window.PSOTS.fin25.budget)||282000;
-    const bFmt='₹'+bVal.toLocaleString('en-IN');
-    document.getElementById('live-budget').textContent=bFmt;
-    document.getElementById('yoy-budget').textContent='~'+bFmt;
-    document.getElementById('stat-budget').textContent=bFmt;
-  }catch(e){
-    const fb=(window.PSOTS&&window.PSOTS.fin25&&window.PSOTS.fin25.budget)||282000;
-    const ff='₹'+fb.toLocaleString('en-IN');
-    document.getElementById('live-budget').textContent=ff;
-    document.getElementById('yoy-budget').textContent='~'+ff;
-    document.getElementById('stat-budget').textContent=ff;
+/* ── Tab switching ── */
+document.getElementById('yrTabs').addEventListener('click', e => {
+  const btn = e.target.closest('.yr-tab');
+  if (!btn) return;
+  const yr = btn.dataset.yr;
+  document.querySelectorAll('.yr-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.yr-panel').forEach(p => p.classList.remove('active'));
+  btn.classList.add('active');
+  const panel = document.getElementById('panel-' + yr);
+  panel.classList.add('active');
+  animateBars(panel);
+});
+
+/* ── Animate expense bars ── */
+function animateBars(panel) {
+  panel.querySelectorAll('.ebar-fill').forEach(b => {
+    b.style.width = '0';
+    setTimeout(() => b.style.width = b.dataset.pct + '%', 60);
+  });
+  const pf = panel.querySelector('.prog-fill');
+  if (pf && pf.dataset.pct) {
+    pf.style.width = '0';
+    setTimeout(() => pf.style.width = pf.dataset.pct + '%', 60);
   }
 }
-loadLive();
+
+/* Observe 2025 bars (visible on load if tab is selected) */
+const ob = new IntersectionObserver(e => {
+  e.forEach(x => { if (x.isIntersecting) animateBars(x.target); });
+}, { threshold: 0.2 });
+document.querySelectorAll('.yr-panel').forEach(p => ob.observe(p));
+
+/* ── Load 2026 live data ── */
+const su = (window.PSOTS && window.PSOTS.scriptUrl) || localStorage.getItem('psots_script_url') || '';
+const CARRY = 104670;
+const fmt = n => '₹' + parseInt(n || 0).toLocaleString('en-IN');
+
+async function load2026() {
+  let collected = 0, count = 0, expenses = 0, budget = 600000;
+
+  try {
+    const r = await fetch(su + '?action=list_all');
+    const d = await r.json();
+    const rows2026 = (d.all || []).filter(x => Number(x.year) === 2026);
+    collected = rows2026.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
+    count = rows2026.length;
+  } catch (e) {}
+
+  try {
+    const r2 = await fetch(su + '?action=getFinance');
+    const d2 = await r2.json();
+    const f = d2.finance || {};
+    if (f.expenses && Number(f.expenses) > 0) expenses = parseInt(f.expenses);
+    if (f.budget && Number(f.budget) > 0) budget = parseInt(f.budget);
+
+    /* Expense breakdown from backend */
+    const cats = [
+      { key: 'expTent',     label: 'Tent & Decor' },
+      { key: 'expKharna',   label: 'Kharna Prasad' },
+      { key: 'expThekua',   label: 'Thekua Prasad' },
+      { key: 'expAV',       label: 'A/V & Sound' },
+      { key: 'expCultural', label: 'Cultural Prog.' },
+      { key: 'expMisc',     label: 'Miscellaneous' },
+    ];
+    const hasExp = expenses > 0 && cats.some(c => f[c.key] && Number(f[c.key]) > 0);
+    if (hasExp) {
+      const bars = cats.filter(c => Number(f[c.key]) > 0).map(c => {
+        const pct = Math.round((Number(f[c.key]) / expenses) * 100);
+        return `<div class="ebar"><div class="ebar-lbl">${c.label}</div><div class="ebar-track"><div class="ebar-fill" data-pct="${pct}"></div></div><div class="ebar-amt">${fmt(f[c.key])}</div></div>`;
+      }).join('');
+      document.getElementById('exp26-content').innerHTML =
+        `<div class="card-sub" style="margin-bottom:.9rem">Where every rupee went — total ${fmt(expenses)}</div>${bars}`;
+    }
+  } catch (e) {}
+
+  const available = CARRY + collected;
+  const balance = available - expenses;
+  const pct = budget > 0 ? Math.min(100, Math.round((collected / budget) * 100)) : 0;
+
+  document.getElementById('c26-collected').textContent = fmt(collected);
+  document.getElementById('c26-available').textContent = fmt(available);
+  document.getElementById('c26-expenses').textContent = fmt(expenses);
+  document.getElementById('c26-balance').textContent = fmt(balance);
+  document.getElementById('c26-count').textContent = count || '—';
+  document.getElementById('c26-budget').textContent = fmt(budget);
+  document.getElementById('c26-budget-sm').textContent = parseInt(budget).toLocaleString('en-IN');
+  document.getElementById('c26-pct').textContent = pct + '%';
+  const bar = document.getElementById('c26-bar');
+  bar.dataset.pct = pct;
+  setTimeout(() => { bar.style.width = pct + '%'; }, 200);
+}
+
+if (su) load2026();
 </script>
 </body>
 </html>
