@@ -643,9 +643,67 @@
 
   <!-- ═══ GALLERY REVIEW TAB ═══ -->
   <div class="tab-panel" id="tab-gallery">
+
+    <!-- Admin Upload -->
+    <div class="admin-card" style="margin-bottom:1rem">
+      <div class="ac-title">⬆️ Admin Upload <span style="font-size:.62rem;background:#e8f5e9;color:#2e7d32;border-radius:50px;padding:.1rem .5rem;margin-left:.35rem;font-weight:600">Auto-Approved</span></div>
+      <div class="ac-sub">Upload photos directly — they go straight to the gallery without needing review. Compress + organise with year, moment and caption.</div>
+
+      <div id="admDropZone" onclick="document.getElementById('admPhotoFile').click()"
+        style="border:2px dashed #f0d5b8;border-radius:12px;padding:1.4rem 1rem;text-align:center;cursor:pointer;transition:border-color .2s;background:var(--warm);margin-bottom:.9rem">
+        <input type="file" id="admPhotoFile" accept="image/*" multiple style="display:none" onchange="admOnFilesSelected(this)"/>
+        <div id="admDropHint">
+          <div style="font-size:1.8rem;margin-bottom:.3rem">📷</div>
+          <div style="font-weight:600;font-size:.85rem;color:var(--ink)">Click to select photos (or drag &amp; drop)</div>
+          <div style="font-size:.72rem;color:#c8a880;margin-top:.2rem">Multiple files supported · JPG/PNG/HEIC · Max 15 MB each</div>
+        </div>
+        <div id="admPreviewStrip" style="display:none;display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center"></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem;margin-bottom:.7rem">
+        <div>
+          <label style="font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b08060;margin-bottom:.25rem;display:block">📅 Year</label>
+          <select id="adm-year" style="width:100%;padding:.6rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;background:var(--warm);outline:none">
+            <option value="2026">2026 (This Year)</option>
+            <option value="2025" selected>2025</option>
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b08060;margin-bottom:.25rem;display:block">🎬 Moment</label>
+          <select id="adm-moment" style="width:100%;padding:.6rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;background:var(--warm);outline:none">
+            <option value="Sandhya Arghya">🌅 Sandhya Arghya (Sunset)</option>
+            <option value="Usha Arghya">🌄 Usha Arghya (Sunrise)</option>
+            <option value="Kharna Dinner">🍚 Kharna Dinner</option>
+            <option value="Thekua Making">🍪 Thekua Making</option>
+            <option value="Ghat Decoration">🎨 Ghat Setup & Decoration</option>
+            <option value="Nahay Khay">🛁 Nahay Khay</option>
+            <option value="Cultural Programme">🎤 Cultural Programme</option>
+            <option value="Community Gathering">👥 Community Gathering</option>
+            <option value="Other">📸 Other</option>
+          </select>
+        </div>
+      </div>
+      <div style="margin-bottom:.9rem">
+        <label style="font-size:.62rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#b08060;margin-bottom:.25rem;display:block">📝 Caption <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#c8a880">(optional — applies to all photos in this batch)</span></label>
+        <input type="text" id="adm-caption" placeholder="e.g. Sunset Arghya at Society Ghat — 2025" style="width:100%;padding:.6rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;background:var(--warm);outline:none"/>
+      </div>
+
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <button id="admUploadBtn" onclick="admUploadAll()" class="btn-primary" style="flex:1" disabled>
+          ⬆️ Upload to Gallery
+        </button>
+        <div id="admUploadProgress" style="font-size:.78rem;color:var(--lbr);min-width:80px;text-align:right"></div>
+      </div>
+      <div id="admUploadDone" style="display:none;margin-top:.8rem;background:#f0fff4;border:1.5px solid #a5d6a7;border-radius:10px;padding:.8rem 1rem;font-size:.82rem;color:#2e7d32;font-weight:600;text-align:center"></div>
+    </div>
+
+    <!-- Review Submissions -->
     <div class="admin-card">
-      <div class="ac-title">📸 Gallery Photo Review</div>
-      <div class="ac-sub">Review photos submitted by residents and volunteers. Approve photos to make them visible in the gallery, or reject to hide them.</div>
+      <div class="ac-title">📋 Resident Submissions</div>
+      <div class="ac-sub">Review photos submitted by residents and volunteers. Approve to publish in the gallery or reject to hide.</div>
 
       <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem;align-items:center">
         <select id="galStatusFilter" onchange="loadGallerySubmissions()" style="padding:.45rem .85rem;border:1.5px solid #f0d5b8;border-radius:8px;font-family:'DM Sans',sans-serif;font-size:.8rem;outline:none;background:var(--warm)">
@@ -2172,6 +2230,144 @@ async function updateGalStatus(idx, newStatus) {
   } catch(e) {
     toast('Update failed', 'error');
   }
+}
+
+/* ═══════════════════════════════════════════════════
+   ADMIN PHOTO UPLOAD (auto-approved)
+═══════════════════════════════════════════════════ */
+let admQueue = []; // array of { file, base64 }
+
+// Drag-and-drop on admin drop zone
+(function() {
+  document.addEventListener('DOMContentLoaded', () => {
+    const dz = document.getElementById('admDropZone');
+    if (!dz) return;
+    dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.borderColor = 'var(--or)'; });
+    dz.addEventListener('dragleave', () => { dz.style.borderColor = '#f0d5b8'; });
+    dz.addEventListener('drop', e => {
+      e.preventDefault(); dz.style.borderColor = '#f0d5b8';
+      const files = [...e.dataTransfer.files].filter(f => f.type.startsWith('image/'));
+      if (files.length) admAddFiles(files);
+    });
+  });
+})();
+
+function admOnFilesSelected(input) {
+  const files = [...input.files];
+  if (files.length) admAddFiles(files);
+}
+
+function admAddFiles(files) {
+  const strip = document.getElementById('admPreviewStrip');
+  document.getElementById('admDropHint').style.display = 'none';
+  strip.style.display = 'flex';
+
+  files.forEach(file => {
+    if (file.size > 15 * 1024 * 1024) { toast(`${file.name} too large (max 15 MB)`, 'error'); return; }
+    const reader = new FileReader();
+    reader.onload = e => {
+      admCompress(e.target.result, 1400, 0.85).then(b64 => {
+        const idx = admQueue.length;
+        admQueue.push({ file, base64: b64 });
+
+        const thumb = document.createElement('div');
+        thumb.style.cssText = 'position:relative;width:80px;height:80px;border-radius:8px;overflow:hidden;border:2px solid #f0d5b8';
+        thumb.innerHTML = `
+          <img src="${b64}" style="width:100%;height:100%;object-fit:cover"/>
+          <button onclick="admRemoveFile(${idx})" style="position:absolute;top:2px;right:2px;width:18px;height:18px;border-radius:50%;background:rgba(0,0,0,.65);border:none;color:#fff;font-size:.7rem;cursor:pointer;line-height:1;display:flex;align-items:center;justify-content:center">×</button>`;
+        thumb.id = `admThumb${idx}`;
+        strip.appendChild(thumb);
+
+        document.getElementById('admUploadBtn').disabled = false;
+        document.getElementById('admUploadProgress').textContent = `${admQueue.filter(q=>q).length} photo${admQueue.filter(q=>q).length !== 1 ? 's' : ''} queued`;
+      });
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+function admRemoveFile(idx) {
+  admQueue[idx] = null;
+  const thumb = document.getElementById(`admThumb${idx}`);
+  if (thumb) thumb.remove();
+  const remaining = admQueue.filter(q => q).length;
+  document.getElementById('admUploadProgress').textContent = remaining ? `${remaining} photo${remaining !== 1 ? 's' : ''} queued` : '';
+  if (!remaining) {
+    document.getElementById('admUploadBtn').disabled = true;
+    document.getElementById('admDropHint').style.display = 'block';
+    document.getElementById('admPreviewStrip').style.display = 'none';
+    admQueue = [];
+  }
+}
+
+function admCompress(dataUrl, maxDim, quality) {
+  return new Promise(resolve => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > maxDim || h > maxDim) { const r = Math.min(maxDim/w, maxDim/h); w = Math.round(w*r); h = Math.round(h*r); }
+      const c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      c.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(c.toDataURL('image/jpeg', quality));
+    };
+    img.src = dataUrl;
+  });
+}
+
+async function admUploadAll() {
+  const url = getScriptUrl();
+  if (!url || url.includes('YOUR_APPS')) { toast('Configure Apps Script URL in Settings first', 'error'); return; }
+
+  const year    = document.getElementById('adm-year').value;
+  const moment  = document.getElementById('adm-moment').value;
+  const caption = document.getElementById('adm-caption').value.trim();
+  const batch   = admQueue.filter(q => q);
+  if (!batch.length) return;
+
+  const btn = document.getElementById('admUploadBtn');
+  btn.disabled = true;
+  const prog = document.getElementById('admUploadProgress');
+
+  let done = 0, failed = 0;
+  for (const item of batch) {
+    prog.textContent = `Uploading ${done + 1} / ${batch.length}…`;
+    try {
+      await fetch(url, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'uploadPhoto',
+          imageBase64: item.base64,
+          year, moment, caption,
+          name: 'Admin',
+          flat: 'Admin',
+          adminUpload: true   // triggers auto-approve in Apps Script
+        })
+      });
+      done++;
+    } catch(e) {
+      failed++;
+    }
+  }
+
+  prog.textContent = '';
+  const doneEl = document.getElementById('admUploadDone');
+  doneEl.textContent = `✅ ${done} photo${done !== 1 ? 's' : ''} uploaded to gallery${failed ? ` · ${failed} failed` : ''}`;
+  doneEl.style.display = 'block';
+  toast(`📸 ${done} photo${done !== 1 ? 's' : ''} uploaded!`, 'success');
+
+  // Reset form
+  admQueue = [];
+  document.getElementById('admPreviewStrip').innerHTML = '';
+  document.getElementById('admPreviewStrip').style.display = 'none';
+  document.getElementById('admDropHint').style.display = 'block';
+  document.getElementById('adm-caption').value = '';
+  document.getElementById('admPhotoFile').value = '';
+  setTimeout(() => { doneEl.style.display = 'none'; }, 5000);
+
+  // Refresh the review grid if it's on Approved
+  if (document.getElementById('galStatusFilter').value === 'Approved') loadGallerySubmissions();
 }
 </script>
 </body>

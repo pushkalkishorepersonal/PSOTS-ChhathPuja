@@ -853,9 +853,10 @@ function actionUploadPhoto(body) {
   }
 
   const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-  sheet.appendRow([now, name, flat, year || '', moment || '', caption || '', driveUrl, 'Pending Review']);
+  const status = body.adminUpload === true ? 'Approved' : 'Pending Review';
+  sheet.appendRow([now, name, flat, year || '', moment || '', caption || '', driveUrl, status]);
 
-  return { success: true, driveUrl, message: 'Photo submitted for review!' };
+  return { success: true, driveUrl, status, message: body.adminUpload ? 'Photo published to gallery!' : 'Photo submitted for review!' };
 }
 
 /* ══════════════════════════════════════════════════════════
