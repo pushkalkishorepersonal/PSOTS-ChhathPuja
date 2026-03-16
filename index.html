@@ -217,8 +217,9 @@
 
   /* VOLUNTEER & GALLERY TILES */
   .t-vol{grid-column:span 6;background:linear-gradient(135deg,#2d1200,#5a2400);border:1px solid rgba(255,194,0,.12);box-shadow:0 4px 20px rgba(0,0,0,.25)}
+  .t-faq{grid-column:span 6}
   .t-gallery{grid-column:span 6;background:#fff;border:1px solid rgba(200,100,0,.09);box-shadow:0 4px 20px rgba(26,8,0,.07)}
-  @media(max-width:680px){.t-vol,.t-gallery{grid-column:span 12}}
+  @media(max-width:680px){.t-vol,.t-faq,.t-gallery{grid-column:span 12}}
 
   footer{background:#080200;padding:2rem 1.5rem;text-align:center}
   .ft-t{font-family:'Yatra One',serif;font-size:.95rem;color:var(--gold);margin-bottom:.28rem}
@@ -381,7 +382,7 @@
     </a>
 
     <!-- FAQ -->
-    <a class="tile" href="pages/faq.html" style="padding:1.4rem;background:linear-gradient(135deg,#fff8f0,#fdf0e0);border:1px solid rgba(200,100,0,.12)">
+    <a class="tile t-faq" href="pages/faq.html" style="padding:1.4rem;background:linear-gradient(135deg,#fff8f0,#fdf0e0);border:1px solid rgba(200,100,0,.12)">
       <div style="font-size:2rem;margin-bottom:.5rem">❓</div>
       <div style="font-family:'DM Sans',sans-serif;font-size:1.02rem;font-weight:700;color:var(--ink);margin-bottom:.3rem">FAQ & Info</div>
       <div style="font-size:.78rem;color:var(--lbr);line-height:1.5;margin-bottom:.8rem">Contributions, data privacy, event info — answers to common questions from residents.</div>
@@ -540,6 +541,10 @@ if(su){
     }
   } catch(e) {}
 })();
+// Re-check session on back-navigation (bfcache)
+window.addEventListener('pageshow', function(e) {
+  if (e.persisted) { location.reload(); }
+});
 </script>
 </body>
 </html>

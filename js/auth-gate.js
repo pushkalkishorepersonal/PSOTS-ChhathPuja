@@ -178,7 +178,7 @@
       fetch(su + '?action=sendOtp&email=' + encodeURIComponent(email))
         .then(function (r) { return r.json(); })
         .then(function (d) {
-          if (d.ok === false) { window._psGate._err(d.msg || 'Could not send code'); btn.disabled = false; btn.textContent = 'Send Sign-in Code →'; return; }
+          if (!d.ok) { window._psGate._err(d.msg || 'Could not send code'); btn.disabled = false; btn.textContent = 'Send Sign-in Code →'; return; }
           document.getElementById('gate-email-step').style.display = 'none';
           document.getElementById('gate-otp-step').style.display = 'block';
           var gw = document.getElementById('gate-google-wrap');
@@ -191,7 +191,7 @@
     verifyOtp: function () {
       var email = (document.getElementById('gate-email').value || '').trim();
       var otp   = (document.getElementById('gate-otp').value || '').trim();
-      if (!otp || otp.length < 4) { window._psGate._err('Enter the 6-digit code'); return; }
+      if (!otp || !/^\d{6}$/.test(otp)) { window._psGate._err('Enter the 6-digit code'); return; }
       var su = (window.PSOTS && window.PSOTS.scriptUrl) || '';
       var btn = document.getElementById('gate-verify-btn');
       btn.disabled = true; btn.textContent = 'Verifying…';
