@@ -6,7 +6,6 @@
   <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:ital,wght@0,700;0,900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css"/>
   <style>
-  .qr-box{display:flex;flex-direction:column;align-items:center;gap:1rem;padding:1.4rem;background:linear-gradient(135deg,#fff5e8,#ffe8d0);border-radius:16px;border:2px solid rgba(232,92,0,.2);margin-bottom:1rem}
   .qr-img-wrap{background:#fff;border-radius:12px;padding:12px;box-shadow:0 4px 18px rgba(26,8,0,.1);position:relative}
   .qr-img-wrap img{display:block;width:180px;height:180px;border-radius:6px}
   .qr-placeholder{width:180px;height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;color:#b08060;font-size:.8rem;text-align:center;border:2px dashed #f0d5b8;border-radius:6px}
@@ -23,9 +22,6 @@
   .amt-inp::placeholder{color:#d4b898;font-size:.95rem;font-family:'DM Sans',sans-serif;font-weight:300}
   .or-l{display:flex;align-items:center;gap:.75rem;margin:.75rem 0;color:#7a5030;font-size:.76rem}
   .or-l::before,.or-l::after{content:'';flex:1;height:1px;background:#f0d5b8}
-  .manual-row{background:var(--warm);border-radius:11px;padding:.85rem 1.05rem;display:flex;align-items:center;justify-content:space-between;gap:.8rem;flex-wrap:wrap;border:1px solid #f0d5b8}
-  .mr-txt{font-size:.82rem;color:#7a5030}
-  .mr-txt strong{color:var(--or)}
   .amt-ro{padding:.7rem .95rem;border:1.5px solid #f0d5b8;border-radius:10px;background:linear-gradient(135deg,#fff5e8,#ffe8cc);font-family:'DM Sans',sans-serif;font-size:1.1rem;font-weight:700;color:var(--or);min-height:42px;display:flex;align-items:center}
   #returnBanner{display:none;position:fixed;bottom:1rem;left:1rem;right:1rem;z-index:500;background:linear-gradient(135deg,#c94d00,#ff8c00);color:#fff;border-radius:16px;padding:.9rem 1.2rem;align-items:center;justify-content:space-between;box-shadow:0 8px 30px rgba(0,0,0,.3);gap:.8rem;animation:slu .4s ease both}
   @keyframes slu{from{transform:translateY(100px);opacity:0}to{transform:translateY(0);opacity:1}}
@@ -33,7 +29,6 @@
   .rb-msg b{font-family:'DM Sans',sans-serif;display:block;font-size:.96rem}
   .rb-fill{background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:50px;padding:.42rem .95rem;font-weight:700;font-size:.76rem;cursor:pointer;white-space:nowrap}
   .rb-x{cursor:pointer;opacity:.7;font-size:1.1rem;flex-shrink:0}
-  /* Guest vs logged-in */
   .mode-bar{display:flex;background:#fff;border-radius:12px;padding:.3rem;border:1px solid #f0d5b8;margin-bottom:1.4rem;gap:.3rem}
   .mode-btn{flex:1;padding:.6rem;border-radius:9px;font-size:.82rem;font-weight:600;border:none;cursor:pointer;transition:all .22s;font-family:'DM Sans',sans-serif}
   .mode-btn.active{background:linear-gradient(135deg,var(--or),#c93800);color:#fff;box-shadow:0 3px 12px rgba(232,92,0,.3)}
@@ -56,19 +51,27 @@
   .success-box p{font-size:.86rem;color:#555;line-height:1.65;margin-bottom:1.1rem}
   .err-box{display:none;background:#fff3f0;border:1px solid #ffb8a0;border-radius:9px;padding:.7rem .95rem;color:#c03000;font-size:.82rem;margin-top:.75rem}
 
-  /* ── Direct App Links ── */
-  .app-links{display:none;margin-top:.8rem;padding-top:.8rem;border-top:1px dashed #f0d5b8}
-  .app-links.visible{display:block}
-  .app-links-lbl{font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;font-weight:600;color:#9b6b48;text-align:center;margin-bottom:.6rem}
-  .app-btns{display:flex;gap:.45rem;justify-content:center;flex-wrap:wrap}
-  .app-btn{display:inline-flex;align-items:center;gap:.38rem;padding:.5rem .9rem;border-radius:50px;font-size:.78rem;font-weight:700;text-decoration:none;font-family:'DM Sans',sans-serif;transition:transform .15s,box-shadow .15s;white-space:nowrap;border:none}
-  .app-btn:active{transform:scale(.95)}
-  .app-btn-gpay{background:#fff;color:#1a73e8;border:1.5px solid #dadce0;box-shadow:0 2px 6px rgba(0,0,0,.1)}
-  .app-btn-phonepe{background:#5f259f;color:#fff;box-shadow:0 2px 8px rgba(95,37,159,.35)}
-  .app-btn-paytm{background:#002970;color:#fff;box-shadow:0 2px 8px rgba(0,41,112,.3)}
-  .app-btn-bhim{background:#00527e;color:#fff;box-shadow:0 2px 8px rgba(0,82,126,.3)}
-  .app-btn-any{background:linear-gradient(135deg,var(--or),#c93800);color:#fff;box-shadow:0 2px 8px rgba(232,92,0,.3)}
-  .app-note{font-size:.68rem;color:#9b6b48;text-align:center;margin-top:.5rem}
+  /* ── Device-adaptive pay panels ── */
+  .pay-panels{display:flex;flex-direction:column;gap:.65rem;margin-bottom:.85rem}
+  .pay-section{border-radius:13px;overflow:hidden;border:1.5px solid rgba(232,92,0,.2)}
+  .pay-sec-hdr{width:100%;display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;background:linear-gradient(135deg,#fff5e8,#ffe0c4);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;color:#5a2e0c;text-align:left;transition:background .18s}
+  .pay-sec-hdr:hover{background:linear-gradient(135deg,#ffe8d0,#ffd0a8)}
+  .sec-arrow{font-size:.82rem;transition:transform .25s ease;display:inline-block;margin-left:.3rem}
+  .pay-section.collapsed .sec-arrow{transform:rotate(-90deg)}
+  .pay-sec-body{overflow:hidden;max-height:640px;transition:max-height .38s ease,padding .3s ease;padding:.95rem}
+  .pay-section.collapsed .pay-sec-body{max-height:0;padding-top:0;padding-bottom:0}
+  .qr-inner{display:flex;flex-direction:column;align-items:center;gap:.75rem}
+  /* App button grid */
+  .app-grid{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;margin-bottom:.55rem}
+  .app-big-btn{display:flex;align-items:center;justify-content:center;gap:.52rem;padding:.82rem .5rem;border-radius:12px;font-size:.9rem;font-weight:700;text-decoration:none;font-family:'DM Sans',sans-serif;transition:transform .15s,box-shadow .15s;border:none;cursor:pointer}
+  .app-big-btn:active{transform:scale(.96)}
+  .app-btn-full{grid-column:1/-1;padding:.72rem}
+  .app-btn-gpay{background:#fff;color:#1a73e8;border:1.5px solid #dadce0;box-shadow:0 2px 8px rgba(0,0,0,.1)}
+  .app-btn-phonepe{background:#5f259f;color:#fff;box-shadow:0 3px 14px rgba(95,37,159,.3)}
+  .app-btn-paytm{background:#002970;color:#fff;box-shadow:0 3px 14px rgba(0,41,112,.25)}
+  .app-btn-bhim{background:#00527e;color:#fff;box-shadow:0 3px 14px rgba(0,82,126,.25)}
+  .app-btn-any{background:linear-gradient(135deg,var(--or),#c93800);color:#fff;box-shadow:0 3px 14px rgba(232,92,0,.3)}
+  .app-sec-note{font-size:.7rem;color:#9b6b48;text-align:center;margin:.35rem 0 0;line-height:1.5}
   </style>
 </head>
 <body>
@@ -103,8 +106,8 @@
 
   <!-- Mode selector -->
   <div class="card">
-    <div class="card-title">🌅 Pay via UPI — Scan &amp; Pay</div>
-    <div class="card-sub">Enter amount → scan the QR in any UPI app (GPay, PhonePe, Paytm, BHIM, iMobile) — or copy the UPI ID to pay manually.</div>
+    <div class="card-title">🌅 Pay via UPI</div>
+    <div class="card-sub" id="cardSub">Enter amount → pay with your preferred method below.</div>
 
     <!-- Guest / Signed-in toggle -->
     <div class="mode-bar">
@@ -130,61 +133,77 @@
       <input class="amt-inp" type="number" id="payAmt" placeholder="Type amount…" min="1" inputmode="numeric" oninput="onAmtInput()"/>
     </div>
 
-    <!-- QR Code Box -->
-    <div class="qr-box">
-      <div class="qr-img-wrap">
-        <div id="qrPlaceholder" class="qr-placeholder">
-          <span style="font-size:2rem">📱</span>
-          <span>Enter amount above<br/>to generate QR</span>
-        </div>
-        <img id="qrImg" style="display:none;width:180px;height:180px;border-radius:6px" alt="UPI QR Code"/>
-      </div>
-      <div class="qr-label">
-        <strong>Scan with any UPI app</strong><br/>
-        GPay · PhonePe · Paytm · BHIM · iMobile · Any UPI app
-      </div>
-      <div class="upi-id-row">
-        <span style="font-size:.76rem;color:#6b3a18;white-space:nowrap">UPI ID:</span>
-        <span class="upi-id-text">9482088904-3@ybl</span>
-        <button class="copy-btn" id="copyBtn" onclick="copyUpiId()">📋 Copy</button>
-      </div>
-      <p id="amtDisplay" style="font-size:.78rem;color:#6b3a18;margin:0;text-align:center">Amount: enter above</p>
+    <!-- UPI ID + amount line — always visible -->
+    <div class="upi-id-row" style="margin-bottom:.6rem">
+      <span style="font-size:.76rem;color:#6b3a18;white-space:nowrap">UPI ID:</span>
+      <span class="upi-id-text">9482088904-3@ybl</span>
+      <button class="copy-btn" id="copyBtn" onclick="copyUpiId()">📋 Copy</button>
+    </div>
+    <p id="amtDisplay" style="font-size:.78rem;color:#6b3a18;margin:0 0 .75rem;text-align:center">Amount: enter above</p>
 
-      <!-- Direct app-open links -->
-      <div class="app-links" id="appLinks">
-        <div class="app-links-lbl">— open directly in app —</div>
-        <div class="app-btns">
-          <a class="app-btn app-btn-gpay" id="link-gpay" href="#" onclick="return handleAppLink(this)">
-            <svg width="16" height="16" viewBox="0 0 48 48" fill="none"><path d="M24 9.5c3.5 0 6.6 1.3 9 3.4l6.7-6.7C35.7 2.6 30.2 0 24 0 14.7 0 6.7 5.5 2.8 13.5l7.8 6C12.3 13.2 17.7 9.5 24 9.5z" fill="#EA4335"/><path d="M46.1 24.5c0-1.5-.1-3-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.1-4.5 6.7l7 5.4C42.9 36.9 46.1 31.1 46.1 24.5z" fill="#4285F4"/><path d="M10.6 28.5A14.8 14.8 0 0 1 9.5 24c0-1.6.3-3.1.8-4.5l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.5 10.8l8.1-6.3z" fill="#FBBC04"/><path d="M24 48c6.2 0 11.4-2 15.2-5.5l-7-5.4c-2 1.4-4.6 2.2-8.2 2.2-6.3 0-11.7-3.8-13.5-9.8l-8.1 6.3C6.7 42.5 14.7 48 24 48z" fill="#34A853"/></svg>
-            GPay
+    <!-- Pay panels — JS sets device layout on load -->
+    <div class="pay-panels">
+
+      <!-- APP SECTION: primary on mobile, collapsed on desktop -->
+      <div id="appSection" class="pay-section">
+        <button class="pay-sec-hdr" onclick="toggleSec('appSection','appArrow')">
+          <span>📱 Open directly in UPI App</span>
+          <span class="sec-arrow" id="appArrow">▾</span>
+        </button>
+        <div class="pay-sec-body">
+          <div class="app-grid">
+            <a class="app-big-btn app-btn-gpay" id="link-gpay" href="#" onclick="return handleAppLink(this)">
+              <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><path d="M24 9.5c3.5 0 6.6 1.3 9 3.4l6.7-6.7C35.7 2.6 30.2 0 24 0 14.7 0 6.7 5.5 2.8 13.5l7.8 6C12.3 13.2 17.7 9.5 24 9.5z" fill="#EA4335"/><path d="M46.1 24.5c0-1.5-.1-3-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.1-4.5 6.7l7 5.4C42.9 36.9 46.1 31.1 46.1 24.5z" fill="#4285F4"/><path d="M10.6 28.5A14.8 14.8 0 0 1 9.5 24c0-1.6.3-3.1.8-4.5l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.5 10.8l8.1-6.3z" fill="#FBBC04"/><path d="M24 48c6.2 0 11.4-2 15.2-5.5l-7-5.4c-2 1.4-4.6 2.2-8.2 2.2-6.3 0-11.7-3.8-13.5-9.8l-8.1 6.3C6.7 42.5 14.7 48 24 48z" fill="#34A853"/></svg>
+              GPay
+            </a>
+            <a class="app-big-btn app-btn-phonepe" id="link-phonepe" href="#" onclick="return handleAppLink(this)">
+              <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="24" fill="#5f259f"/><path d="M16 12h10c5.5 0 9 3 9 7.5 0 4-2.5 7-7 7.8L34 36h-5.5l-5.2-8.4H21V36h-5V12zm5 4v7.5h4.5c2.5 0 4-1.2 4-3.7 0-2.4-1.5-3.8-4-3.8H21z" fill="#fff"/></svg>
+              PhonePe
+            </a>
+            <a class="app-big-btn app-btn-paytm" id="link-paytm" href="#" onclick="return handleAppLink(this)">
+              <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="8" fill="#002970"/><path d="M8 24c0-8.8 7.2-16 16-16s16 7.2 16 16-7.2 16-16 16S8 32.8 8 24z" fill="#00BAF2"/><path d="M18 20h4v8h-4zm8 0h4v4h-4v4h-4v-4h4v-4z" fill="#fff"/></svg>
+              Paytm
+            </a>
+            <a class="app-big-btn app-btn-bhim" id="link-bhim" href="#" onclick="return handleAppLink(this)">
+              <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="8" fill="#00527e"/><text x="24" y="32" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="20" fill="#fff">B</text></svg>
+              BHIM
+            </a>
+          </div>
+          <a class="app-big-btn app-btn-any app-btn-full" id="link-any" href="#" onclick="return handleAppLink(this)">
+            ↗ Open in Any UPI App
           </a>
-          <a class="app-btn app-btn-phonepe" id="link-phonepe" href="#" onclick="return handleAppLink(this)">
-            <svg width="16" height="16" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="24" fill="#5f259f"/><path d="M16 12h10c5.5 0 9 3 9 7.5 0 4-2.5 7-7 7.8L34 36h-5.5l-5.2-8.4H21V36h-5V12zm5 4v7.5h4.5c2.5 0 4-1.2 4-3.7 0-2.4-1.5-3.8-4-3.8H21z" fill="#fff"/></svg>
-            PhonePe
-          </a>
-          <a class="app-btn app-btn-paytm" id="link-paytm" href="#" onclick="return handleAppLink(this)">
-            <svg width="16" height="16" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="8" fill="#002970"/><path d="M8 24c0-8.8 7.2-16 16-16s16 7.2 16 16-7.2 16-16 16S8 32.8 8 24z" fill="#00BAF2"/><path d="M18 20h4v8h-4zm8 0h4v4h-4v4h-4v-4h4v-4z" fill="#fff"/></svg>
-            Paytm
-          </a>
-          <a class="app-btn app-btn-bhim" id="link-bhim" href="#" onclick="return handleAppLink(this)">
-            <svg width="16" height="16" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="8" fill="#00527e"/><text x="24" y="32" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="20" fill="#fff">B</text></svg>
-            BHIM
-          </a>
-          <a class="app-btn app-btn-any" id="link-any" href="#" onclick="return handleAppLink(this)">
-            ↗ Any UPI
-          </a>
+          <p class="app-sec-note" id="appSecNote">Enter amount above — links open with amount pre-filled</p>
         </div>
-        <div class="app-note">📱 Opens the app on your phone with amount pre-filled</div>
       </div>
+
+      <!-- QR SECTION: primary on desktop, collapsed on mobile -->
+      <div id="qrSection" class="pay-section">
+        <button class="pay-sec-hdr" onclick="toggleSec('qrSection','qrArrow')">
+          <span>📷 Scan QR Code</span>
+          <span class="sec-arrow" id="qrArrow">▾</span>
+        </button>
+        <div class="pay-sec-body">
+          <div class="qr-inner">
+            <div class="qr-img-wrap">
+              <div id="qrPlaceholder" class="qr-placeholder">
+                <span style="font-size:2rem">📱</span>
+                <span>Enter amount above<br/>to generate QR</span>
+              </div>
+              <img id="qrImg" style="display:none;width:180px;height:180px;border-radius:6px" alt="UPI QR Code"/>
+            </div>
+            <div class="qr-label"><strong>Scan with any UPI app</strong><br/>GPay · PhonePe · Paytm · BHIM · iMobile</div>
+          </div>
+        </div>
+      </div>
+
     </div>
 
     <div class="or-l">how to pay</div>
     <div style="background:var(--warm);border-radius:11px;padding:.85rem 1.05rem;border:1px solid #f0d5b8;font-size:.82rem;color:#6b3a18;line-height:1.8">
-      <strong>Option A — Scan QR:</strong> Open any UPI app → Scan QR code above → Amount pre-filled → Pay<br/>
-      <strong>Option B — Copy UPI ID:</strong> Open UPI app → Send Money → Paste <strong>9482088904-3@ybl</strong> → Enter amount → Pay<br/>
-      <strong>Option C — Mobile:</strong> Open UPI app → Search by mobile → <strong>9482088904</strong> → Pay
+      <strong>📱 Mobile — Tap app button:</strong> Enter amount → tap GPay / PhonePe / etc. → amount pre-filled → Pay<br/>
+      <strong>📷 Any device — Scan QR:</strong> Open any UPI app → Scan QR → Amount pre-filled → Pay<br/>
+      <strong>📋 Manual:</strong> Copy UPI ID <strong>9482088904-3@ybl</strong> → Open UPI app → Send Money → Paste → Pay
     </div>
-    <p style="font-size:.76rem;color:#6b3a18;margin-top:.6rem;text-align:center">💡 Desktop: open UPI app → Scan QR or enter UPI ID <strong>9482088904-3@ybl</strong></p>
   </div>
 
   <!-- Confirm form -->
@@ -245,10 +264,31 @@ let currentUser=null,userProfile={},lastSubmit={};
 // Init
 window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('f-date').valueAsDate=new Date();
+  initLayout();
   const u=localStorage.getItem('psots_user');
   if(u){currentUser=JSON.parse(u);const p=localStorage.getItem('psots_profile_'+currentUser.id);if(p)userProfile=JSON.parse(p);loadUserMode();}
   else setMode('guest');
 });
+
+// Device-adaptive layout: mobile → app buttons primary; desktop → QR primary
+function initLayout(){
+  const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(isMobile){
+    document.getElementById('qrSection').classList.add('collapsed');
+    document.getElementById('qrArrow').textContent='▸';
+    document.getElementById('cardSub').textContent='Tap your UPI app to pay instantly — amount is pre-filled automatically.';
+  } else {
+    document.getElementById('appSection').classList.add('collapsed');
+    document.getElementById('appArrow').textContent='▸';
+    document.getElementById('cardSub').textContent='Scan the QR code with any UPI app — GPay, PhonePe, Paytm, BHIM.';
+  }
+}
+
+function toggleSec(sectionId,arrowId){
+  const sec=document.getElementById(sectionId);
+  const isNowCollapsed=sec.classList.toggle('collapsed');
+  document.getElementById(arrowId).textContent=isNowCollapsed?'▸':'▾';
+}
 
 function loadUserMode(){
   if(!currentUser){setMode('guest');return;}
@@ -285,7 +325,6 @@ function onAmtInput(){
   const f=v?'₹ '+parseInt(v).toLocaleString('en-IN'):'← enter amount above';
   document.getElementById('amtRo').textContent=f;
   document.getElementById('amtRoUser').textContent=f;
-  // Update QR
   const qrImg=document.getElementById('qrImg');
   const qrPh=document.getElementById('qrPlaceholder');
   const amtDisplay=document.getElementById('amtDisplay');
@@ -294,7 +333,7 @@ function onAmtInput(){
     qrImg.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&qzone=2&data=${encodeURIComponent(upiUri)}`;
     qrImg.style.display='block';
     qrPh.style.display='none';
-    amtDisplay.textContent='Amount: ₹'+parseInt(v).toLocaleString('en-IN')+' — pre-filled in QR';
+    amtDisplay.textContent='Amount: ₹'+parseInt(v).toLocaleString('en-IN')+' — pre-filled';
     amtDisplay.style.color='var(--or)';
     amtDisplay.style.fontWeight='700';
   }else{
@@ -309,29 +348,27 @@ function onAmtInput(){
 
 function updateAppLinks(amount){
   const amt=parseFloat(amount);
-  const section=document.getElementById('appLinks');
-  if(!amt||amt<1){section.classList.remove('visible');return;}
   const pa=encodeURIComponent(C.upiId);
   const pn=encodeURIComponent(C.payeeName);
   const tn=encodeURIComponent('ChhathPuja2026');
   const base=`pa=${pa}&pn=${pn}&am=${amt}&cu=INR&tn=${tn}`;
-  document.getElementById('link-gpay').href    =`tez://upi/pay?${base}`;
-  document.getElementById('link-phonepe').href =`phonepe://pay?${base}`;
-  document.getElementById('link-paytm').href   =`paytmmp://pay?${base}`;
-  document.getElementById('link-bhim').href    =`bhim://pay?${base}`;
-  document.getElementById('link-any').href     =`upi://pay?${base}`;
-  section.classList.add('visible');
+  if(amt>=1){
+    document.getElementById('link-gpay').href    =`tez://upi/pay?${base}`;
+    document.getElementById('link-phonepe').href =`phonepe://pay?${base}`;
+    document.getElementById('link-paytm').href   =`paytmmp://pay?${base}`;
+    document.getElementById('link-bhim').href    =`bhim://pay?${base}`;
+    document.getElementById('link-any').href     =`upi://pay?${base}`;
+    document.getElementById('appSecNote').textContent='📱 Tap to open — ₹'+parseInt(amount).toLocaleString('en-IN')+' pre-filled';
+  } else {
+    ['link-gpay','link-phonepe','link-paytm','link-bhim','link-any'].forEach(id=>{document.getElementById(id).href='#';});
+    document.getElementById('appSecNote').textContent='Enter amount above — links open with amount pre-filled';
+  }
 }
 
-// On mobile, deep links open the app directly.
-// On desktop the scheme won't resolve — show a friendly note instead.
 function handleAppLink(el){
-  const isMobile=/Android|iPhone|iPad/i.test(navigator.userAgent);
-  if(!isMobile){
-    toast('📱 Open this page on your phone to use app links','info');
-    return false;
-  }
-  return true; // allow the href to fire
+  const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(!isMobile){toast('📱 Open this page on your phone to use app links');return false;}
+  return true;
 }
 
 function copyUpiId(){
