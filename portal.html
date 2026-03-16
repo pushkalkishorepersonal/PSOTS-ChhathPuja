@@ -283,13 +283,14 @@
           </button>
         </div>
         <button onclick="resendOtp()" style="background:none;border:none;color:var(--or);font-size:.78rem;cursor:pointer;padding:0;font-family:'DM Sans',sans-serif">↩ Send a new code</button>
+        <p style="font-size:.73rem;color:#a06030;margin-top:.5rem;line-height:1.4">Not seeing the email? Check your <strong>Spam</strong> or <strong>Promotions</strong> tab.</p>
       </div>
       <p id="otpErr" style="display:none;font-size:.8rem;color:#c03000;margin-top:.45rem"></p>
     </div>
 
-    <div class="login-divider">or continue as guest</div>
+    <div class="login-divider">or committee access</div>
     <button class="btn-ghost" style="width:100%;justify-content:center" onclick="guestMode()">
-      Continue without signing in →
+      ⚙️ Go to Admin Panel →
     </button>
     <p class="login-note" style="margin-top:1rem">We use your Google account only for identification. We never access your emails or Google data. Your PSOTS information is stored separately and securely.</p>
   </div>
@@ -611,10 +612,11 @@ window.addEventListener('load', () => {
     return;
   }
 
+  const didSignOut = localStorage.getItem('psots_signed_out') === '1';
   google.accounts.id.initialize({
     client_id: C.googleClientId,
     callback: handleGoogleLogin,
-    auto_select: true,
+    auto_select: !didSignOut,
   });
   google.accounts.id.renderButton(document.getElementById('googleBtnWrap'), {
     theme: 'outline', size: 'large', shape: 'pill',
@@ -650,6 +652,7 @@ function handleGoogleLogin(response) {
   };
   localStorage.setItem('psots_user', JSON.stringify(currentUser));
   localStorage.setItem('psots_returning', '1');
+  localStorage.removeItem('psots_signed_out');
   redirectIfAdmin() || showPortal();
 }
 
@@ -670,7 +673,7 @@ function demoLogin() {
 }
 
 function guestMode() {
-  window.location.href = 'index.html#payment';
+  window.location.href = 'admin.html';
 }
 
 /* ── Email OTP login ── */
@@ -723,6 +726,7 @@ async function verifyOtp() {
       };
       localStorage.setItem('psots_user', JSON.stringify(currentUser));
       localStorage.setItem('psots_returning', '1');
+      localStorage.removeItem('psots_signed_out');
       if (data.profile) {
         userProfile = data.profile;
         localStorage.setItem('psots_profile_' + currentUser.id, JSON.stringify(userProfile));
@@ -758,6 +762,8 @@ function signOut() {
     google.accounts.id.disableAutoSelect();
   }
   localStorage.removeItem('psots_user');
+  localStorage.removeItem('psots_returning');
+  localStorage.setItem('psots_signed_out', '1');
   currentUser = null;
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('portalApp').style.display = 'none';
