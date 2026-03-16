@@ -244,10 +244,10 @@
   <div class="login-box">
     <span class="login-icon">🌅</span>
     <div class="login-title">My PSOTS Portal</div>
-    <div class="login-sub">Sign in to view your contributions, manage notifications and connect with the committee.</div>
+    <div id="loginSub" class="login-sub">Sign in to view your contributions, manage notifications and connect with the committee.</div>
     <div class="login-society">Prestige Song of the South · Chhath 2026</div>
 
-    <div class="login-benefits">
+    <div id="loginBenefits" class="login-benefits">
       <div class="lb-title">What you get access to</div>
       <div class="lb-item"><span class="lb-icon">📊</span>Your contribution history — all years in one place</div>
       <div class="lb-item"><span class="lb-icon">📲</span>Manage your WhatsApp update preferences</div>
@@ -586,6 +586,14 @@ const C = {
 ═══════════════════════════════════════════════════ */
 let currentUser = null;
 
+// Hide onboarding info for returning users on the login screen
+if (localStorage.getItem('psots_returning')) {
+  const b = document.getElementById('loginBenefits');
+  const s = document.getElementById('loginSub');
+  if (b) b.style.display = 'none';
+  if (s) s.textContent = 'Welcome back! Sign in to continue.';
+}
+
 window.addEventListener('load', () => {
   if (C.googleClientId === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
     // Demo mode — no real Google client ID yet
@@ -641,6 +649,7 @@ function handleGoogleLogin(response) {
     loginTime: Date.now(),
   };
   localStorage.setItem('psots_user', JSON.stringify(currentUser));
+  localStorage.setItem('psots_returning', '1');
   redirectIfAdmin() || showPortal();
 }
 
@@ -655,6 +664,7 @@ function demoLogin() {
     isDemo: true,
   };
   localStorage.setItem('psots_user', JSON.stringify(currentUser));
+  localStorage.setItem('psots_returning', '1');
   showPortal();
   toast('👋 Demo mode — set up Google Client ID for real login', '');
 }
@@ -712,6 +722,7 @@ async function verifyOtp() {
         loginTime: Date.now(),
       };
       localStorage.setItem('psots_user', JSON.stringify(currentUser));
+      localStorage.setItem('psots_returning', '1');
       if (data.profile) {
         userProfile = data.profile;
         localStorage.setItem('psots_profile_' + currentUser.id, JSON.stringify(userProfile));
