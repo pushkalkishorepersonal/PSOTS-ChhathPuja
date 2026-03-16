@@ -73,6 +73,15 @@
   .app-btn-any{background:linear-gradient(135deg,var(--or),#c93800);color:#fff;box-shadow:0 3px 14px rgba(232,92,0,.3)}
   .app-sec-note{font-size:.7rem;color:#9b6b48;text-align:center;margin:.35rem 0 0;line-height:1.5}
 
+  /* ── Mobile: compact tile layout ── */
+  @media(max-width:659px){
+    .card{padding:1rem 1.1rem;border-radius:14px}
+    .card-title{font-size:1rem}
+    .card-sub{display:none}
+    .note{display:none}
+    .user-prefill-card{padding:.65rem .85rem}
+  }
+
   /* ── Desktop: two-column tile layout ── */
   @media(min-width:660px){
     .page-content{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;align-items:start}
@@ -199,7 +208,7 @@
               </div>
               <img id="qrImg" style="display:none;width:180px;height:180px;border-radius:6px" alt="UPI QR Code"/>
             </div>
-            <div class="qr-label"><strong>Scan with any UPI app</strong><br/>GPay · PhonePe · Paytm · BHIM · iMobile</div>
+            <div class="qr-label"><strong>Scan with any UPI app</strong></div>
           </div>
         </div>
       </div>
