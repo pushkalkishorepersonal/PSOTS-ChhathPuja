@@ -72,6 +72,14 @@
   .app-btn-bhim{background:#00527e;color:#fff;box-shadow:0 3px 14px rgba(0,82,126,.25)}
   .app-btn-any{background:linear-gradient(135deg,var(--or),#c93800);color:#fff;box-shadow:0 3px 14px rgba(232,92,0,.3)}
   .app-sec-note{font-size:.7rem;color:#9b6b48;text-align:center;margin:.35rem 0 0;line-height:1.5}
+
+  /* ── Desktop: two-column tile layout ── */
+  @media(min-width:660px){
+    .page-content{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem;align-items:start}
+    .step-bar{grid-column:1/-1}
+    .card-sub{display:none}
+    .card{margin-bottom:0}
+  }
   </style>
 </head>
 <body>
@@ -198,12 +206,6 @@
 
     </div>
 
-    <div class="or-l">how to pay</div>
-    <div style="background:var(--warm);border-radius:11px;padding:.85rem 1.05rem;border:1px solid #f0d5b8;font-size:.82rem;color:#6b3a18;line-height:1.8">
-      <strong>📱 Mobile — Tap app button:</strong> Enter amount → tap GPay / PhonePe / etc. → amount pre-filled → Pay<br/>
-      <strong>📷 Any device — Scan QR:</strong> Open any UPI app → Scan QR → Amount pre-filled → Pay<br/>
-      <strong>📋 Manual:</strong> Copy UPI ID <strong>9482088904-3@ybl</strong> → Open UPI app → Send Money → Paste → Pay
-    </div>
   </div>
 
   <!-- Confirm form -->
