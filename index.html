@@ -87,6 +87,29 @@
   @media(max-width:680px){.t-sched,.t-fin,.t-portal,.t-wa,.t-contrib,.t-ann{grid-column:span 12}}
   @media(min-width:681px) and (max-width:860px){.t-contrib,.t-ann{grid-column:span 6}}
 
+  /* ── MOBILE HERO FIXES ── */
+  @media(max-width:480px){
+    /* Arghya cards: remove min-width so two cards fit side-by-side without overflowing */
+    .arghya-strip{gap:.45rem;padding:0 .5rem}
+    .ac{min-width:0;flex:1 1 0;max-width:none;padding:.8rem .8rem;gap:.55rem}
+    .ac-time{font-size:1.35rem}
+    .ac-icon{font-size:2rem}
+    .ac-label{font-size:.8rem}
+    .ac-date{font-size:.72rem}
+    /* Countdown: prevent SECS wrapping onto second row */
+    .h-cd{gap:.4rem;padding:0 .4rem;flex-wrap:nowrap}
+    .cdb{min-width:0;flex:1;padding:.6rem .4rem}
+    .cbn{font-size:1.65rem}
+    .cbl{font-size:.65rem}
+    /* Ghat icons: tighter gap so नारियल doesn't get clipped */
+    .h-ghat{gap:clamp(.35rem,1.8vw,1.8rem);padding:0 .4rem}
+  }
+  @media(max-width:360px){
+    .ac{padding:.7rem .65rem}
+    .ac-time{font-size:1.2rem}
+    .cbn{font-size:1.5rem}
+  }
+
   /* PAY TILE */
   .t-pay{background:linear-gradient(135deg,#c94000 0%,#e85c00 38%,#ff8c00 68%,#ffc200 100%);box-shadow:0 8px 40px rgba(201,64,0,.4);min-height:155px}
   .pi{display:grid;grid-template-columns:1fr auto;align-items:center;padding:1.8rem 2rem;gap:1.5rem;height:100%}
