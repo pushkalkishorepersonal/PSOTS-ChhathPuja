@@ -767,6 +767,8 @@ function signOut() {
   currentUser = null;
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('portalApp').style.display = 'none';
+  document.getElementById('btnSignout').style.display = 'none';
+  document.getElementById('navAvatar').style.display = 'none';
 }
 
 function getAdminEmails() {
