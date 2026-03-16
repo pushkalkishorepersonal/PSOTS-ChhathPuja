@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: psots-society-bot
+    env: python
+    region: singapore  # Closest to India
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python bot.py
+    envVars:
+      - key: RENDER
+        value: "true"
+      - key: BOT_TOKEN
+        sync: false        # Set manually in Render dashboard
+      - key: GEMINI_API_KEY
+        sync: false        # Set manually in Render dashboard
+      - key: ADMIN_IDS
+        sync: false        # Your Telegram user ID(s), comma-separated
+      - key: WEBHOOK_URL
+        sync: false        # Your Render app URL e.g. https://psots-society-bot.onrender.com
+      - key: PORT
+        value: "8080"
