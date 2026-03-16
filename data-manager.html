@@ -118,7 +118,7 @@
 <!-- LOGIN -->
 <div id="loginScreen">
   <div class="login-box">
-    <div style="font-size:3rem;margin-bottom:.8rem">🪔</div>
+    <div style="font-size:3rem;margin-bottom:.8rem">🌅</div>
     <div style="font-family:'DM Sans',sans-serif;font-size:1.5rem;font-weight:900;color:var(--ink);margin-bottom:.3rem">Data Manager</div>
     <div style="font-size:.82rem;color:var(--lbr);margin-bottom:2rem">PSOTS Chhath 2026 · Historical Import & Resident Directory</div>
     <input class="login-input" type="password" id="pwIn" placeholder="Admin password" onkeydown="if(event.key==='Enter')doLogin()"/>
@@ -130,7 +130,7 @@
 <!-- APP -->
 <div id="app">
   <header>
-    <div><div class="h-brand">🪔 PSOTS Data Manager</div><div class="h-sub">Import & Resident Directory</div></div>
+    <div><div class="h-brand">🌅 PSOTS Data Manager</div><div class="h-sub">Import & Resident Directory</div></div>
     <div class="h-actions">
       <a class="btn-admin-link" href="admin.html">← Admin Panel</a>
       <button class="btn-sm" onclick="logout()">Logout</button>
@@ -748,7 +748,7 @@ function renderHistory() {
       </tr>`).join('');
     return `<div style="margin-bottom:1.2rem">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.45rem;flex-wrap:wrap;gap:.4rem">
-        <span style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--ink)">🪔 ${yr}</span>
+        <span style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--ink)">🌅 ${yr}</span>
         <div style="display:flex;align-items:center;gap:.7rem">
           <span style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--or)">₹${total.toLocaleString('en-IN')} · ${rows.length} records</span>
           <button onclick="toggleYearRows('yr${yr}')" style="background:var(--warm);color:var(--or);border:1px solid rgba(232,92,0,.2);border-radius:50px;padding:.22rem .65rem;font-size:.68rem;cursor:pointer" id="yrBtn${yr}">▼ Show records</button>
@@ -1057,7 +1057,7 @@ function lookupFlat(q) {
   const h = (match.contributions||[]).sort((a,b)=>b.year-a.year);
   document.getElementById('lr-history').innerHTML = h.length ? h.map(c => `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem .8rem;background:var(--warm);border-radius:8px;border:1px solid #f0dfc8;margin-bottom:.38rem;font-size:.82rem">
-      <span style="color:var(--lbr)">🪔 ${c.year}</span>
+      <span style="color:var(--lbr)">🌅 ${c.year}</span>
       <span style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--or)">₹${(c.amount||0).toLocaleString('en-IN')}</span>
       <span style="font-size:.7rem;color:var(--lbr)">${c.date||'—'}</span>
       <span class="tag tag-green" style="font-size:.6rem">✅ Verified</span>

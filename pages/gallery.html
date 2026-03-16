@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gallery — PSOTS Chhath Puja</title>
+  <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:ital,wght@0,700;0,900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script src="../config.js"></script>
+  <style>
+  .year-tabs{display:flex;gap:0;background:#fff;border-bottom:1px solid #f0d5b8;overflow-x:auto;position:sticky;top:52px;z-index:50;margin-bottom:1.5rem;border-radius:14px 14px 0 0}
+  .year-tabs::-webkit-scrollbar{display:none}
+  .year-tab{padding:.75rem 1.3rem;font-size:.82rem;font-weight:700;color:var(--lbr);background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;transition:all .2s}
+  .year-tab.active{color:var(--or);border-bottom-color:var(--or)}
+  .year-tab:hover{color:var(--or)}
+  .gallery-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:.8rem;margin-bottom:2rem}
+  .gallery-item{border-radius:14px;overflow:hidden;cursor:pointer;position:relative;aspect-ratio:4/3;background:#f5ede0;border:1px solid rgba(200,100,0,.1);transition:transform .25s,box-shadow .25s}
+  .gallery-item:hover{transform:translateY(-3px);box-shadow:0 8px 28px rgba(26,8,0,.15)}
+  .gallery-item img{width:100%;height:100%;object-fit:cover}
+  .gallery-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;width:100%;height:100%;color:var(--lbr);font-size:.82rem;text-align:center;padding:1rem}
+  .gallery-placeholder span{font-size:2rem}
+  .year-stats{display:flex;gap:.8rem;flex-wrap:wrap;margin-bottom:1.5rem}
+  .year-stat{background:var(--warm);border:1px solid #f0d5b8;border-radius:10px;padding:.6rem 1rem;font-size:.82rem;color:var(--br)}
+  .year-stat strong{color:var(--or);font-weight:700}
+  .upload-area{border:2px dashed #f0d5b8;border-radius:16px;padding:2rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--warm)}
+  .upload-area:hover{border-color:var(--or);background:#fff5e8}
+  .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:none;align-items:center;justify-content:center;padding:1rem;cursor:pointer}
+  .lightbox img{max-width:95vw;max-height:90vh;border-radius:8px;object-fit:contain}
+  .lightbox-close{position:absolute;top:1rem;right:1.5rem;font-size:2rem;color:#fff;cursor:pointer;background:none;border:none;z-index:10}
+  </style>
+</head>
+<body>
+<nav class="page-nav">
+  <a class="page-nav-back" href="../index.html"><span class="page-nav-back-icon">←</span> Home</a>
+  <div class="page-nav-title">📸 Gallery</div>
+  <div></div>
+</nav>
+<div class="page-hero">
+  <span class="ph-icon">📸</span>
+  <div class="ph-title">Event Gallery</div>
+  <div class="ph-sub">Memories from 5 years of Chhath at PSOTS</div>
+</div>
+<div class="page-content">
+
+  <div class="year-tabs" id="yearTabs">
+    <button class="year-tab active" onclick="showYear(2025,this)">2025</button>
+    <button class="year-tab" onclick="showYear(2024,this)">2024</button>
+    <button class="year-tab" onclick="showYear(2023,this)">2023</button>
+    <button class="year-tab" onclick="showYear(2022,this)">2022</button>
+  </div>
+
+  <div id="yearContent">
+    <!-- Dynamic content loaded here -->
+  </div>
+
+  <div class="card" style="text-align:center;margin-top:2rem">
+    <div class="card-title" style="justify-content:center">📲 Share Your Photos</div>
+    <p style="font-size:.85rem;color:var(--br);line-height:1.6;margin-bottom:1rem">Have photos from previous years or this year's event? Send them to the committee and we'll feature them in the gallery!</p>
+    <div style="display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap;margin-bottom:1rem">
+      <a href="https://wa.me/919482088904?text=Hi%2C%20I%20have%20photos%20from%20Chhath%20Puja%20to%20share%20for%20the%20gallery%20%F0%9F%93%B8" target="_blank" style="text-decoration:none"><button class="btn-wa">📲 Send via WhatsApp</button></a>
+    </div>
+    <div style="font-size:.78rem;color:#c8a880;line-height:1.6">
+      <strong>Tips for great photos:</strong> Arghya moments, ghat decoration, vrati families, thekua making, community gathering, cultural programme.
+      <br/>Send photos as "Document" (not compressed) for best quality.
+    </div>
+  </div>
+
+  <div class="card" style="background:linear-gradient(135deg,#1a0800,#3d1200);color:#fff;text-align:center;margin-top:1rem">
+    <div style="font-size:2rem;margin-bottom:.5rem">🎬</div>
+    <div class="card-title" style="color:var(--gilt);justify-content:center">5 Years of Chhath at PSOTS</div>
+    <p style="font-size:.82rem;color:rgba(255,220,120,.8);line-height:1.6;margin-bottom:1rem">From 65 contributors in 2022 to 141 in 2025 — our Chhath celebration has grown into one of the biggest community events at Prestige Song of the South.</p>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-bottom:1rem">
+      <div style="background:rgba(255,194,0,.08);border:1px solid rgba(255,194,0,.15);border-radius:10px;padding:.6rem .4rem">
+        <div style="font-weight:900;font-size:1.1rem;color:var(--gold)">2022</div>
+        <div style="font-size:.68rem;color:rgba(255,220,120,.6)">65 families</div>
+      </div>
+      <div style="background:rgba(255,194,0,.08);border:1px solid rgba(255,194,0,.15);border-radius:10px;padding:.6rem .4rem">
+        <div style="font-weight:900;font-size:1.1rem;color:var(--gold)">2023</div>
+        <div style="font-size:.68rem;color:rgba(255,220,120,.6)">100 families</div>
+      </div>
+      <div style="background:rgba(255,194,0,.08);border:1px solid rgba(255,194,0,.15);border-radius:10px;padding:.6rem .4rem">
+        <div style="font-weight:900;font-size:1.1rem;color:var(--gold)">2024</div>
+        <div style="font-size:.68rem;color:rgba(255,220,120,.6)">120 families</div>
+      </div>
+      <div style="background:rgba(255,194,0,.08);border:1px solid rgba(255,194,0,.15);border-radius:10px;padding:.6rem .4rem">
+        <div style="font-weight:900;font-size:1.1rem;color:var(--gold)">2025</div>
+        <div style="font-size:.68rem;color:rgba(255,220,120,.6)">141 families</div>
+      </div>
+    </div>
+    <div style="font-family:'Yatra One',serif;font-size:1rem;color:rgba(255,194,0,.7)">पंच वर्ष महोत्सव — 2026 will be the grandest!</div>
+  </div>
+
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lightbox-close" onclick="closeLightbox()">&times;</button>
+  <img id="lightboxImg" src="" alt=""/>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const GALLERY_DATA = {
+  2025: {
+    stats: { contributors: 141, vratis: 15, collected: '2,35,553' },
+    caption: 'Our 4th year — bigger than ever! 15 Vrati families, grand ghat with LED lighting, community kharna dinner for 400+ residents.',
+    photos: []
+  },
+  2024: {
+    stats: { contributors: 120, vratis: 12, collected: '2,17,048' },
+    caption: '3rd year of Chhath at PSOTS. Extended ghat area, first cultural programme with local artists.',
+    photos: []
+  },
+  2023: {
+    stats: { contributors: 100, vratis: 10, collected: '1,83,630' },
+    caption: '2nd year celebration. Community participation doubled! First time Thekua was distributed to all towers.',
+    photos: []
+  },
+  2022: {
+    stats: { contributors: 65, vratis: 8, collected: '1,25,300' },
+    caption: 'Where it all began — the first Chhath Puja at PSOTS. A humble start with 65 contributing families.',
+    photos: []
+  }
+};
+
+function showYear(year, btn) {
+  document.querySelectorAll('.year-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  const d = GALLERY_DATA[year];
+  const el = document.getElementById('yearContent');
+
+  el.innerHTML = `
+    <div class="year-stats">
+      <div class="year-stat">👥 <strong>${d.stats.contributors}</strong> Contributors</div>
+      <div class="year-stat">🙏 <strong>${d.stats.vratis}</strong> Vrati Families</div>
+      <div class="year-stat">💰 <strong>₹${d.stats.collected}</strong> Collected</div>
+    </div>
+    <p style="font-size:.88rem;color:var(--br);line-height:1.6;margin-bottom:1.5rem">${d.caption}</p>
+    <div class="gallery-grid" id="galleryGrid">
+      ${d.photos.length > 0 ? d.photos.map((p,i) => `
+        <div class="gallery-item" onclick="openLightbox('${p.url}')">
+          <img src="${p.url}" alt="${p.caption || 'Chhath Puja ' + year}" loading="lazy"/>
+        </div>
+      `).join('') : generatePlaceholders(year)}
+    </div>`;
+}
+
+function generatePlaceholders(year) {
+  const scenes = [
+    { icon: '🌅', text: 'संध्या अर्घ्य — Evening Arghya', desc: 'Offering to the setting sun at Society Ghat' },
+    { icon: '🌄', text: 'उषा अर्घ्य — Morning Arghya', desc: 'Dawn offering to the rising sun' },
+    { icon: '<svg width="32" height="28" viewBox="0 0 42 36"><ellipse cx="21" cy="28" rx="18" ry="7" fill="#c68a3c"/><path d="M3 28Q3 14 21 8Q39 14 39 28" fill="#d4a04a"/><circle cx="14" cy="20" r="4" fill="#e85c00"/><circle cx="21" cy="17" r="3.5" fill="#ffc200"/><circle cx="28" cy="20" r="4" fill="#2e7d32"/></svg>', text: 'सूप सजावट — Soop Decoration', desc: 'Preparing the sacred offerings' },
+    { icon: '🍚', text: 'खरना प्रसाद — Kharna Dinner', desc: 'Community dinner at Community Hall' },
+    { icon: '<svg width="28" height="24" viewBox="0 0 34 28"><ellipse cx="17" cy="22" rx="15" ry="5" fill="#c68a3c"/><ellipse cx="10" cy="18" rx="6" ry="4" fill="#d4874a"/><ellipse cx="24" cy="18" rx="6" ry="4" fill="#c87a3a"/><ellipse cx="17" cy="14" rx="6" ry="4" fill="#d4944a"/></svg>', text: 'ठेकुआ बनाना — Thekua Making', desc: 'Community thekua preparation' },
+    { icon: '🎤', text: 'सांस्कृतिक कार्यक्रम — Cultural Programme', desc: 'Bhojpuri & Maithili performances' },
+    { icon: '🎨', text: 'घाट सजावट — Ghat Setup', desc: 'Decorating the Society Ghat' },
+    { icon: '🙏', text: 'समुदाय — Community', desc: 'Residents celebrating together' },
+    { icon: '📸', text: 'यादें — Memories', desc: 'Candid moments from the event' },
+  ];
+  return scenes.map(s => `
+    <div class="gallery-item">
+      <div class="gallery-placeholder">
+        <span>${s.icon}</span>
+        <div><strong>${s.text}</strong><br/><small style="color:#c8a880;line-height:1.4">${s.desc}<br/>${year} · Share your photos!</small></div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function openLightbox(url) {
+  document.getElementById('lightboxImg').src = url;
+  document.getElementById('lightbox').style.display = 'flex';
+}
+
+function closeLightbox() {
+  document.getElementById('lightbox').style.display = 'none';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
+
+// Load default year
+showYear(2025, document.querySelector('.year-tab.active'));
+</script>
+</body>
+</html>

@@ -17,12 +17,14 @@ const SHEET_CONTRIBUTIONS = 'Contributions';
 const SHEET_PROFILES      = 'Profiles';
 const SHEET_FINANCE       = 'Finance';
 const SHEET_ANNOUNCEMENTS = 'Announcements';
+const SHEET_VOLUNTEERS    = 'Volunteers';
 
 // ─── Column headers ───
 const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','Date','Status','AccountType','UserID','Year'];
-const PROF_HEADERS = ['UserID','Name','Email','Flat','Mobile','IsVrati','Photo','LastUpdated'];
+const PROF_HEADERS = ['UserID','Name','Email','Flat','Mobile','IsVrati','Photo','LastUpdated','WaOptIn'];
 const FIN_HEADERS  = ['Key','Value'];
 const ANN_HEADERS  = ['Tag','Meta','Text'];
+const VOL_HEADERS  = ['Timestamp','Name','Flat','Mobile','Days','Tasks','AssignedTask','Status','Note','CheckedIn','CheckinTime'];
 
 /* ══════════════════════════════════════════════════════════
    INITIAL SETUP — Run this ONCE
@@ -93,6 +95,26 @@ function setupSheets() {
     ann.getRange(1, 1, 1, 3).setFontWeight('bold').setBackground('#2C7744').setFontColor('#FFF');
   }
 
+  // Create Volunteers sheet
+  let vol = ss.getSheetByName(SHEET_VOLUNTEERS);
+  if (!vol) {
+    vol = ss.insertSheet(SHEET_VOLUNTEERS);
+    vol.appendRow(VOL_HEADERS);
+    vol.getRange(1, 1, 1, VOL_HEADERS.length)
+       .setFontWeight('bold')
+       .setBackground('#2C7744')
+       .setFontColor('#FFFFFF');
+    vol.setFrozenRows(1);
+    vol.setColumnWidth(1, 160); // Timestamp
+    vol.setColumnWidth(2, 180); // Name
+    vol.setColumnWidth(3, 80);  // Flat
+    vol.setColumnWidth(4, 120); // Mobile
+    vol.setColumnWidth(5, 130); // Days
+    vol.setColumnWidth(6, 200); // Preferred Tasks
+    vol.setColumnWidth(7, 180); // Assigned Task
+    vol.setColumnWidth(8, 110); // Status
+  }
+
   // Remove default Sheet1 if it exists and is empty
   const sheet1 = ss.getSheetByName('Sheet1');
   if (sheet1 && sheet1.getLastRow() <= 1) {
@@ -130,6 +152,12 @@ function doGet(e) {
     case 'getAnnouncements':
       result = actionGetAnnouncements();
       break;
+    case 'getWaSubscribers':
+      result = actionGetWaSubscribers();
+      break;
+    case 'getVolunteers':
+      result = actionGetVolunteers();
+      break;
     case 'ping':
       result = { ok: true, message: 'PSOTS Backend is running!' };
       break;
@@ -161,6 +189,10 @@ function doPost(e) {
       result = actionBulkImport(body.records || []);
     } else if (body.action === 'updateAnnouncements') {
       result = actionUpdateAnnouncements(body.data || []);
+    } else if (body.action === 'saveVolunteers') {
+      result = actionSaveVolunteers(body.data || []);
+    } else if (body.action === 'volunteerCheckin') {
+      result = actionVolunteerCheckin(body);
     } else {
       // Default: new contribution
       result = actionAddContribution(body);
@@ -337,13 +369,14 @@ function actionGetProfile(uid) {
     if (String(r[0]) === String(uid)) {
       return {
         profile: {
-          uid:    String(r[0]),
-          name:   String(r[1]),
-          email:  String(r[2]),
-          flat:   String(r[3]),
-          mobile: String(r[4]),
+          uid:     String(r[0]),
+          name:    String(r[1]),
+          email:   String(r[2]),
+          flat:    String(r[3]),
+          mobile:  String(r[4]),
           isVrati: String(r[5]) === 'true',
-          photo:  String(r[6])
+          photo:   String(r[6]),
+          waOptIn: String(r[8]) === 'true'
         }
       };
     }
@@ -376,6 +409,7 @@ function actionSaveProfile(body) {
         sheet.getRange(row, 6).setValue(String(body.isVrati || false));
         sheet.getRange(row, 7).setValue(body.photo || '');
         sheet.getRange(row, 8).setValue(new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }));
+        sheet.getRange(row, 9).setValue(String(body.waOptIn === true || body.waOptIn === 'true'));
         return { success: true, updated: true };
       }
     }
@@ -390,10 +424,28 @@ function actionSaveProfile(body) {
     body.mobile || '',
     String(body.isVrati || false),
     body.photo || '',
-    new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })
+    new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+    String(body.waOptIn === true || body.waOptIn === 'true')
   ]);
 
   return { success: true, created: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Get WhatsApp opt-in subscribers (admin GET)
+══════════════════════════════════════════════════════════ */
+function actionGetWaSubscribers() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROFILES);
+  if (!sheet || sheet.getLastRow() < 2) return { subscribers: [] };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, PROF_HEADERS.length).getValues();
+  const subscribers = [];
+  for (const r of data) {
+    if (String(r[8]) === 'true' && String(r[4]).trim()) {
+      subscribers.push({ name: String(r[1]), flat: String(r[3]), mobile: String(r[4]) });
+    }
+  }
+  return { subscribers, total: subscribers.length };
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -500,6 +552,120 @@ function actionUpdateAnnouncements(data) {
     sheet.getRange(2, 1, rows.length, 3).setValues(rows);
   }
   return { success: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Get all volunteers (admin GET)
+══════════════════════════════════════════════════════════ */
+function actionGetVolunteers() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_VOLUNTEERS);
+  if (!sheet || sheet.getLastRow() < 2) return { volunteers: [] };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, VOL_HEADERS.length).getValues();
+  const volunteers = data
+    .filter(r => r[1] || r[2]) // must have name or flat
+    .map(r => ({
+      ts:           String(r[0]),
+      name:         String(r[1]),
+      flat:         String(r[2]),
+      mobile:       String(r[3]),
+      days:         String(r[4]),
+      tasks:        String(r[5]),
+      assignedTask: String(r[6]),
+      status:       String(r[7]),
+      note:         String(r[8]),
+      checkedIn:    String(r[9]) === 'true',
+      checkinTime:  String(r[10])
+    }));
+
+  return { volunteers };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Save / sync full volunteer list (admin POST)
+   Replaces all rows — called after admin assigns tasks or confirms
+══════════════════════════════════════════════════════════ */
+function actionSaveVolunteers(records) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_VOLUNTEERS);
+  if (!sheet) return { error: 'Volunteers sheet not found. Run setupSheets() first.' };
+
+  // Clear existing data rows
+  if (sheet.getLastRow() > 1) {
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, VOL_HEADERS.length).clearContent();
+  }
+
+  if (records.length === 0) return { success: true, saved: 0 };
+
+  const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+  const rows = records.map(v => [
+    v.ts || now,
+    v.name         || '',
+    v.flat         || '',
+    v.mobile       || '',
+    v.days         || '',
+    v.tasks        || '',
+    v.assignedTask || '',
+    v.status       || 'Registered',
+    v.note         || '',
+    String(v.checkedIn || false),
+    v.checkinTime  || ''
+  ]);
+
+  sheet.getRange(2, 1, rows.length, VOL_HEADERS.length).setValues(rows);
+
+  // Highlight confirmed rows in green
+  for (let i = 0; i < rows.length; i++) {
+    const status = rows[i][7];
+    if (status === 'Confirmed') {
+      sheet.getRange(i + 2, 1, 1, VOL_HEADERS.length).setBackground('#E8F5E9');
+    } else if (rows[i][9] === 'true') { // checked in
+      sheet.getRange(i + 2, 1, 1, VOL_HEADERS.length).setBackground('#E3F2FD');
+    } else {
+      sheet.getRange(i + 2, 1, 1, VOL_HEADERS.length).setBackground(null);
+    }
+  }
+
+  return { success: true, saved: rows.length };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Record volunteer check-in on event day (portal POST)
+══════════════════════════════════════════════════════════ */
+function actionVolunteerCheckin(body) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_VOLUNTEERS);
+  if (!sheet || sheet.getLastRow() < 2) return { error: 'No volunteer records' };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, VOL_HEADERS.length).getValues();
+  const name = String(body.name || '').toLowerCase();
+  const flat = String(body.flat || '').trim();
+  const now  = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+
+  for (let i = 0; i < data.length; i++) {
+    const rowFlat = String(data[i][2]).trim();
+    const rowName = String(data[i][1]).toLowerCase();
+    if ((flat && rowFlat === flat) || (name && rowName === name)) {
+      sheet.getRange(i + 2, 10).setValue('true');       // CheckedIn
+      sheet.getRange(i + 2, 11).setValue(now);           // CheckinTime
+      sheet.getRange(i + 2, 1, 1, VOL_HEADERS.length).setBackground('#E3F2FD');
+      return { success: true, name: data[i][1], day: body.day };
+    }
+  }
+
+  // Volunteer not pre-registered — still log their check-in as a new row
+  sheet.appendRow([
+    now,
+    body.name || '',
+    body.flat || '',
+    body.mobile || '',
+    body.day || '',
+    '',
+    '',
+    'Walk-in',
+    'Checked in without prior registration',
+    'true',
+    now
+  ]);
+  return { success: true, walkin: true };
 }
 
 /* ══════════════════════════════════════════════════════════

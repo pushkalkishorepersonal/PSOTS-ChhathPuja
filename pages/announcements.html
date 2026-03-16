@@ -41,17 +41,24 @@
   </div>
 </div>
 <script>
+function renderAnns(list){
+  if(!list.length)return;
+  document.getElementById('ann-list').innerHTML=list.map(a=>`
+    <div class="ann">
+      <div class="ann-meta">${a.meta||''}</div>
+      <div class="ann-tag">${a.tag||''}</div>
+      <p>${(a.text||'').replace(/\*([^*]+)\*/g,'<b>$1</b>')}</p>
+    </div>`).join('');
+}
+// Try localStorage first (saved by admin panel)
+const cached=localStorage.getItem('psots_announcements');
+if(cached){try{renderAnns(JSON.parse(cached));}catch(e){}}
+// Then fetch latest from sheet
 const su=(window.PSOTS&&window.PSOTS.scriptUrl)||localStorage.getItem('psots_script_url')||'';
 if(su){
   fetch(su+'?action=getAnnouncements').then(r=>r.json()).then(d=>{
     const list=d.announcements||[];
-    if(!list.length)return;
-    document.getElementById('ann-list').innerHTML=list.map(a=>`
-      <div class="ann">
-        <div class="ann-meta">${a.meta||''}</div>
-        <div class="ann-tag">${a.tag||''}</div>
-        <p>${(a.text||'').replace(/\*([^*]+)\*/g,'<b>$1</b>')}</p>
-      </div>`).join('');
+    if(list.length){renderAnns(list);localStorage.setItem('psots_announcements',JSON.stringify(list));}
   }).catch(()=>{});
 }
 </script>

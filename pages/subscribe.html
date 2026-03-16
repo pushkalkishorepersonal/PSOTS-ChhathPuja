@@ -48,6 +48,14 @@
     <button class="btn-wa btn-block" onclick="doSubscribe()">📲 Subscribe on WhatsApp</button>
     <p style="font-size:.76rem;color:#6b3a18;margin-top:.7rem;text-align:center">Tapping above opens WhatsApp with your details pre-filled. Just hit Send.</p>
   </div>
+  <div class="card" style="background:linear-gradient(135deg,#075e54,#128c7e);color:#fff">
+    <div class="card-title" style="color:#fff">📢 WhatsApp Channel</div>
+    <div style="font-size:.82rem;color:rgba(255,255,255,.88);margin-bottom:1rem;line-height:1.5">Join our official WhatsApp broadcast channel for real-time updates during Chhath Puja. One-way channel — no spam, only important announcements.</div>
+    <a href="https://chat.whatsapp.com/G9hKgycJFZDB6Bcuqv3Uzp" target="_blank" style="text-decoration:none;display:inline-block">
+      <button style="background:#25d366;color:#fff;border:none;border-radius:12px;padding:.7rem 1.4rem;font-size:.88rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.4rem">📲 Join WhatsApp Channel</button>
+    </a>
+  </div>
+
   <div class="card">
     <div class="card-title">Already Subscribed?</div>
     <div class="card-sub">To unsubscribe from the broadcast list, send a WhatsApp message to the committee.</div>
@@ -73,7 +81,7 @@ function doSubscribe(){
   if(document.getElementById('p2').checked)prefs.push('Payment Confirmations');
   if(document.getElementById('p3').checked)prefs.push('Announcements');
   if(document.getElementById('p4').checked)prefs.push('Prasad Updates');
-  const msg=encodeURIComponent(`🪔 *PSOTS Chhath 2026 — Subscribe for Updates*\n\n👤 ${name}\n🏠 Flat: ${flat}\n📱 ${mobile}\n\n✅ Preferences:\n${prefs.map(p=>'• '+p).join('\n')}\n\nPlease add me to the broadcast list. 🙏`);
+  const msg=encodeURIComponent(`🌅 *PSOTS Chhath 2026 — Subscribe for Updates*\n\n👤 ${name}\n🏠 Flat: ${flat}\n📱 ${mobile}\n\n✅ Preferences:\n${prefs.map(p=>'• '+p).join('\n')}\n\nPlease add me to the broadcast list. 🙏`);
   window.open(`https://wa.me/${C.waOrg}?text=${msg}`,'_blank');
   localStorage.setItem('psots_wa_subscribed','true');
   document.getElementById('toast').textContent='📲 WhatsApp opened — tap Send to subscribe!';
