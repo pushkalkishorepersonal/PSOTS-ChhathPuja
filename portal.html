@@ -495,6 +495,12 @@
       <div class="pcard-title">🎫 Contribution Receipt</div>
       <div class="pcard-sub">Your digital Thank You card from the Chhath Puja committee. Share it with friends and family!</div>
 
+      <!-- Year selector — shown after data loads -->
+      <div id="receiptYearSelector" style="display:none;margin-bottom:1rem;text-align:center">
+        <div style="font-size:.75rem;color:var(--lbr);margin-bottom:.5rem;font-weight:600">Show receipt for:</div>
+        <div id="receiptYearChips" style="display:flex;gap:.4rem;flex-wrap:wrap;justify-content:center"></div>
+      </div>
+
       <div id="receiptContent">
         <div class="loading">Loading your contribution data…</div>
       </div>
@@ -1312,14 +1318,21 @@ function toast(msg, type='') {
 /* ═══════════════════════════════════════════════════
    RECEIPT / THANK YOU CARD
 ═══════════════════════════════════════════════════ */
-function loadReceipt() {
+/* All contributions across all years — populated by loadReceipt */
+let _allReceiptContribs = [];
+let _receiptYear = '2026'; // currently selected year (or 'all')
+let _receiptName = '', _receiptFlat = '';
+
+async function loadReceipt() {
   const el = document.getElementById('receiptContent');
   const actions = document.getElementById('receiptActions');
   const noMsg = document.getElementById('noReceiptMsg');
+  const yearSel = document.getElementById('receiptYearSelector');
 
-  // Find 2026 verified contribution for this user
   const flat = userProfile.flat;
-  const name = userProfile.name || currentUser?.name || '';
+  _receiptName = userProfile.name || currentUser?.name || '';
+  _receiptFlat = flat;
+
   if (!flat) {
     el.innerHTML = '';
     noMsg.style.display = 'block';
@@ -1327,68 +1340,148 @@ function loadReceipt() {
     return;
   }
 
-  // Check localStorage for cached contributions first
-  const contribs = JSON.parse(localStorage.getItem('psots_my_contribs_2026') || '[]');
-  const verified = contribs.filter(c => c.status && c.status.includes('Received'));
+  el.innerHTML = '<div class="loading">Loading your contribution data…</div>';
 
-  if (verified.length > 0) {
-    renderReceipt(name, flat, verified);
+  let combined = [];
+
+  // 1. Pull historical data from history.json
+  try {
+    const gRes = await fetch('data/history.json');
+    if (gRes.ok) {
+      const g = await gRes.json();
+      const allH = g.history || [];
+      const mine = allH.filter(r => String(r.flat).trim() === String(flat).trim());
+      combined = combined.concat(mine.map(r => ({
+        year: String(r.year), amount: r.amount, method: r.method || 'UPI',
+        date: r.date || '', status: r.status || '✅ Received'
+      })));
+    }
+  } catch(e) {}
+
+  // 2. Pull 2026 contributions from live sheet
+  const su = C.scriptUrl;
+  if (su && !su.includes('YOUR_APPS')) {
+    try {
+      const d = await fetch(su + '?action=list').then(r => r.json());
+      const mine26 = (d.contributors || []).filter(c =>
+        String(c.flat).trim() === String(flat).trim() && c.status && c.status.includes('Received'));
+      // Merge — avoid duplicates by amount+date
+      mine26.forEach(c => {
+        const dup = combined.find(x => x.year === '2026' && String(x.amount) === String(c.amount) && x.date === (c.date || ''));
+        if (!dup) combined.push({ year: '2026', amount: c.amount, method: c.method || 'UPI', date: c.date || '', status: c.status });
+      });
+    } catch(e) {}
+  }
+
+  _allReceiptContribs = combined.filter(c => c.status && c.status.includes('Received'));
+
+  if (_allReceiptContribs.length === 0) {
+    el.innerHTML = '';
+    noMsg.style.display = 'block';
+    actions.style.display = 'none';
+    yearSel.style.display = 'none';
     return;
   }
 
-  // Try fetching from sheet
-  const su = C.scriptUrl;
-  if (su && !su.includes('YOUR_APPS')) {
-    el.innerHTML = '<div class="loading">Loading…</div>';
-    fetch(su + '?action=list').then(r => r.json()).then(d => {
-      const all = d.contributors || [];
-      const mine = all.filter(c => String(c.flat).trim() === String(flat).trim() && c.status && c.status.includes('Received'));
-      if (mine.length > 0) {
-        localStorage.setItem('psots_my_contribs_2026', JSON.stringify(mine));
-        renderReceipt(name, flat, mine);
-      } else {
-        el.innerHTML = '';
-        noMsg.style.display = 'block';
-        actions.style.display = 'none';
-      }
-    }).catch(() => {
-      el.innerHTML = '';
-      noMsg.style.display = 'block';
-    });
-  } else {
-    el.innerHTML = '';
-    noMsg.style.display = 'block';
-  }
+  // Build year list from data (most recent first) + "All Years"
+  const years = [...new Set(_allReceiptContribs.map(c => c.year))].sort((a,b) => b-a);
+
+  // Default to most recent year that has contributions
+  _receiptYear = years[0] || '2026';
+
+  // Render year chips
+  yearSel.style.display = 'block';
+  _renderReceiptYearChips(years);
+
+  // Render receipt for default year
+  _renderReceipt();
 }
 
-function renderReceipt(name, flat, contribs) {
-  const total = contribs.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
+function _renderReceiptYearChips(years) {
+  const chips = document.getElementById('receiptYearChips');
+  const allYears = [...years, 'all'];
+  chips.innerHTML = allYears.map(y => `
+    <button onclick="selectReceiptYear('${y}')" id="rchip-${y}"
+      style="padding:.35rem .85rem;border-radius:50px;border:1.5px solid #f0d5b8;font-size:.78rem;font-weight:600;cursor:pointer;font-family:'DM Sans',sans-serif;
+             background:${_receiptYear === y ? 'var(--or)' : '#fff0e0'};
+             color:${_receiptYear === y ? '#fff' : 'var(--or)'}">
+      ${y === 'all' ? '🗓 All Years' : '🌅 ' + y}
+    </button>`).join('');
+}
+
+function selectReceiptYear(year) {
+  _receiptYear = year;
+  // Update chip styles
+  document.querySelectorAll('[id^="rchip-"]').forEach(b => {
+    const isActive = b.id === 'rchip-' + year;
+    b.style.background = isActive ? 'var(--or)' : '#fff0e0';
+    b.style.color = isActive ? '#fff' : 'var(--or)';
+  });
+  _renderReceipt();
+}
+
+function _renderReceipt() {
+  const contribs = _receiptYear === 'all'
+    ? _allReceiptContribs
+    : _allReceiptContribs.filter(c => c.year === _receiptYear);
+
   const el = document.getElementById('receiptContent');
   const actions = document.getElementById('receiptActions');
   const noMsg = document.getElementById('noReceiptMsg');
+
+  if (contribs.length === 0) {
+    el.innerHTML = `<div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.88rem">No verified contributions found for ${_receiptYear}.</div>`;
+    actions.style.display = 'none';
+    noMsg.style.display = 'none';
+    return;
+  }
+
   noMsg.style.display = 'none';
   actions.style.display = 'block';
 
+  const total = contribs.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
+  const isAllYears = _receiptYear === 'all';
+  const years = [...new Set(contribs.map(c => c.year))].sort((a,b) => b-a);
+  const titleYear = isAllYears ? 'All Years' : _receiptYear;
+  const subLine = isAllYears
+    ? `${years.join(', ')} · Thank You Certificate`
+    : `Chhath Puja ${_receiptYear} · Thank You Certificate`;
+  const footerLine = isAllYears
+    ? `${years.length} year${years.length > 1 ? 's' : ''} of contributions · Society Ghat · Bengaluru`
+    : `Nov 1–4, ${_receiptYear} · Society Ghat · Bengaluru`;
+
   el.innerHTML = `
-    <div class="receipt-card" id="receiptCard">
+    <div class="receipt-card" id="receiptCard" data-year="${_receiptYear}">
       <div class="rc-icon">🌅</div>
-      <div class="rc-title">PSOTS Chhath Puja 2026</div>
-      <div class="rc-sub">पंच वर्ष महोत्सव · Thank You Certificate</div>
+      <div class="rc-title">PSOTS Chhath Puja ${titleYear}</div>
+      <div class="rc-sub">${subLine}</div>
       <div class="rc-badge">✅ Verified Contributor</div>
-      <div class="rc-name">${name}</div>
-      <div class="rc-flat">Flat ${flat} · Prestige Song of the South</div>
+      <div class="rc-name">${_receiptName}</div>
+      <div class="rc-flat">Flat ${_receiptFlat} · Prestige Song of the South</div>
       <div class="rc-amount">₹${total.toLocaleString('en-IN')}</div>
       <div class="rc-label">Total Contribution · ${contribs.length} payment${contribs.length > 1 ? 's' : ''}</div>
-      <div class="rc-year">Nov 1–4, 2026 · Society Ghat · Bengaluru<br/>जय छठ मइया! 🙏</div>
+      <div class="rc-year">${footerLine}<br/>जय छठ मइया! 🙏</div>
     </div>`;
 }
 
+/* Keep old name as alias so existing callers (if any) still work */
+function renderReceipt(name, flat, contribs) {
+  _receiptName = name; _receiptFlat = flat;
+  _allReceiptContribs = contribs;
+  _receiptYear = [...new Set(contribs.map(c => c.year||'2026'))].sort((a,b)=>b-a)[0] || '2026';
+  const years = [...new Set(contribs.map(c => c.year||'2026'))].sort((a,b)=>b-a);
+  document.getElementById('receiptYearSelector').style.display = 'block';
+  _renderReceiptYearChips(years);
+  _renderReceipt();
+}
+
 function shareReceipt() {
-  const name = userProfile.name || currentUser?.name || '';
-  const flat = userProfile.flat || '';
-  const text = `🌅 *PSOTS Chhath Puja 2026 — पंच वर्ष महोत्सव*\n\nI've contributed to Chhath Puja at Prestige Song of the South! 🙏\n\n👤 ${name}\n🏠 Flat ${flat}\n\nJoin us: Nov 1-4, 2026 at Society Ghat\nContribute: ${(window.PSOTS && window.PSOTS.siteUrl) || 'chhath.psots.in'}\n\nजय छठ मइया! 🌅`;
+  const name = _receiptName || userProfile.name || currentUser?.name || '';
+  const flat = _receiptFlat || userProfile.flat || '';
+  const yr = _receiptYear === 'all' ? 'all years' : _receiptYear;
+  const text = `🌅 *PSOTS Chhath Puja ${_receiptYear === 'all' ? '— All Years' : _receiptYear}*\n\nI've contributed to Chhath Puja at Prestige Song of the South! 🙏\n\n👤 ${name}\n🏠 Flat ${flat}\n\nJoin us: Nov 1-4, 2026 at Society Ghat\nContribute: ${(window.PSOTS && window.PSOTS.siteUrl) || 'chhath.psots.in'}\n\nजय छठ मइया! 🌅`;
   if (navigator.share) {
-    navigator.share({ title: 'Chhath Puja 2026 — My Contribution', text }).catch(() => {});
+    navigator.share({ title: `Chhath Puja ${yr} — My Contribution`, text }).catch(() => {});
   } else {
     window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
   }
