@@ -1,0 +1,134 @@
+<svg width="512" height="512" viewBox="0 0 512 512" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <clipPath id="c">
+      <circle cx="256" cy="256" r="249"/>
+    </clipPath>
+
+    <!-- Sky: top dark → saffron glow near horizon -->
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="320" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#150400"/>
+      <stop offset="50%"  stop-color="#5a1400"/>
+      <stop offset="100%" stop-color="#b84800"/>
+    </linearGradient>
+
+    <!-- Water: dark purple-maroon -->
+    <linearGradient id="water" x1="0" y1="320" x2="0" y2="506" gradientUnits="userSpaceOnUse">
+      <stop offset="0%"   stop-color="#1a0d30"/>
+      <stop offset="100%" stop-color="#080510"/>
+    </linearGradient>
+
+    <!-- Sun: bright centre → deep orange edge -->
+    <radialGradient id="sun" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#fffde0"/>
+      <stop offset="40%"  stop-color="#ffe033"/>
+      <stop offset="100%" stop-color="#ff8800"/>
+    </radialGradient>
+
+    <!-- Glow halo behind sun -->
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%"   stop-color="#ff8800" stop-opacity="0.45"/>
+      <stop offset="100%" stop-color="#ff8800" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Reflection streak in water -->
+    <radialGradient id="refl" cx="50%" cy="0%" r="100%" gradientUnits="objectBoundingBox">
+      <stop offset="0%"   stop-color="#ffd040" stop-opacity="0.5"/>
+      <stop offset="100%" stop-color="#ffd040" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- Text dark halo (drop shadow via filter) -->
+    <filter id="textShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="0" stdDeviation="6" flood-color="#000000" flood-opacity="0.7"/>
+    </filter>
+  </defs>
+
+  <!-- ── Base dark circle ── -->
+  <circle cx="256" cy="256" r="256" fill="#100300"/>
+
+  <!-- ── Sky ── -->
+  <rect x="7" y="7" width="498" height="313" fill="url(#sky)" clip-path="url(#c)"/>
+
+  <!-- ── Water ── -->
+  <rect x="7" y="320" width="498" height="185" fill="url(#water)" clip-path="url(#c)"/>
+
+  <!-- ── Horizon glow halo ── -->
+  <ellipse cx="256" cy="320" rx="185" ry="90"  fill="url(#glow)" clip-path="url(#c)" opacity="0.7"/>
+  <ellipse cx="256" cy="320" rx="120" ry="55"  fill="url(#glow)" clip-path="url(#c)" opacity="0.5"/>
+
+  <!-- ── Sun rays (drawn before disk so disk sits on top) ── -->
+  <g clip-path="url(#c)">
+    <g transform="translate(256,320)">
+      <!-- Primary rays: 7 directions, thick -->
+      <line x1="0" y1="-84" x2="0"   y2="-178" stroke="#ffe577" stroke-width="11" stroke-linecap="round"/>
+      <line x1="0" y1="-84" x2="0"   y2="-175" stroke="#ffe577" stroke-width="11" stroke-linecap="round" transform="rotate(30)"/>
+      <line x1="0" y1="-84" x2="0"   y2="-172" stroke="#ffe577" stroke-width="11" stroke-linecap="round" transform="rotate(60)"/>
+      <line x1="0" y1="-84" x2="0"   y2="-165" stroke="#ffe577" stroke-width="11" stroke-linecap="round" transform="rotate(90)"/>
+      <line x1="0" y1="-84" x2="0"   y2="-175" stroke="#ffe577" stroke-width="11" stroke-linecap="round" transform="rotate(-30)"/>
+      <line x1="0" y1="-84" x2="0"   y2="-172" stroke="#ffe577" stroke-width="11" stroke-linecap="round" transform="rotate(-60)"/>
+      <line x1="0" y1="-84" x2="0"   y2="-165" stroke="#ffe577" stroke-width="11" stroke-linecap="round" transform="rotate(-90)"/>
+      <!-- Secondary rays: 6 directions, thin -->
+      <line x1="0" y1="-84" x2="0"   y2="-158" stroke="#ffdd55" stroke-width="5"  stroke-linecap="round" transform="rotate(15)"/>
+      <line x1="0" y1="-84" x2="0"   y2="-158" stroke="#ffdd55" stroke-width="5"  stroke-linecap="round" transform="rotate(45)"/>
+      <line x1="0" y1="-84" x2="0"   y2="-155" stroke="#ffdd55" stroke-width="5"  stroke-linecap="round" transform="rotate(75)"/>
+      <line x1="0" y1="-84" x2="0"   y2="-158" stroke="#ffdd55" stroke-width="5"  stroke-linecap="round" transform="rotate(-15)"/>
+      <line x1="0" y1="-84" x2="0"   y2="-158" stroke="#ffdd55" stroke-width="5"  stroke-linecap="round" transform="rotate(-45)"/>
+      <line x1="0" y1="-84" x2="0"   y2="-155" stroke="#ffdd55" stroke-width="5"  stroke-linecap="round" transform="rotate(-75)"/>
+    </g>
+  </g>
+
+  <!-- ── Sun disk (center on horizon → shows as rising semicircle) ── -->
+  <circle cx="256" cy="320" r="82" fill="url(#sun)" clip-path="url(#c)"/>
+
+  <!-- ── Horizon line ── -->
+  <line x1="7" y1="320" x2="505" y2="320" stroke="#ff9933" stroke-width="2.5" clip-path="url(#c)" opacity="0.9"/>
+
+  <!-- ── Sun reflection in water ── -->
+  <ellipse cx="256" cy="368" rx="34" ry="52" fill="url(#refl)" clip-path="url(#c)"/>
+
+  <!-- ── Water waves ── -->
+  <path d="M 7 340 Q 70 332 140 340 Q 210 348 280 340 Q 350 332 420 340 Q 463 344 505 340"
+        stroke="#4a2278" stroke-width="2.2" fill="none" opacity="0.75" clip-path="url(#c)"/>
+  <path d="M 7 360 Q 80 352 150 360 Q 220 368 290 360 Q 360 352 430 360 Q 468 364 505 360"
+        stroke="#3d1868" stroke-width="1.8" fill="none" opacity="0.6"  clip-path="url(#c)"/>
+  <path d="M 7 382 Q 88 375 158 382 Q 228 389 298 382 Q 368 375 438 382 Q 471 385 505 382"
+        stroke="#321558" stroke-width="1.4" fill="none" opacity="0.5"  clip-path="url(#c)"/>
+  <path d="M 7 405 Q 90 399 162 405 Q 234 411 304 405 Q 374 399 444 405 Q 474 408 505 405"
+        stroke="#281248" stroke-width="1.1" fill="none" opacity="0.4"  clip-path="url(#c)"/>
+
+  <!-- ── Decorative divider line under PSOTS text ── -->
+  <!-- diamond-centre line -->
+  <line x1="88"  y1="128" x2="246" y2="128" stroke="#cc7700" stroke-width="1.4" clip-path="url(#c)" opacity="0.8"/>
+  <line x1="266" y1="128" x2="424" y2="128" stroke="#cc7700" stroke-width="1.4" clip-path="url(#c)" opacity="0.8"/>
+  <polygon points="256,122 263,128 256,134 249,128" fill="#ffd700" clip-path="url(#c)"/>
+
+  <!-- ── PSOTS main text ── -->
+  <text x="256" y="115"
+        text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="68" font-weight="bold"
+        fill="#ffd700"
+        letter-spacing="8"
+        filter="url(#textShadow)">PSOTS</text>
+
+  <!-- ── CHHATH PUJA text (in water zone) ── -->
+  <text x="256" y="400"
+        text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="29" font-weight="bold"
+        fill="#ffcc66"
+        letter-spacing="4"
+        filter="url(#textShadow)">CHHATH PUJA</text>
+
+  <!-- ── 2026 ── -->
+  <text x="256" y="449"
+        text-anchor="middle"
+        font-family="Georgia, 'Times New Roman', serif"
+        font-size="22"
+        fill="#dd9944"
+        letter-spacing="7"
+        filter="url(#textShadow)">2026</text>
+
+  <!-- ── Double border ring ── -->
+  <circle cx="256" cy="256" r="248" fill="none" stroke="#cc4400" stroke-width="5"/>
+  <circle cx="256" cy="256" r="241" fill="none" stroke="#ff8800" stroke-width="1.5" opacity="0.55"/>
+</svg>

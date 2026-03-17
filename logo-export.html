@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PSOTS Logo Export</title>
+  <style>
+    body { margin: 0; background: #111; display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 100vh; font-family: sans-serif; gap: 20px; }
+    canvas { border-radius: 50%; box-shadow: 0 0 40px #ff880055; }
+    button { background: #e85c00; color: #fff; border: none; border-radius: 50px; padding: .65rem 1.8rem; font-size: 1rem; cursor: pointer; font-weight: 600; }
+    button:hover { background: #ff7722; }
+    p { color: #aaa; font-size: .85rem; margin: 0; }
+  </style>
+</head>
+<body>
+  <canvas id="c" width="512" height="512"></canvas>
+  <button onclick="download()">⬇ Download as PNG (512×512)</button>
+  <p>Open this file in a browser, then download the PNG to use as your Gmail profile picture.</p>
+  <script>
+    const img = new Image();
+    img.onload = function() {
+      const ctx = document.getElementById('c').getContext('2d');
+      ctx.drawImage(img, 0, 0);
+    };
+    img.src = 'psots-logo.svg';
+
+    function download() {
+      const a = document.createElement('a');
+      a.download = 'psots-chhath-logo.png';
+      a.href = document.getElementById('c').toDataURL('image/png');
+      a.click();
+    }
+  </script>
+</body>
+</html>

@@ -73,19 +73,26 @@
   .dash-ey{font-size:.72rem;letter-spacing:.2em;text-transform:uppercase;color:var(--or);font-weight:600;display:block;margin-bottom:.35rem}
   .dash-title{font-family:'DM Sans',sans-serif;font-weight:900;font-size:clamp(1.4rem,3.5vw,2rem);color:var(--ink)}
   .dash-sub{font-size:.82rem;color:#6b3a18;margin-top:.3rem}
-  .tgrid{display:grid;grid-template-columns:repeat(12,1fr);gap:1rem;max-width:920px;margin:0 auto}
+  .tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;max-width:1200px;margin:0 auto}
   .tile{border-radius:20px;overflow:hidden;cursor:pointer;text-decoration:none;display:block;color:inherit;transition:transform .25s,box-shadow .25s;position:relative}
   .tile:hover{transform:translateY(-5px);box-shadow:0 16px 45px rgba(26,8,0,.18)}
   .tile:active{transform:translateY(-2px)}
-  .t-pay     {grid-column:span 12}
-  .t-sched   {grid-column:span 6}
-  .t-fin     {grid-column:span 6}
-  .t-contrib {grid-column:span 5}
-  .t-ann     {grid-column:span 7}
-  .t-portal  {grid-column:span 6}
-  .t-wa      {grid-column:span 6}
-  @media(max-width:680px){.t-sched,.t-fin,.t-portal,.t-wa,.t-contrib,.t-ann{grid-column:span 12}}
-  @media(min-width:681px) and (max-width:860px){.t-contrib,.t-ann{grid-column:span 6}}
+  .t-pay     {grid-column:span 4}
+  .t-sched   {grid-column:span 2}
+  .t-ann     {grid-column:span 2}
+  .t-fin     {grid-column:span 1}
+  .t-contrib {grid-column:span 1}
+  .t-vol     {grid-column:span 1}
+  .t-wa      {grid-column:span 1}
+  .t-faq     {grid-column:span 1}
+  .t-gallery {grid-column:span 1}
+  .t-portal  {grid-column:span 2}
+  @media(max-width:680px){
+    .tgrid{grid-template-columns:repeat(2,1fr)}
+    .t-pay{grid-column:span 2}
+    .t-sched,.t-ann,.t-portal{grid-column:span 2}
+    .t-fin,.t-contrib,.t-vol,.t-wa,.t-faq,.t-gallery{grid-column:span 1}
+  }
 
   /* ── MOBILE HERO FIXES ── */
   @media(max-width:480px){
@@ -216,10 +223,8 @@
   @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 
   /* VOLUNTEER & GALLERY TILES */
-  .t-vol{grid-column:span 6;background:linear-gradient(135deg,#2d1200,#5a2400);border:1px solid rgba(255,194,0,.12);box-shadow:0 4px 20px rgba(0,0,0,.25)}
-  .t-faq{grid-column:span 6}
-  .t-gallery{grid-column:span 6;background:#fff;border:1px solid rgba(200,100,0,.09);box-shadow:0 4px 20px rgba(26,8,0,.07)}
-  @media(max-width:680px){.t-vol,.t-faq,.t-gallery{grid-column:span 12}}
+  .t-vol{background:linear-gradient(135deg,#2d1200,#5a2400);border:1px solid rgba(255,194,0,.12);box-shadow:0 4px 20px rgba(0,0,0,.25)}
+  .t-gallery{background:#fff;border:1px solid rgba(200,100,0,.09);box-shadow:0 4px 20px rgba(26,8,0,.07)}
 
   footer{background:#080200;padding:2rem 1.5rem;text-align:center}
   .ft-t{font-family:'Yatra One',serif;font-size:.95rem;color:var(--gold);margin-bottom:.28rem}
@@ -315,7 +320,7 @@
 
   <div class="tgrid">
 
-    <!-- CONTRIBUTE -->
+    <!-- ROW 1: PRIMARY ACTION -->
     <a class="tile t-pay" href="pages/payment.html">
       <div class="live"></div>
       <div class="pi">
@@ -331,7 +336,7 @@
       </div>
     </a>
 
-    <!-- SCHEDULE -->
+    <!-- ROW 2: KEY INFO (span 2 each) -->
     <a class="tile t-sched" href="pages/schedule.html">
       <div class="sh"><div class="ts-head-left"><div class="sh-ey">Four Holy Days</div><div class="sh-title">📅 Event Schedule</div></div><div class="sh-ico">🌅</div></div>
       <div class="sb">
@@ -343,7 +348,17 @@
       <span class="ta">View Full Schedule →</span>
     </a>
 
-    <!-- FINANCE -->
+    <a class="tile t-ann" href="pages/announcements.html">
+      <div class="anh"><div class="an-title">📢 Announcements <span class="an-new">New</span></div></div>
+      <div class="al">
+        <div class="ai"><div class="ai-m">2026 — 5th Year</div><div class="ai-tag">🎊 Grand</div><div class="ai-txt">पंच वर्ष महोत्सव! Grander ghat, bigger celebration. <b>₹1,04,670</b> surplus from 2025.</div></div>
+        <div class="ai"><div class="ai-m">2026 — Prasad</div><div class="ai-tag">🙏 Prasad</div><div class="ai-txt"><b>Nov 2</b> खरना & <b>Nov 4</b> ठेकुआ प्रसाद for all residents.</div></div>
+        <div class="ai"><div class="ai-m">Deadline</div><div class="ai-tag">⏰ Important</div><div class="ai-txt">Contribute before <b>Oct 25</b> for prasad list.</div></div>
+      </div>
+      <span class="tad">All Announcements →</span>
+    </a>
+
+    <!-- ROW 3: 4 COMPACT TILES -->
     <a class="tile t-fin" href="pages/finance.html">
       <div class="fh"><div class="fh-ey">Transparency · पारदर्शिता</div><div class="fh-title">💰 Finance 2026</div></div>
       <div class="fg">
@@ -356,48 +371,39 @@
       <span class="tad">Full Year-wise Breakdown →</span>
     </a>
 
-    <!-- CONTRIBUTORS -->
     <a class="tile t-contrib" href="pages/contributors.html">
       <div class="ch"><div class="ch-title">🙏 Contributors 2026</div><div class="ch-badge" id="conBadge">…</div></div>
       <div class="cl" id="conPreview"><div class="crl">Loading…</div></div>
       <span class="ta">See Full List →</span>
     </a>
 
-    <!-- ANNOUNCEMENTS -->
-    <a class="tile t-ann" href="pages/announcements.html">
-      <div class="anh"><div class="an-title">📢 Announcements <span class="an-new">New</span></div></div>
-      <div class="al">
-        <div class="ai"><div class="ai-m">2026 — 5th Year</div><div class="ai-tag">🎊 Grand</div><div class="ai-txt">पंच वर्ष महोत्सव! Grander ghat, bigger celebration. <b>₹1,04,670</b> surplus from 2025.</div></div>
-        <div class="ai"><div class="ai-m">2026 — Prasad</div><div class="ai-tag">🙏 Prasad</div><div class="ai-txt"><b>Nov 2</b> खरना & <b>Nov 4</b> ठेकुआ प्रसाद for all residents.</div></div>
-        <div class="ai"><div class="ai-m">Deadline</div><div class="ai-tag">⏰ Important</div><div class="ai-txt">Contribute before <b>Oct 25</b> for prasad list.</div></div>
-      </div>
-      <span class="tad">All Announcements →</span>
-    </a>
-
-    <!-- VOLUNTEER & RSVP -->
-    <a class="tile t-vol" href="pages/volunteer.html" style="padding:1.4rem;display:flex;flex-direction:column;justify-content:space-between;gap:.6rem;min-height:160px">
+    <a class="tile t-vol" href="pages/volunteer.html" style="padding:1.4rem;display:flex;flex-direction:column;justify-content:space-between;gap:.6rem">
       <div><div style="font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,194,0,.85);margin-bottom:.15rem">Volunteer & RSVP</div><div style="font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;color:var(--gilt);display:flex;align-items:center;gap:.38rem">🤝 Volunteer Sign-Up</div></div>
-      <div style="font-size:.78rem;color:rgba(255,237,200,.85);line-height:1.5">Help with ghat setup, prasad, decoration & cultural events. Also RSVP for prasad packets!</div>
-      <span style="display:inline-flex;align-items:center;gap:.4rem;font-size:.68rem;font-weight:600;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;border-top:1px solid rgba(255,194,0,.1);padding-top:.6rem">Sign Up & RSVP →</span>
+      <div style="font-size:.78rem;color:rgba(255,237,200,.85);line-height:1.5">Help with ghat setup, prasad, decoration & cultural events!</div>
+      <span style="display:inline-flex;align-items:center;gap:.4rem;font-size:.68rem;font-weight:600;color:var(--gold);letter-spacing:.06em;text-transform:uppercase;border-top:1px solid rgba(255,194,0,.1);padding-top:.6rem">Sign Up →</span>
     </a>
 
-    <!-- FAQ -->
+    <a class="tile t-wa" href="pages/subscribe.html">
+      <div class="wt-top"><div class="wt-ico">📲</div><div class="wt-tag">Free Updates</div></div>
+      <div><div class="wt-title">WhatsApp Updates</div><div class="wt-sub">Event reminders, Arghya timings, prasad details — direct to your WhatsApp.</div></div>
+      <span class="wt-btn">Subscribe →</span>
+    </a>
+
+    <!-- ROW 4: SECONDARY -->
     <a class="tile t-faq" href="pages/faq.html" style="padding:1.4rem;background:linear-gradient(135deg,#fff8f0,#fdf0e0);border:1px solid rgba(200,100,0,.12)">
       <div style="font-size:2rem;margin-bottom:.5rem">❓</div>
       <div style="font-family:'DM Sans',sans-serif;font-size:1.02rem;font-weight:700;color:var(--ink);margin-bottom:.3rem">FAQ & Info</div>
-      <div style="font-size:.78rem;color:var(--lbr);line-height:1.5;margin-bottom:.8rem">Contributions, data privacy, event info — answers to common questions from residents.</div>
+      <div style="font-size:.78rem;color:var(--lbr);line-height:1.5;margin-bottom:.8rem">Answers to common questions from residents.</div>
       <span style="font-size:.68rem;font-weight:600;color:var(--or);letter-spacing:.06em;text-transform:uppercase">Read FAQ →</span>
     </a>
 
-    <!-- GALLERY -->
     <a class="tile t-gallery" href="pages/gallery.html" style="padding:1.4rem">
       <div style="font-size:2rem;margin-bottom:.5rem">📸</div>
       <div style="font-family:'DM Sans',sans-serif;font-size:1.02rem;font-weight:700;color:var(--ink);margin-bottom:.3rem">Event Gallery</div>
-      <div style="font-size:.78rem;color:var(--lbr);line-height:1.5;margin-bottom:.8rem">Photos & memories from 5 years of Chhath at PSOTS — 2022 to 2025.</div>
+      <div style="font-size:.78rem;color:var(--lbr);line-height:1.5;margin-bottom:.8rem">Photos & memories from 5 years of Chhath at PSOTS.</div>
       <span style="font-size:.68rem;font-weight:600;color:var(--or);letter-spacing:.06em;text-transform:uppercase">View Gallery →</span>
     </a>
 
-    <!-- PORTAL -->
     <a class="tile t-portal" href="portal.html" id="portalTile">
       <span class="tp-ico" id="portalIco">👤</span>
       <div class="tp-title" id="portalTitle">My PSOTS Account</div>
@@ -408,13 +414,6 @@
         <div class="tp-feat"><span>🔒</span>Private — only you can see it</div>
       </div>
       <span class="tp-btn" id="portalBtn">Sign In / View Account →</span>
-    </a>
-
-    <!-- WHATSAPP SUBSCRIBE -->
-    <a class="tile t-wa" href="pages/subscribe.html">
-      <div class="wt-top"><div class="wt-ico">📲</div><div class="wt-tag">Free Updates</div></div>
-      <div><div class="wt-title">WhatsApp Updates</div><div class="wt-sub">Event reminders, Arghya timings, prasad details — direct to your WhatsApp. Join our broadcast channel!</div></div>
-      <span class="wt-btn">Subscribe / Join Channel →</span>
     </a>
 
   </div>

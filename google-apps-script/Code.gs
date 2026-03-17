@@ -160,7 +160,7 @@ function doGet(e) {
       result = actionList();
       break;
     case 'list_all':
-      result = actionListAll();
+      result = actionListAll(e.parameter.key);
       break;
     case 'myContribs':
       result = actionMyContribs(e.parameter.flat, e.parameter.mobile);
@@ -191,6 +191,9 @@ function doGet(e) {
       break;
     case 'verifyOtp':
       result = actionVerifyOtp(e.parameter.email, e.parameter.otp);
+      break;
+    case 'findByFlat':
+      result = actionFindByFlat(e.parameter.flat);
       break;
     default:
       result = { error: 'Unknown action: ' + action };
@@ -271,7 +274,10 @@ function actionList() {
 /* ══════════════════════════════════════════════════════════
    ACTION: List ALL contributions (admin only)
 ══════════════════════════════════════════════════════════ */
-function actionListAll() {
+function actionListAll(key) {
+  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
   if (!sheet || sheet.getLastRow() < 2) return { all: [] };
 
@@ -473,27 +479,60 @@ function actionSendOtp(email) {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { ok: false, msg: 'Invalid email address' };
   }
+
+  // Rate limit: max 3 OTP requests per 15 minutes per email
+  const rateProp = 'otp_rate_' + email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  try {
+    const rateData = PropertiesService.getScriptProperties().getProperty(rateProp);
+    const rate = rateData ? JSON.parse(rateData) : { count: 0, window: Date.now() };
+    const windowMs = 15 * 60 * 1000;
+    if (Date.now() - rate.window > windowMs) {
+      rate.count = 0; rate.window = Date.now();
+    }
+    if (rate.count >= 3) {
+      return { ok: false, msg: 'Too many OTP requests. Please wait 15 minutes before trying again.' };
+    }
+    rate.count++;
+    PropertiesService.getScriptProperties().setProperty(rateProp, JSON.stringify(rate));
+  } catch (rErr) { /* ignore rate limit errors — don't block legit users */ }
+
+  // Check daily email quota before attempting
+  try {
+    const remaining = MailApp.getRemainingDailyQuota();
+    if (remaining < 1) {
+      return { ok: false, msg: 'Daily email limit reached. Please use Google sign-in or try again tomorrow.' };
+    }
+  } catch (qErr) {
+    // getRemainingDailyQuota may fail if MailApp not authorized — continue and let sendEmail surface the real error
+  }
+
   const otp = String(Math.floor(100000 + Math.random() * 900000));
   const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
   PropertiesService.getScriptProperties().setProperty(
     'otp_' + email,
     JSON.stringify({ otp, expiry })
   );
+  const yr = new Date().getFullYear();
   try {
     MailApp.sendEmail({
       to: email,
-      subject: 'PSOTS Chhath 2026 — Sign-in Code: ' + otp,
-      htmlBody: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
-        <h2 style="color:#e85c00;margin-bottom:.5rem">🌅 PSOTS Chhath Puja 2026</h2>
-        <p style="color:#333">Your one-time sign-in code for the PSOTS resident portal is:</p>
-        <div style="font-size:2.5rem;font-weight:900;letter-spacing:.3em;color:#e85c00;margin:1.5rem 0;font-family:monospace">${otp}</div>
-        <p style="color:#555">Valid for <strong>10 minutes</strong>. Do not share this code.</p>
-        <hr style="border:none;border-top:1px solid #f0d5b8;margin:1.5rem 0"/>
-        <p style="color:#999;font-size:.8rem">Prestige Song of the South · Bengaluru<br/>If you did not request this, please ignore.</p>
-      </div>`
+      name: 'PSOTS Chhath Puja Committee',
+      noReply: true,
+      subject: 'PSOTS Chhath ' + yr + ' — Your Sign-in Code',
+      htmlBody: '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">' +
+        '<h2 style="color:#e85c00;margin-bottom:.5rem">PSOTS Chhath Puja ' + yr + '</h2>' +
+        '<p style="color:#333">Your one-time sign-in code for the PSOTS resident portal is:</p>' +
+        '<div style="font-size:2.5rem;font-weight:900;letter-spacing:.3em;color:#e85c00;margin:1.5rem 0;font-family:monospace">' + otp + '</div>' +
+        '<p style="color:#555">Valid for <strong>10 minutes</strong>. Do not share this code.</p>' +
+        '<hr style="border:none;border-top:1px solid #f0d5b8;margin:1.5rem 0"/>' +
+        '<p style="color:#999;font-size:.8rem">Prestige Song of the South, Bengaluru<br/>If you did not request this, please ignore.</p>' +
+        '</div>',
+      body: 'Your PSOTS sign-in code is: ' + otp + ' (valid 10 minutes)'
     });
     return { ok: true };
   } catch (err) {
+    // Log for debugging in Apps Script dashboard
+    console.error('OTP email failed for ' + email + ': ' + err.message);
     return { ok: false, msg: 'Could not send email: ' + err.message };
   }
 }
@@ -518,8 +557,38 @@ function actionVerifyOtp(email, code) {
     return { ok: false, msg: 'Incorrect code. Please try again.' };
   }
   PropertiesService.getScriptProperties().deleteProperty(key);
-  const userId = 'email_' + email.toLowerCase().replace(/[^a-z0-9]/g, '_');
-  const profileData = actionGetProfile(userId);
+  const emailUserId = 'email_' + email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  let profileData = actionGetProfile(emailUserId);
+
+  // Fallback: search Profiles sheet by email in case user previously signed in via Google
+  if (!profileData.profile) {
+    const pSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROFILES);
+    if (pSheet && pSheet.getLastRow() >= 2) {
+      const rows = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, PROF_HEADERS.length).getValues();
+      for (const r of rows) {
+        if (String(r[2]).toLowerCase() === email.toLowerCase()) {
+          profileData = {
+            profile: {
+              uid:     String(r[0]),
+              name:    String(r[1]),
+              email:   String(r[2]),
+              flat:    String(r[3]),
+              mobile:  String(r[4]),
+              isVrati: String(r[5]) === 'true',
+              photo:   String(r[6]),
+              waOptIn: String(r[8]) === 'true'
+            }
+          };
+          break;
+        }
+      }
+    }
+  }
+
+  // Use the profile's actual UID so the portal can sync correctly on next load.
+  // If no profile found, fall back to the email-derived UID (new user).
+  const userId = (profileData.profile && profileData.profile.uid) ? profileData.profile.uid : emailUserId;
+
   return { ok: true, userId, profile: profileData.profile };
 }
 
@@ -560,8 +629,12 @@ function actionUpdateFinance(body) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_FINANCE);
   if (!sheet) return { error: 'Finance sheet not found. Run setupSheets() first.' };
 
+  // Build allowed keys — include committee role slots (cmte_0 … cmte_11 + cmte_count)
+  const cmteKeys = ['cmte_count'];
+  for (let i = 0; i < 12; i++) cmteKeys.push('cmte_' + i);
   const keys = ['carry','collected','budget','expenses','expTent','expKharna','expThekua','expAV','expCultural','expMisc',
-                 'timEveTime','timEveDate','timEveLoc','timMornTime','timMornDate','timMornLoc','timKharnaTime','timKharnaDate'];
+                 'timEveTime','timEveDate','timEveLoc','timMornTime','timMornDate','timMornLoc','timKharnaTime','timKharnaDate',
+                 ...cmteKeys];
   const data = sheet.getLastRow() >= 2
     ? sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues()
     : [];
@@ -857,6 +930,54 @@ function actionUploadPhoto(body) {
   sheet.appendRow([now, name, flat, year || '', moment || '', caption || '', driveUrl, status]);
 
   return { success: true, driveUrl, status, message: body.adminUpload ? 'Photo published to gallery!' : 'Photo submitted for review!' };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Find existing data by flat number (profile setup helper)
+   Helps returning residents link their history without re-entering everything
+══════════════════════════════════════════════════════════ */
+function actionFindByFlat(flat) {
+  if (!flat || !String(flat).trim()) return { ok: false, msg: 'Flat number required' };
+  const flatStr = String(flat).trim();
+
+  // 1. Search Profiles sheet first
+  const pSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROFILES);
+  if (pSheet && pSheet.getLastRow() >= 2) {
+    const rows = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, PROF_HEADERS.length).getValues();
+    for (const r of rows) {
+      if (String(r[3]).trim() === flatStr) {
+        return {
+          ok: true, found: true, source: 'profile',
+          name:    String(r[1]),
+          email:   String(r[2]),
+          flat:    String(r[3]),
+          mobile:  String(r[4]),
+          isVrati: String(r[5]) === 'true'
+        };
+      }
+    }
+  }
+
+  // 2. Fall back to Contributions sheet to get name/mobile
+  const cSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
+  if (cSheet && cSheet.getLastRow() >= 2) {
+    const rows = cSheet.getRange(2, 1, cSheet.getLastRow() - 1, CON_HEADERS.length).getValues();
+    // Prefer most-recent record (last match)
+    let match = null;
+    for (const r of rows) {
+      if (String(r[2]).trim() === flatStr) match = r;
+    }
+    if (match) {
+      return {
+        ok: true, found: true, source: 'contributions',
+        name:   String(match[1]),
+        flat:   flatStr,
+        mobile: String(match[3])
+      };
+    }
+  }
+
+  return { ok: true, found: false };
 }
 
 /* ══════════════════════════════════════════════════════════
