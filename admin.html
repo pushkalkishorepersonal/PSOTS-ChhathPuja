@@ -1112,7 +1112,7 @@ async function loadAdminCon() {
   }
 
   try {
-    const res = await fetch(url + '?action=list_all&admin=1');
+    const res = await fetch(url + '?action=list_all&key=' + encodeURIComponent(C.adminKey || ''));
     const data = await res.json();
     allConData = data.all || [];
     renderConTable(allConData);

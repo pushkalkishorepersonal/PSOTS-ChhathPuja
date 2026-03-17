@@ -160,7 +160,7 @@ function doGet(e) {
       result = actionList();
       break;
     case 'list_all':
-      result = actionListAll();
+      result = actionListAll(e.parameter.key);
       break;
     case 'myContribs':
       result = actionMyContribs(e.parameter.flat, e.parameter.mobile);
@@ -274,7 +274,10 @@ function actionList() {
 /* ══════════════════════════════════════════════════════════
    ACTION: List ALL contributions (admin only)
 ══════════════════════════════════════════════════════════ */
-function actionListAll() {
+function actionListAll(key) {
+  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
   if (!sheet || sheet.getLastRow() < 2) return { all: [] };
 
@@ -477,6 +480,22 @@ function actionSendOtp(email) {
     return { ok: false, msg: 'Invalid email address' };
   }
 
+  // Rate limit: max 3 OTP requests per 15 minutes per email
+  const rateProp = 'otp_rate_' + email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  try {
+    const rateData = PropertiesService.getScriptProperties().getProperty(rateProp);
+    const rate = rateData ? JSON.parse(rateData) : { count: 0, window: Date.now() };
+    const windowMs = 15 * 60 * 1000;
+    if (Date.now() - rate.window > windowMs) {
+      rate.count = 0; rate.window = Date.now();
+    }
+    if (rate.count >= 3) {
+      return { ok: false, msg: 'Too many OTP requests. Please wait 15 minutes before trying again.' };
+    }
+    rate.count++;
+    PropertiesService.getScriptProperties().setProperty(rateProp, JSON.stringify(rate));
+  } catch (rErr) { /* ignore rate limit errors — don't block legit users */ }
+
   // Check daily email quota before attempting
   try {
     const remaining = MailApp.getRemainingDailyQuota();
@@ -538,8 +557,8 @@ function actionVerifyOtp(email, code) {
     return { ok: false, msg: 'Incorrect code. Please try again.' };
   }
   PropertiesService.getScriptProperties().deleteProperty(key);
-  const userId = 'email_' + email.toLowerCase().replace(/[^a-z0-9]/g, '_');
-  let profileData = actionGetProfile(userId);
+  const emailUserId = 'email_' + email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  let profileData = actionGetProfile(emailUserId);
 
   // Fallback: search Profiles sheet by email in case user previously signed in via Google
   if (!profileData.profile) {
@@ -565,6 +584,10 @@ function actionVerifyOtp(email, code) {
       }
     }
   }
+
+  // Use the profile's actual UID so the portal can sync correctly on next load.
+  // If no profile found, fall back to the email-derived UID (new user).
+  const userId = (profileData.profile && profileData.profile.uid) ? profileData.profile.uid : emailUserId;
 
   return { ok: true, userId, profile: profileData.profile };
 }
