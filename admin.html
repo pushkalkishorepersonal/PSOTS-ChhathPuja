@@ -608,6 +608,15 @@
     </div>
 
     <div class="admin-card">
+      <div class="ac-title">🔗 Linked Resident Accounts</div>
+      <div class="ac-sub">Residents who have linked their Google account to a flat number. Use "Unlink" to clear their flat and mobile — they can re-link next time they sign in.</div>
+      <div style="margin-top:.8rem">
+        <button class="btn-secondary" onclick="loadLinkedAccounts()" style="font-size:.78rem">🔄 Load Accounts</button>
+      </div>
+      <div id="linkedAccountsList" style="margin-top:.8rem"></div>
+    </div>
+
+    <div class="admin-card">
       <div class="ac-title">🎭 Committee Role Assignment</div>
       <div class="ac-sub">Assign residents to committee roles by name or flat number. Roles are saved to the backend and shown on the committee page.</div>
       <div id="cmteRoleList" style="display:flex;flex-direction:column;gap:.9rem;margin-top:1rem"></div>
@@ -938,6 +947,45 @@ function loadScriptUrl() {
 
 function getAdminKey() {
   return document.getElementById('s-adminKey')?.value || localStorage.getItem('psots_admin_key') || '';
+}
+
+async function loadLinkedAccounts() {
+  const el = document.getElementById('linkedAccountsList');
+  const url = getScriptUrl();
+  if (!url || url.includes('YOUR_APPS')) { el.innerHTML = '<div style="color:var(--lbr);font-size:.8rem">Apps Script URL not configured.</div>'; return; }
+  const key = getAdminKey();
+  if (!key) { el.innerHTML = '<div style="color:var(--red);font-size:.8rem">Enter your Admin Key above first.</div>'; return; }
+  el.innerHTML = '<div style="color:var(--lbr);font-size:.8rem">Loading…</div>';
+  try {
+    const d = await fetch(`${url}?action=listProfiles&key=${encodeURIComponent(key)}`).then(r => r.json());
+    if (d.error) { el.innerHTML = `<div style="color:var(--red);font-size:.8rem">${d.error}</div>`; return; }
+    const linked = (d.profiles || []).filter(p => p.flat || p.mobile);
+    if (!linked.length) { el.innerHTML = '<div style="color:var(--lbr);font-size:.8rem">No residents have linked accounts yet.</div>'; return; }
+    el.innerHTML = `<table class="con-table" style="margin-top:.5rem"><thead><tr><th>Name</th><th>Email</th><th>Flat</th><th>Mobile</th><th></th></tr></thead><tbody>` +
+      linked.map(p => `<tr>
+        <td>${p.name||'—'}</td>
+        <td style="font-size:.72rem">${p.email||'—'}</td>
+        <td><strong>${p.flat||'—'}</strong></td>
+        <td>${p.mobile||'—'}</td>
+        <td><button onclick="clearResidentProfile('${escAdm(p.uid)}','${escAdm(p.name)}')" style="background:#fff0f0;color:var(--red);border:1px solid rgba(200,0,0,.2);border-radius:6px;padding:.2rem .55rem;font-size:.7rem;cursor:pointer">Unlink</button></td>
+      </tr>`).join('') +
+      `</tbody></table>`;
+  } catch(e) { el.innerHTML = '<div style="color:var(--red);font-size:.8rem">Failed to load accounts.</div>'; }
+}
+
+async function clearResidentProfile(uid, name) {
+  if (!confirm(`Unlink flat/mobile for ${name}?\n\nThey can re-link next time they sign in.`)) return;
+  const url = getScriptUrl();
+  const key = getAdminKey();
+  try {
+    await fetch(url, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'clearProfile', uid, key })
+    });
+    toast(`✅ Unlinked ${name}`, 'success');
+    loadLinkedAccounts();
+  } catch(e) { toast('Failed to unlink. Try again.', 'error'); }
 }
 
 function saveSettings() {

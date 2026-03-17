@@ -207,6 +207,9 @@ function doGet(e) {
     case 'getRSVPs':
       result = actionGetRSVPs();
       break;
+    case 'listProfiles':
+      result = actionListProfiles(e.parameter.key);
+      break;
     case 'ping':
       result = { ok: true, message: 'PSOTS Backend is running!' };
       break;
@@ -255,6 +258,8 @@ function doPost(e) {
       result = actionUploadPhoto(body);
     } else if (body.action === 'updateGalleryStatus') {
       result = actionUpdateGalleryStatus(body);
+    } else if (body.action === 'clearProfile') {
+      result = actionClearProfile(body.uid, body.key);
     } else {
       // Default: new contribution
       result = actionAddContribution(body);
@@ -631,6 +636,55 @@ function actionGetWaSubscribers() {
     }
   }
   return { subscribers, total: subscribers.length };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: List all profiles (admin only)
+══════════════════════════════════════════════════════════ */
+function actionListProfiles(key) {
+  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROFILES);
+  if (!sheet || sheet.getLastRow() < 2) return { profiles: [] };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, PROF_HEADERS.length).getValues();
+
+  const profiles = data
+    .filter(r => String(r[0]).trim())  // skip blank rows
+    .map(r => ({
+      uid:    String(r[0]),
+      name:   String(r[1]),
+      email:  String(r[2]),
+      flat:   String(r[3]),
+      mobile: String(r[4])
+    }));
+
+  return { profiles };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Clear profile flat/mobile/email (admin only POST)
+══════════════════════════════════════════════════════════ */
+function actionClearProfile(uid, key) {
+  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+  if (!uid) return { error: 'uid required' };
+
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROFILES);
+  if (!sheet || sheet.getLastRow() < 2) return { error: 'Profiles sheet not found' };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, 1).getValues();
+  for (let i = 0; i < data.length; i++) {
+    if (String(data[i][0]) === String(uid)) {
+      const row = i + 2;
+      // Clear flat (col 4) and mobile (col 5) — keep name/email for account identity
+      sheet.getRange(row, 4).setValue('');
+      sheet.getRange(row, 5).setValue('');
+      return { ok: true };
+    }
+  }
+  return { error: 'Profile not found' };
 }
 
 /* ══════════════════════════════════════════════════════════
