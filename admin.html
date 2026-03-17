@@ -607,6 +607,16 @@
     </div>
 
     <div class="admin-card">
+      <div class="ac-title">🎭 Committee Role Assignment</div>
+      <div class="ac-sub">Assign residents to committee roles by name or flat number. Roles are saved to the backend and shown on the committee page.</div>
+      <div id="cmteRoleList" style="display:flex;flex-direction:column;gap:.9rem;margin-top:1rem"></div>
+      <div style="display:flex;gap:.7rem;margin-top:1rem;flex-wrap:wrap;align-items:center">
+        <button class="btn-secondary" onclick="addCmteRole()">＋ Add Role</button>
+        <button class="btn-primary" onclick="saveCmteRoles()">💾 Save All Roles</button>
+      </div>
+    </div>
+
+    <div class="admin-card">
       <div class="ac-title">🗄 Data Management</div>
       <div style="display:flex;gap:.7rem;flex-wrap:wrap">
         <button class="btn-secondary" onclick="exportAll()">📥 Export All Data (JSON)</button>
@@ -943,6 +953,7 @@ function switchTab(id) {
   event.target.classList.add('active');
   if (id === 'directory') loadDirectory();
   if (id === 'volunteers') loadVolunteers();
+  if (id === 'settings') loadCmteRoles();
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1598,6 +1609,130 @@ function clearLocalData() {
   if (!confirm('Clear all locally cached data? (Settings and password will be preserved)')) return;
   ['psots_finance','psots_announcements','psots_timings'].forEach(k => localStorage.removeItem(k));
   toast('🗑 Cache cleared', 'error');
+}
+
+/* ═══════════════════════════════════════════════════
+   COMMITTEE ROLE ASSIGNMENT
+═══════════════════════════════════════════════════ */
+const DEFAULT_ROLES = ['Chief Organiser','Treasurer','Decoration Head','Prasad Coordinator','Cultural Coordinator','Logistics Head'];
+let cmteRoles = []; // [{role, name, flat, mobile}]
+
+function renderCmteRoles() {
+  const el = document.getElementById('cmteRoleList');
+  if (!el) return;
+  el.innerHTML = cmteRoles.map((r, i) => `
+    <div style="background:#fff8f2;border:1px solid #f0d5b8;border-radius:12px;padding:.85rem 1rem;display:flex;flex-wrap:wrap;gap:.6rem;align-items:flex-end">
+      <div style="flex:1;min-width:140px">
+        <label style="font-size:.72rem;color:var(--lbr);display:block;margin-bottom:.25rem">Role</label>
+        <input list="cmteRoleOptions" value="${r.role}" onchange="cmteRoles[${i}].role=this.value"
+          style="width:100%;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff"/>
+        <datalist id="cmteRoleOptions">${DEFAULT_ROLES.map(d=>`<option value="${d}">`).join('')}</datalist>
+      </div>
+      <div style="flex:1;min-width:130px">
+        <label style="font-size:.72rem;color:var(--lbr);display:block;margin-bottom:.25rem">Name</label>
+        <input id="cmte-name-${i}" value="${r.name}" placeholder="Resident name" oninput="cmteRoles[${i}].name=this.value"
+          style="width:100%;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff"/>
+      </div>
+      <div style="flex:0 0 100px">
+        <label style="font-size:.72rem;color:var(--lbr);display:block;margin-bottom:.25rem">Flat No.</label>
+        <input id="cmte-flat-${i}" value="${r.flat}" placeholder="e.g. 15167" oninput="cmteRoles[${i}].flat=this.value"
+          style="width:100%;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff"/>
+      </div>
+      <button onclick="lookupCmteResident(${i})" title="Lookup by flat"
+        style="background:#fff0e0;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .75rem;font-size:.78rem;cursor:pointer;color:var(--or);font-weight:600;white-space:nowrap">🔍 Lookup</button>
+      <button onclick="cmteRoles.splice(${i},1);renderCmteRoles()" title="Remove"
+        style="background:none;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .6rem;font-size:.85rem;cursor:pointer;color:#c03000">✕</button>
+    </div>`).join('');
+}
+
+async function lookupCmteResident(i) {
+  const flat = cmteRoles[i].flat || document.getElementById('cmte-flat-' + i)?.value.trim();
+  const nameInput = document.getElementById('cmte-name-' + i)?.value.trim();
+  if (!flat && !nameInput) { toast('Enter a flat number or name first', 'error'); return; }
+
+  if (flat) {
+    try {
+      const res = await fetch(`${url}?action=findByFlat&flat=${encodeURIComponent(flat)}`);
+      const d = await res.json();
+      if (d.found) {
+        cmteRoles[i].name = d.name || cmteRoles[i].name;
+        cmteRoles[i].flat = d.flat || flat;
+        cmteRoles[i].mobile = d.mobile || '';
+        renderCmteRoles();
+        toast('✅ Found: ' + (d.name || flat), 'success');
+        return;
+      }
+    } catch(e) {}
+  }
+
+  // Search by name through all contributors
+  if (nameInput) {
+    try {
+      const res = await fetch(`${url}?action=list_all&key=${encodeURIComponent(C.adminKey||'')}`);
+      const d = await res.json();
+      const match = (d.all||[]).find(r => r.name.toLowerCase().includes(nameInput.toLowerCase()));
+      if (match) {
+        cmteRoles[i].name = match.name;
+        cmteRoles[i].flat = match.flat || cmteRoles[i].flat;
+        cmteRoles[i].mobile = match.mobile || '';
+        renderCmteRoles();
+        toast('✅ Found: ' + match.name + ' · Flat ' + match.flat, 'success');
+        return;
+      }
+    } catch(e) {}
+  }
+  toast('Resident not found — you can still type manually', 'error');
+}
+
+function addCmteRole() {
+  cmteRoles.push({ role: '', name: '', flat: '', mobile: '' });
+  renderCmteRoles();
+}
+
+async function saveCmteRoles() {
+  const body = { action: 'updateFinance' };
+  // Clear old roles first (up to 12 slots)
+  for (let i = 0; i < 12; i++) { body['cmte_' + i] = ''; }
+  cmteRoles.forEach((r, i) => {
+    body['cmte_' + i] = JSON.stringify({ role: r.role, name: r.name, flat: r.flat, mobile: r.mobile });
+  });
+  body['cmte_count'] = String(cmteRoles.length);
+  try {
+    await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(body) });
+    localStorage.setItem('psots_cmte_roles', JSON.stringify(cmteRoles));
+    toast('✅ Committee roles saved!', 'success');
+  } catch(e) {
+    toast('Save failed: ' + e.message, 'error');
+  }
+}
+
+function loadCmteRoles() {
+  // Load from localStorage first
+  const cached = localStorage.getItem('psots_cmte_roles');
+  if (cached) { try { cmteRoles = JSON.parse(cached); renderCmteRoles(); } catch(e) {} }
+
+  // Then try backend
+  if (!url || url.includes('YOUR_APPS_SCRIPT')) return;
+  fetch(`${url}?action=getFinance`).then(r => r.json()).then(d => {
+    const f = d.finance || {};
+    const count = parseInt(f['cmte_count'] || '0');
+    if (count > 0) {
+      const loaded = [];
+      for (let i = 0; i < count; i++) {
+        try { loaded.push(JSON.parse(f['cmte_' + i] || '{}')); } catch(e) {}
+      }
+      if (loaded.length) { cmteRoles = loaded; renderCmteRoles(); }
+    } else if (cmteRoles.length === 0) {
+      // Seed with default roles as empty slots
+      cmteRoles = DEFAULT_ROLES.map(role => ({ role, name: '', flat: '', mobile: '' }));
+      renderCmteRoles();
+    }
+  }).catch(() => {
+    if (cmteRoles.length === 0) {
+      cmteRoles = DEFAULT_ROLES.map(role => ({ role, name: '', flat: '', mobile: '' }));
+      renderCmteRoles();
+    }
+  });
 }
 
 /* ═══════════════════════════════════════════════════

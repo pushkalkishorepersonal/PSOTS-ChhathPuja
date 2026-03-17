@@ -629,8 +629,12 @@ function actionUpdateFinance(body) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_FINANCE);
   if (!sheet) return { error: 'Finance sheet not found. Run setupSheets() first.' };
 
+  // Build allowed keys — include committee role slots (cmte_0 … cmte_11 + cmte_count)
+  const cmteKeys = ['cmte_count'];
+  for (let i = 0; i < 12; i++) cmteKeys.push('cmte_' + i);
   const keys = ['carry','collected','budget','expenses','expTent','expKharna','expThekua','expAV','expCultural','expMisc',
-                 'timEveTime','timEveDate','timEveLoc','timMornTime','timMornDate','timMornLoc','timKharnaTime','timKharnaDate'];
+                 'timEveTime','timEveDate','timEveLoc','timMornTime','timMornDate','timMornLoc','timKharnaTime','timKharnaDate',
+                 ...cmteKeys];
   const data = sheet.getLastRow() >= 2
     ? sheet.getRange(2, 1, sheet.getLastRow() - 1, 2).getValues()
     : [];
