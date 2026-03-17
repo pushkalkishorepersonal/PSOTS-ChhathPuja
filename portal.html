@@ -1358,17 +1358,17 @@ async function loadReceipt() {
     }
   } catch(e) {}
 
-  // 2. Pull 2026 contributions from live sheet
+  // 2. Pull live-sheet contributions (all years) for this flat using myContribs (includes year per row)
   const su = C.scriptUrl;
   if (su && !su.includes('YOUR_APPS')) {
     try {
-      const d = await fetch(su + '?action=list').then(r => r.json());
-      const mine26 = (d.contributors || []).filter(c =>
-        String(c.flat).trim() === String(flat).trim() && c.status && c.status.includes('Received'));
-      // Merge — avoid duplicates by amount+date
-      mine26.forEach(c => {
-        const dup = combined.find(x => x.year === '2026' && String(x.amount) === String(c.amount) && x.date === (c.date || ''));
-        if (!dup) combined.push({ year: '2026', amount: c.amount, method: c.method || 'UPI', date: c.date || '', status: c.status });
+      const d = await fetch(`${su}?action=myContribs&flat=${encodeURIComponent(flat)}`).then(r => r.json());
+      const mine = (d.contributions || []).filter(c => c.status && c.status.includes('Received'));
+      // Merge — avoid duplicates by year+amount+date (history.json may already have older years)
+      mine.forEach(c => {
+        const yr = String(c.year || new Date().getFullYear());
+        const dup = combined.find(x => x.year === yr && String(x.amount) === String(c.amount) && x.date === (c.date || ''));
+        if (!dup) combined.push({ year: yr, amount: c.amount, method: c.method || 'UPI', date: c.date || '', status: c.status });
       });
     } catch(e) {}
   }
