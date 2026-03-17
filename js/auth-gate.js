@@ -178,7 +178,7 @@
       fetch(su + '?action=sendOtp&email=' + encodeURIComponent(email))
         .then(function (r) { return r.json(); })
         .then(function (d) {
-          if (!d.ok) { window._psGate._err(d.msg || 'Could not send code'); btn.disabled = false; btn.textContent = 'Send Sign-in Code →'; return; }
+          if (!d.ok) { window._psGate._err(d.msg || d.error || 'Could not send code'); btn.disabled = false; btn.textContent = 'Send Sign-in Code →'; return; }
           document.getElementById('gate-email-step').style.display = 'none';
           document.getElementById('gate-otp-step').style.display = 'block';
           var gw = document.getElementById('gate-google-wrap');
@@ -199,7 +199,7 @@
       fetch(su + '?action=verifyOtp&email=' + encodeURIComponent(email) + '&otp=' + encodeURIComponent(otp))
         .then(function (r) { return r.json(); })
         .then(function (d) {
-          if (!d.ok) { window._psGate._err(d.msg || 'Incorrect code. Try again.'); btn.disabled = false; btn.textContent = 'Verify & Enter →'; return; }
+          if (!d.ok) { window._psGate._err(d.msg || d.error || 'Incorrect code. Try again.'); btn.disabled = false; btn.textContent = 'Verify & Enter →'; return; }
           var u = {
             id: d.userId,
             name: (d.profile && d.profile.name) || email.split('@')[0],

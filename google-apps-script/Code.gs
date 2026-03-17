@@ -473,6 +473,17 @@ function actionSendOtp(email) {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return { ok: false, msg: 'Invalid email address' };
   }
+
+  // Check daily email quota before attempting
+  try {
+    const remaining = MailApp.getRemainingDailyQuota();
+    if (remaining < 1) {
+      return { ok: false, msg: 'Daily email limit reached. Please use Google sign-in or try again tomorrow.' };
+    }
+  } catch (qErr) {
+    // getRemainingDailyQuota may fail if MailApp not authorized — continue and let sendEmail surface the real error
+  }
+
   const otp = String(Math.floor(100000 + Math.random() * 900000));
   const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
   PropertiesService.getScriptProperties().setProperty(
@@ -482,18 +493,22 @@ function actionSendOtp(email) {
   try {
     MailApp.sendEmail({
       to: email,
-      subject: 'PSOTS Chhath 2026 — Sign-in Code: ' + otp,
-      htmlBody: `<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">
-        <h2 style="color:#e85c00;margin-bottom:.5rem">🌅 PSOTS Chhath Puja 2026</h2>
-        <p style="color:#333">Your one-time sign-in code for the PSOTS resident portal is:</p>
-        <div style="font-size:2.5rem;font-weight:900;letter-spacing:.3em;color:#e85c00;margin:1.5rem 0;font-family:monospace">${otp}</div>
-        <p style="color:#555">Valid for <strong>10 minutes</strong>. Do not share this code.</p>
-        <hr style="border:none;border-top:1px solid #f0d5b8;margin:1.5rem 0"/>
-        <p style="color:#999;font-size:.8rem">Prestige Song of the South · Bengaluru<br/>If you did not request this, please ignore.</p>
-      </div>`
+      noReply: true,
+      subject: 'PSOTS Chhath 2026 — Your Sign-in Code',
+      htmlBody: '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">' +
+        '<h2 style="color:#e85c00;margin-bottom:.5rem">PSOTS Chhath Puja 2026</h2>' +
+        '<p style="color:#333">Your one-time sign-in code for the PSOTS resident portal is:</p>' +
+        '<div style="font-size:2.5rem;font-weight:900;letter-spacing:.3em;color:#e85c00;margin:1.5rem 0;font-family:monospace">' + otp + '</div>' +
+        '<p style="color:#555">Valid for <strong>10 minutes</strong>. Do not share this code.</p>' +
+        '<hr style="border:none;border-top:1px solid #f0d5b8;margin:1.5rem 0"/>' +
+        '<p style="color:#999;font-size:.8rem">Prestige Song of the South, Bengaluru<br/>If you did not request this, please ignore.</p>' +
+        '</div>',
+      body: 'Your PSOTS sign-in code is: ' + otp + ' (valid 10 minutes)'
     });
     return { ok: true };
   } catch (err) {
+    // Log for debugging in Apps Script dashboard
+    console.error('OTP email failed for ' + email + ': ' + err.message);
     return { ok: false, msg: 'Could not send email: ' + err.message };
   }
 }

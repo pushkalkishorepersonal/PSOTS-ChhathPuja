@@ -696,10 +696,17 @@ async function sendOtp() {
       document.getElementById('otpStep2').style.display = 'block';
       document.getElementById('otpEmailShown').textContent = email;
     } else {
-      showOtpErr(data.msg || 'Failed to send code. Try again.');
+      // Surface actual backend error (incl. "Unknown action" if script not redeployed)
+      const errMsg = data.msg || data.error || 'Failed to send code. Try again.';
+      if (data.error && data.error.includes('Unknown action')) {
+        showOtpErr('Email OTP not available — please redeploy the Apps Script. Use Google sign-in for now.');
+      } else {
+        showOtpErr(errMsg);
+      }
       btn.disabled = false; btn.textContent = 'Send OTP';
     }
   } catch(e) {
+    console.error('OTP send error:', e);
     showOtpErr('Network error. Please try again.');
     btn.disabled = false; btn.textContent = 'Send OTP';
   }
@@ -733,10 +740,11 @@ async function verifyOtp() {
       }
       redirectIfAdmin() || showPortal();
     } else {
-      showOtpErr(data.msg || 'Incorrect code. Please try again.');
+      showOtpErr(data.msg || data.error || 'Incorrect code. Please try again.');
       btn.disabled = false; btn.textContent = 'Verify';
     }
   } catch(e) {
+    console.error('OTP verify error:', e);
     showOtpErr('Network error. Please try again.');
     btn.disabled = false; btn.textContent = 'Verify';
   }
