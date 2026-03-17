@@ -434,12 +434,26 @@ tick();setInterval(tick,1000);
 const ob=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){const b=document.getElementById('tfBar');if(b)b.style.width=b.dataset.pct+'%'}})},{threshold:.3});
 const ds=document.querySelector('.dashboard');if(ds)ob.observe(ds);
 const su=(window.PSOTS&&window.PSOTS.scriptUrl)||localStorage.getItem('psots_script_url')||'';
+// Check login state early so we can gate sensitive tile data
+const _pu=(function(){try{return JSON.parse(localStorage.getItem('psots_user')||localStorage.getItem('psots_admin_user')||'null');}catch(e){return null;}})();
+const _li=!!(_pu&&_pu.id);
+// If logged out, replace Finance and Contributors tile content with sign-in prompt
+if(!_li){
+  const _lockStyle='padding:1.4rem .8rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.55rem';
+  const _lockHtml='<div style="'+_lockStyle+'"><div style="font-size:1.4rem">🔒</div><div style="font-size:.82rem;font-weight:700;color:var(--or)">Sign in to view</div><div style="font-size:.74rem;color:var(--lbr)">Login with Google or email OTP</div></div>';
+  // Finance tile
+  const _fg=document.querySelector('.fg');if(_fg)_fg.outerHTML='<div class="fg">'+_lockHtml+'</div>';
+  const _fb=document.querySelector('.fb');if(_fb)_fb.style.display='none';
+  // Contributors tile
+  const _cl=document.getElementById('conPreview');if(_cl)_cl.innerHTML=_lockHtml;
+  const _cb=document.getElementById('conBadge');if(_cb)_cb.textContent='';
+}
 async function loadPrev(){const el=document.getElementById('conPreview'),bd=document.getElementById('conBadge');if(!su||su.includes('YOUR_APPS')){try{const res=await fetch('data/history.json');if(res.ok){const g=await res.json(),h=g.history||[];const y2025=h.filter(r=>r.year===2025).slice(0,4);if(y2025.length>0){bd.textContent=h.filter(r=>r.year===2025).length+'';el.innerHTML=y2025.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat||'-'}</div></div><div class="cra">₹${(c.amount||0).toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');return;}}}catch(e){}}if(!su||su.includes('YOUR_APPS')){const demo=[{name:'Pushkal Kishore',flat:'15167',amount:5001},{name:'Ratnesh Singh',flat:'15165',amount:1100},{name:'Rekha Sinha',flat:'9045',amount:11000}];bd.textContent='demo';el.innerHTML=demo.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat}</div></div><div class="cra">₹${c.amount.toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');return;}try{const r=await fetch(su+'?action=list'),d=await r.json(),l=(d.contributors||[]).slice(0,4);bd.textContent=(d.contributors||[]).length+'';el.innerHTML=l.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat}</div></div><div class="cra">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');}catch(e){el.innerHTML='<div class="crl">Tap to view →</div>';}}
-loadPrev();
+if(_li) loadPrev(); // only load contributor data when signed in
 // Load live finance + arghya timings from Google Sheet
 if(su){
-  // Finance tile: 2026 collection progress
-  fetch(su+'?action=list_all').then(r=>r.json()).then(d=>{
+  // Finance tile: 2026 collection progress (only when logged in)
+  if(_li) fetch(su+'?action=list_all').then(r=>r.json()).then(d=>{
     const rows=(d.all||[]).filter(x=>Number(x.year)===2026);
     const col=rows.reduce((s,c)=>s+(parseFloat(c.amount)||0),0);
     const cnt=rows.length;
@@ -447,12 +461,12 @@ if(su){
     document.getElementById('tf-count').textContent=cnt||'0';
   }).catch(()=>{});
   fetch(su+'?action=getFinance').then(r=>r.json()).then(d=>{const f=d.finance||{};
-    // Update finance tile budget + progress bar
+    // Update finance tile budget + progress bar (only when logged in)
+    if(_li){
     const bgt=f.budget&&Number(f.budget)>0?parseInt(f.budget):600000;
     document.getElementById('tf-budget').textContent='₹'+bgt.toLocaleString('en-IN');
-    // We'll update pct once collected is known; approximate from collected vs budget
-    // (collected loaded separately above; just set bar to 0 until both resolve)
     const tfBar=document.getElementById('tfBar');if(tfBar)tfBar.style.width='0%';
+    }
     // Arghya timings
     function fmtTime(t){if(!t)return null;const[h,m]=t.split(':');const hr=parseInt(h);return(hr>12?hr-12:hr||12)+':'+(m||'00')+' '+(hr>=12?'PM':'AM');}
     function fmtDate(dd,loc){if(!dd)return null;const dt=new Date(dd);const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mo[dt.getMonth()]+' '+(dt.getDate())+', '+(dt.getFullYear())+(loc?' · '+loc:'');}
