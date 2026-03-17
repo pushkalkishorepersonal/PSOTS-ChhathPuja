@@ -25,6 +25,11 @@
   function injectGate() {
     if (document.getElementById('psots-auth-gate')) return;
 
+    // Compute event year dynamically from config (or current year)
+    var evtYear = (window.PSOTS && window.PSOTS.eventStart)
+      ? new Date(window.PSOTS.eventStart).getFullYear()
+      : new Date().getFullYear();
+
     // Build relative back-links that work from /pages/ directory
     var here    = window.location.pathname;
     var inPages = here.indexOf('/pages/') !== -1;
@@ -50,7 +55,7 @@
         '<div style="font-family:\'Yatra One\',serif;font-size:1.35rem;color:#e85c00;margin-bottom:.15rem">',
           'PSOTS Chhath Puja</div>',
         '<div style="font-size:.75rem;color:#c8a880;margin-bottom:1.4rem;letter-spacing:.05em">',
-          'पंच वर्ष महोत्सव &nbsp;·&nbsp; 2026</div>',
+          'PSOTS Residents &nbsp;·&nbsp; ' + evtYear + '</div>',
 
         // Lock notice
         '<div style="background:linear-gradient(135deg,#fff8f0,#fff0e0);border:1.5px solid #f0d5b8;',

@@ -192,6 +192,9 @@ function doGet(e) {
     case 'verifyOtp':
       result = actionVerifyOtp(e.parameter.email, e.parameter.otp);
       break;
+    case 'findByFlat':
+      result = actionFindByFlat(e.parameter.flat);
+      break;
     default:
       result = { error: 'Unknown action: ' + action };
   }
@@ -490,13 +493,15 @@ function actionSendOtp(email) {
     'otp_' + email,
     JSON.stringify({ otp, expiry })
   );
+  const yr = new Date().getFullYear();
   try {
     MailApp.sendEmail({
       to: email,
+      name: 'PSOTS Chhath Puja Committee',
       noReply: true,
-      subject: 'PSOTS Chhath 2026 — Your Sign-in Code',
+      subject: 'PSOTS Chhath ' + yr + ' — Your Sign-in Code',
       htmlBody: '<div style="font-family:sans-serif;max-width:480px;margin:0 auto;padding:2rem">' +
-        '<h2 style="color:#e85c00;margin-bottom:.5rem">PSOTS Chhath Puja 2026</h2>' +
+        '<h2 style="color:#e85c00;margin-bottom:.5rem">PSOTS Chhath Puja ' + yr + '</h2>' +
         '<p style="color:#333">Your one-time sign-in code for the PSOTS resident portal is:</p>' +
         '<div style="font-size:2.5rem;font-weight:900;letter-spacing:.3em;color:#e85c00;margin:1.5rem 0;font-family:monospace">' + otp + '</div>' +
         '<p style="color:#555">Valid for <strong>10 minutes</strong>. Do not share this code.</p>' +
@@ -534,7 +539,33 @@ function actionVerifyOtp(email, code) {
   }
   PropertiesService.getScriptProperties().deleteProperty(key);
   const userId = 'email_' + email.toLowerCase().replace(/[^a-z0-9]/g, '_');
-  const profileData = actionGetProfile(userId);
+  let profileData = actionGetProfile(userId);
+
+  // Fallback: search Profiles sheet by email in case user previously signed in via Google
+  if (!profileData.profile) {
+    const pSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROFILES);
+    if (pSheet && pSheet.getLastRow() >= 2) {
+      const rows = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, PROF_HEADERS.length).getValues();
+      for (const r of rows) {
+        if (String(r[2]).toLowerCase() === email.toLowerCase()) {
+          profileData = {
+            profile: {
+              uid:     String(r[0]),
+              name:    String(r[1]),
+              email:   String(r[2]),
+              flat:    String(r[3]),
+              mobile:  String(r[4]),
+              isVrati: String(r[5]) === 'true',
+              photo:   String(r[6]),
+              waOptIn: String(r[8]) === 'true'
+            }
+          };
+          break;
+        }
+      }
+    }
+  }
+
   return { ok: true, userId, profile: profileData.profile };
 }
 
@@ -872,6 +903,54 @@ function actionUploadPhoto(body) {
   sheet.appendRow([now, name, flat, year || '', moment || '', caption || '', driveUrl, status]);
 
   return { success: true, driveUrl, status, message: body.adminUpload ? 'Photo published to gallery!' : 'Photo submitted for review!' };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Find existing data by flat number (profile setup helper)
+   Helps returning residents link their history without re-entering everything
+══════════════════════════════════════════════════════════ */
+function actionFindByFlat(flat) {
+  if (!flat || !String(flat).trim()) return { ok: false, msg: 'Flat number required' };
+  const flatStr = String(flat).trim();
+
+  // 1. Search Profiles sheet first
+  const pSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROFILES);
+  if (pSheet && pSheet.getLastRow() >= 2) {
+    const rows = pSheet.getRange(2, 1, pSheet.getLastRow() - 1, PROF_HEADERS.length).getValues();
+    for (const r of rows) {
+      if (String(r[3]).trim() === flatStr) {
+        return {
+          ok: true, found: true, source: 'profile',
+          name:    String(r[1]),
+          email:   String(r[2]),
+          flat:    String(r[3]),
+          mobile:  String(r[4]),
+          isVrati: String(r[5]) === 'true'
+        };
+      }
+    }
+  }
+
+  // 2. Fall back to Contributions sheet to get name/mobile
+  const cSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
+  if (cSheet && cSheet.getLastRow() >= 2) {
+    const rows = cSheet.getRange(2, 1, cSheet.getLastRow() - 1, CON_HEADERS.length).getValues();
+    // Prefer most-recent record (last match)
+    let match = null;
+    for (const r of rows) {
+      if (String(r[2]).trim() === flatStr) match = r;
+    }
+    if (match) {
+      return {
+        ok: true, found: true, source: 'contributions',
+        name:   String(match[1]),
+        flat:   flatStr,
+        mobile: String(match[3])
+      };
+    }
+  }
+
+  return { ok: true, found: false };
 }
 
 /* ══════════════════════════════════════════════════════════

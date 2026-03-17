@@ -1007,7 +1007,7 @@ async function loadContributions() {
 
   if (C.scriptUrl.includes('YOUR_APPS_SCRIPT')) {
     if (!flat && !mobile) {
-      el.innerHTML = '<div class="no-contrib"><div class="nc-icon">👤</div><p>Complete your profile with your flat number to see your contribution history.</p><br/><button class="btn-primary" onclick="switchTab(\'profile\')">Set Up Profile →</button></div>';
+      el.innerHTML = '<div class="no-contrib"><div class="nc-icon">🏠</div><p style="margin-bottom:.8rem">Enter your flat number to find your contribution history</p><div style="display:flex;gap:.5rem;max-width:300px;margin:0 auto .5rem"><input id="flatLookupInput" type="text" placeholder="e.g. 15167" style="flex:1;padding:.6rem .9rem;border:1.5px solid #f0d5b8;border-radius:10px;font-size:.88rem;outline:none;font-family:\'DM Sans\',sans-serif" /><button onclick="lookupByFlat()" style="padding:.6rem 1rem;background:linear-gradient(135deg,#e85c00,#c93800);color:#fff;border:none;border-radius:10px;font-size:.85rem;font-weight:600;cursor:pointer">Find →</button></div><p style="font-size:.72rem;color:#c8a880">Not a returning resident? <button onclick="switchTab(\'profile\')" style="background:none;border:none;color:#e85c00;cursor:pointer;font-size:.72rem;text-decoration:underline">Complete your profile</button></p></div>';
       return;
     }
     // No data found in global JSON, show empty state
@@ -1017,7 +1017,7 @@ async function loadContributions() {
 
   try {
     if (!flat && !mobile) {
-      el.innerHTML = '<div class="no-contrib"><div class="nc-icon">👤</div><p>Complete your profile with your flat number to see your contribution history.</p><br/><button class="btn-primary" onclick="switchTab(\'profile\')">Set Up Profile →</button></div>';
+      el.innerHTML = '<div class="no-contrib"><div class="nc-icon">🏠</div><p style="margin-bottom:.8rem">Enter your flat number to find your contribution history</p><div style="display:flex;gap:.5rem;max-width:300px;margin:0 auto .5rem"><input id="flatLookupInput" type="text" placeholder="e.g. 15167" style="flex:1;padding:.6rem .9rem;border:1.5px solid #f0d5b8;border-radius:10px;font-size:.88rem;outline:none;font-family:\'DM Sans\',sans-serif" /><button onclick="lookupByFlat()" style="padding:.6rem 1rem;background:linear-gradient(135deg,#e85c00,#c93800);color:#fff;border:none;border-radius:10px;font-size:.85rem;font-weight:600;cursor:pointer">Find →</button></div><p style="font-size:.72rem;color:#c8a880">Not a returning resident? <button onclick="switchTab(\'profile\')" style="background:none;border:none;color:#e85c00;cursor:pointer;font-size:.72rem;text-decoration:underline">Complete your profile</button></p></div>';
       return;
     }
     const res = await fetch(`${C.scriptUrl}?action=myContribs&flat=${flat}&mobile=${mobile}`);
@@ -1025,6 +1025,45 @@ async function loadContributions() {
     renderContributions(data.contributions || []);
   } catch(e) {
     el.innerHTML = '<div class="no-contrib"><div class="nc-icon">⚠️</div><p>Could not load history right now. Try again later.</p></div>';
+  }
+}
+
+async function lookupByFlat() {
+  const input = document.getElementById('flatLookupInput');
+  if (!input) return;
+  const flat = input.value.trim();
+  if (!flat) { input.focus(); return; }
+
+  input.disabled = true;
+  const btn = input.nextElementSibling;
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  try {
+    const res = await fetch(`${C.scriptUrl}?action=findByFlat&flat=${encodeURIComponent(flat)}`);
+    const data = await res.json();
+
+    userProfile.flat = flat;
+    if (data.found) {
+      if (data.name && !userProfile.name) userProfile.name = data.name;
+      if (data.mobile && !userProfile.mobile) userProfile.mobile = data.mobile;
+    }
+
+    const key = 'psots_profile_' + currentUser.id;
+    localStorage.setItem(key, JSON.stringify(userProfile));
+    fillProfileUI();
+
+    // Persist to backend so this device links flat to email userId
+    fetch(C.scriptUrl, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveProfile', uid: currentUser.id, email: currentUser.email, ...userProfile })
+    }).catch(() => {});
+
+    loadContributions();
+  } catch(e) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Find →'; }
+    input.disabled = false;
+    toast('Could not connect. Try again.', 'error');
   }
 }
 
