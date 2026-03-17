@@ -597,6 +597,7 @@
       <div class="ac-title">⚙️ Site Configuration</div>
       <div class="fg">
         <div class="ff"><label>Apps Script URL</label><input type="text" id="s-scriptUrl" placeholder="https://script.google.com/macros/s/…/exec"/><div class="note">Paste your Google Apps Script deployment URL here</div></div>
+        <div class="ff"><label>Admin Key</label><input type="password" id="s-adminKey" placeholder="Same value as ADMIN_KEY in Script Properties"/><div class="note">Stored only in your browser. Never put this in source code.</div></div>
         <div class="ff"><label>UPI ID</label><input type="text" id="s-upiId" value="9482088904-3@ybl"/></div>
         <div class="ff"><label>Primary WhatsApp</label><input type="text" id="s-waOrg" value="919482088904"/></div>
         <div class="ff"><label>Second Contact</label><input type="text" id="s-waOrg2" value="919902837002"/></div>
@@ -930,11 +931,20 @@ function loadScriptUrl() {
   const url = localStorage.getItem(SCRIPT_URL_KEY) || (window.PSOTS && window.PSOTS.scriptUrl) || '';
   const el = document.getElementById('s-scriptUrl');
   if (el && url) el.value = url;
+  const key = localStorage.getItem('psots_admin_key') || '';
+  const kel = document.getElementById('s-adminKey');
+  if (kel && key) kel.value = key;
+}
+
+function getAdminKey() {
+  return document.getElementById('s-adminKey')?.value || localStorage.getItem('psots_admin_key') || '';
 }
 
 function saveSettings() {
   const url = document.getElementById('s-scriptUrl').value.trim();
   if (url) localStorage.setItem(SCRIPT_URL_KEY, url);
+  const key = document.getElementById('s-adminKey')?.value.trim();
+  if (key) localStorage.setItem('psots_admin_key', key);
   // Save other settings to localStorage
   ['upiId','waOrg','waOrg2','eventDate','deadline'].forEach(k => {
     const el = document.getElementById('s-' + k);
@@ -1123,7 +1133,7 @@ async function loadAdminCon() {
   }
 
   try {
-    const res = await fetch(url + '?action=list_all&key=' + encodeURIComponent(C.adminKey || ''));
+    const res = await fetch(url + '?action=list_all&key=' + encodeURIComponent(getAdminKey()));
     const data = await res.json();
     allConData = data.all || [];
     renderConTable(allConData);
@@ -1545,7 +1555,7 @@ function copySubscriberNums() {
     ta.value = nums; document.body.appendChild(ta);
     ta.select(); document.execCommand('copy');
     document.body.removeChild(ta);
-  }).finally ? null : null;
+  });
   toast('📋 ' + subs.length + ' numbers copied to clipboard!', 'success');
 }
 

@@ -59,8 +59,9 @@ window.PSOTS = {
   adminEmails: ['pushkalkishore@gmail.com'],
 
   /* ── ADMIN API KEY ────────────── */
-  /* Set the same value in Google Apps Script → Project Settings → Script Properties: ADMIN_KEY */
-  adminKey: 'psots-admin-2026',
+  /* Do NOT put adminKey here — set it once inside Admin Panel → Settings → Admin Key field.
+     It is stored in localStorage only and never shipped in source code.
+     In Google Apps Script set the same value: Project Settings → Script Properties → ADMIN_KEY */
 
   /* ══ FILL THESE AFTER SETUP ══════
      See README.md for exact steps.   */

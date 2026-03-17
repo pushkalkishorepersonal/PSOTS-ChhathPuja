@@ -19,6 +19,7 @@ const SHEET_FINANCE       = 'Finance';
 const SHEET_ANNOUNCEMENTS = 'Announcements';
 const SHEET_VOLUNTEERS    = 'Volunteers';
 const SHEET_GALLERY       = 'GallerySubmissions';
+const SHEET_RSVPS         = 'RSVPs';
 
 // ─── Column headers ───
 const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','Date','Status','AccountType','UserID','Year'];
@@ -27,6 +28,7 @@ const FIN_HEADERS  = ['Key','Value'];
 const ANN_HEADERS  = ['Tag','Meta','Text'];
 const VOL_HEADERS  = ['Timestamp','Name','Flat','Mobile','Days','Tasks','AssignedTask','Status','Note','CheckedIn','CheckinTime'];
 const GAL_HEADERS  = ['Timestamp','Name','Flat','Year','Moment','Caption','DriveUrl','Status'];
+const RSVP_HEADERS = ['Timestamp','Name','Flat','Mobile','Family','KharnaPlates','ThekuaPackets'];
 
 /* ══════════════════════════════════════════════════════════
    INITIAL SETUP — Run this ONCE
@@ -137,6 +139,25 @@ function setupSheets() {
     gal.setColumnWidth(8, 120); // Status
   }
 
+  // Create RSVPs sheet
+  let rsvp = ss.getSheetByName(SHEET_RSVPS);
+  if (!rsvp) {
+    rsvp = ss.insertSheet(SHEET_RSVPS);
+    rsvp.appendRow(RSVP_HEADERS);
+    rsvp.getRange(1, 1, 1, RSVP_HEADERS.length)
+       .setFontWeight('bold')
+       .setBackground('#1565C0')
+       .setFontColor('#FFFFFF');
+    rsvp.setFrozenRows(1);
+    rsvp.setColumnWidth(1, 160); // Timestamp
+    rsvp.setColumnWidth(2, 180); // Name
+    rsvp.setColumnWidth(3, 80);  // Flat
+    rsvp.setColumnWidth(4, 120); // Mobile
+    rsvp.setColumnWidth(5, 80);  // Family
+    rsvp.setColumnWidth(6, 110); // KharnaPlates
+    rsvp.setColumnWidth(7, 120); // ThekuaPackets
+  }
+
   // Remove default Sheet1 if it exists and is empty
   const sheet1 = ss.getSheetByName('Sheet1');
   if (sheet1 && sheet1.getLastRow() <= 1) {
@@ -182,6 +203,9 @@ function doGet(e) {
       break;
     case 'getGalleryPhotos':
       result = actionGetGalleryPhotos(e.parameter.year, e.parameter.status);
+      break;
+    case 'getRSVPs':
+      result = actionGetRSVPs();
       break;
     case 'ping':
       result = { ok: true, message: 'PSOTS Backend is running!' };
@@ -978,6 +1002,30 @@ function actionFindByFlat(flat) {
   }
 
   return { ok: true, found: false };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Get RSVPs (admin only)
+══════════════════════════════════════════════════════════ */
+function actionGetRSVPs() {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_RSVPS);
+  if (!sheet || sheet.getLastRow() < 2) return { rsvps: [] };
+
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, RSVP_HEADERS.length).getValues();
+
+  const rsvps = data
+    .filter(r => String(r[1]).trim())   // skip blank rows
+    .map(r => ({
+      timestamp:     String(r[0]),
+      name:          String(r[1]),
+      flat:          String(r[2]),
+      mobile:        String(r[3]),
+      family:        Number(r[4]) || 0,
+      kharnaPlates:  Number(r[5]) || 0,
+      thekuaPackets: Number(r[6]) || 0
+    }));
+
+  return { rsvps };
 }
 
 /* ══════════════════════════════════════════════════════════
