@@ -218,6 +218,7 @@
             </div>
           </div>
           <p class="app-sec-note" id="appSecNote">Enter amount above — links open with amount pre-filled</p>
+          <p class="app-sec-note" style="color:#b04000;margin-top:.3rem">App link declined or failed? Scroll down — scan the QR code instead ↓</p>
         </div>
       </div>
 
@@ -237,6 +238,7 @@
               <img id="qrImg" style="display:none;width:180px;height:180px;border-radius:6px" alt="UPI QR Code"/>
             </div>
             <div class="qr-label"><strong>Scan with any UPI app</strong></div>
+            <p id="qrAmtNote" style="display:none;font-size:.72rem;color:#7a5030;text-align:center;margin:0">Enter amount above for amount-prefilled QR<br/>or scan now and type amount in your UPI app</p>
           </div>
         </div>
       </div>
@@ -317,18 +319,23 @@ window.addEventListener('DOMContentLoaded',()=>{
   }
 });
 
-// Device-adaptive layout: mobile → app buttons primary; desktop → QR primary
+// Device-adaptive layout: on mobile keep both sections open; on desktop collapse app section
 function initLayout(){
   const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if(isMobile){
-    document.getElementById('qrSection').classList.add('collapsed');
-    document.getElementById('qrArrow').textContent='▸';
-    document.getElementById('cardSub').textContent='Tap your UPI app to pay instantly — amount is pre-filled automatically.';
-  } else {
+  if(!isMobile){
     document.getElementById('appSection').classList.add('collapsed');
     document.getElementById('appArrow').textContent='▸';
     document.getElementById('cardSub').textContent='Scan the QR code with any UPI app — GPay, PhonePe, Paytm, BHIM.';
+  } else {
+    document.getElementById('cardSub').textContent='Tap your UPI app or scan the QR — QR works with ALL apps.';
   }
+  // Always show static QR for UPI ID on load (user can scan and enter amount in their app)
+  const staticUri=`upi://pay?pa=${encodeURIComponent(C.upiId)}&pn=${encodeURIComponent(C.payeeName)}&cu=INR&tn=ChhathPuja2026`;
+  const qrImg=document.getElementById('qrImg');
+  qrImg.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&qzone=2&data=${encodeURIComponent(staticUri)}`;
+  qrImg.style.display='block';
+  document.getElementById('qrPlaceholder').style.display='none';
+  document.getElementById('qrAmtNote').style.display='block';
 }
 
 function toggleSec(sectionId,arrowId){
@@ -380,12 +387,17 @@ function onAmtInput(){
     qrImg.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&qzone=2&data=${encodeURIComponent(upiUri)}`;
     qrImg.style.display='block';
     qrPh.style.display='none';
+    document.getElementById('qrAmtNote').style.display='none';
     amtDisplay.textContent='Amount: ₹'+parseInt(v).toLocaleString('en-IN')+' — pre-filled';
     amtDisplay.style.color='var(--or)';
     amtDisplay.style.fontWeight='700';
   }else{
-    qrImg.style.display='none';
-    qrPh.style.display='flex';
+    // Show static QR (no amount) so resident can still scan and enter amount in app
+    const staticUri=`upi://pay?pa=${encodeURIComponent(C.upiId)}&pn=${encodeURIComponent(C.payeeName)}&cu=INR&tn=ChhathPuja2026`;
+    qrImg.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&qzone=2&data=${encodeURIComponent(staticUri)}`;
+    qrImg.style.display='block';
+    qrPh.style.display='none';
+    document.getElementById('qrAmtNote').style.display='block';
     amtDisplay.textContent='Amount: enter above';
     amtDisplay.style.color='#6b3a18';
     amtDisplay.style.fontWeight='400';
@@ -400,10 +412,10 @@ function updateAppLinks(amount){
   const tn=encodeURIComponent('ChhathPuja2026');
   const base=`pa=${pa}&pn=${pn}&am=${amt}&cu=INR&tn=${tn}`;
   if(amt>=1){
-    document.getElementById('link-gpay').href    =`tez://upi/pay?${base}`;
-    document.getElementById('link-phonepe').href =`phonepe://pay?${base}`;
-    document.getElementById('link-paytm').href   =`paytmmp://pay?${base}`;
-    document.getElementById('link-bhim').href    =`bhim://pay?${base}`;
+    document.getElementById('link-gpay').href    =`upi://pay?${base}`;
+    document.getElementById('link-phonepe').href =`upi://pay?${base}`;
+    document.getElementById('link-paytm').href   =`upi://pay?${base}`;
+    document.getElementById('link-bhim').href    =`upi://pay?${base}`;
     document.getElementById('link-amazon').href  =`upi://pay?${base}`;
     document.getElementById('link-any').href     =`upi://pay?${base}`;
     document.getElementById('appSecNote').textContent='📱 Tap to open — ₹'+parseInt(amount).toLocaleString('en-IN')+' pre-filled';
