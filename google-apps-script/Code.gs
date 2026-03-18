@@ -305,7 +305,7 @@ function actionList() {
 ══════════════════════════════════════════════════════════ */
 function actionListAll(key) {
   const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
-  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+  if (!adminKey || key !== adminKey) return { error: 'Unauthorized' };
 
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
   if (!sheet || sheet.getLastRow() < 2) return { all: [] };
@@ -643,7 +643,7 @@ function actionGetWaSubscribers() {
 ══════════════════════════════════════════════════════════ */
 function actionListProfiles(key) {
   const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
-  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+  if (!adminKey || key !== adminKey) return { error: 'Unauthorized' };
 
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROFILES);
   if (!sheet || sheet.getLastRow() < 2) return { profiles: [] };
@@ -668,7 +668,7 @@ function actionListProfiles(key) {
 ══════════════════════════════════════════════════════════ */
 function actionClearProfile(uid, key) {
   const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
-  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+  if (!adminKey || key !== adminKey) return { error: 'Unauthorized' };
   if (!uid) return { error: 'uid required' };
 
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROFILES);
