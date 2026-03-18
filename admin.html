@@ -799,22 +799,28 @@ window.addEventListener('load', () => {
   // 1. Already logged into admin session
   const adminSaved = localStorage.getItem('psots_admin_user');
   if (adminSaved) {
-    const u = JSON.parse(adminSaved);
-    if (adminEmails.includes(u.email)) { enterAdmin(u); return; }
+    try {
+      const u = JSON.parse(adminSaved);
+      if (adminEmails.includes(u.email)) { enterAdmin(u); return; }
+    } catch(e) {}
     localStorage.removeItem('psots_admin_user');
   }
 
   // 2. Already logged into portal — reuse session
   const portalSaved = localStorage.getItem('psots_user');
   if (portalSaved) {
-    const u = JSON.parse(portalSaved);
-    if (adminEmails.includes(u.email)) {
-      localStorage.setItem('psots_admin_user', JSON.stringify(u));
-      enterAdmin(u); return;
+    try {
+      const u = JSON.parse(portalSaved);
+      if (adminEmails.includes(u.email)) {
+        localStorage.setItem('psots_admin_user', JSON.stringify(u));
+        enterAdmin(u); return;
+      }
+      // Logged in but not admin — send back to portal
+      window.location.href = 'portal.html';
+      return;
+    } catch(e) {
+      localStorage.removeItem('psots_user');
     }
-    // Logged in but not admin — send back to portal
-    window.location.href = 'portal.html';
-    return;
   }
 
   // 3. Not logged in at all — redirect to portal login
@@ -835,13 +841,22 @@ function handleAdminLogin(response) {
 function enterAdmin(u) {
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('adminApp').style.display = 'block';
-  // Show user in nav
+  // Show user in nav — use DOM methods to prevent XSS via u.name / u.picture
   const nav = document.querySelector('.an-actions');
-  nav.insertAdjacentHTML('afterbegin', `
-    <div style="display:flex;align-items:center;gap:.5rem;margin-right:.5rem">
-      ${u.picture ? `<img src="${u.picture}" style="width:28px;height:28px;border-radius:50%;object-fit:cover"/>` : ''}
-      <span style="font-size:.75rem;color:rgba(255,255,255,.8)">${u.name}</span>
-    </div>`);
+  const div = document.createElement('div');
+  div.style.cssText = 'display:flex;align-items:center;gap:.5rem;margin-right:.5rem';
+  if (u.picture) {
+    const img = document.createElement('img');
+    img.src = u.picture;
+    img.style.cssText = 'width:28px;height:28px;border-radius:50%;object-fit:cover';
+    img.alt = '';
+    div.appendChild(img);
+  }
+  const span = document.createElement('span');
+  span.style.cssText = 'font-size:.75rem;color:rgba(255,255,255,.8)';
+  span.textContent = u.name;
+  div.appendChild(span);
+  nav.insertBefore(div, nav.firstChild);
   initAdmin();
 }
 
@@ -855,8 +870,9 @@ function changePw() {
   const cur = document.getElementById('pw-current').value;
   const nw  = document.getElementById('pw-new').value;
   const cnf = document.getElementById('pw-confirm').value;
-  const stored = localStorage.getItem('psots_admin_pw') || DEFAULT_PW_HASH;
-  if (btoa(cur) !== stored) return toast('❌ Current password incorrect', 'error');
+  const stored = localStorage.getItem('psots_admin_pw');
+  // If no password has been set yet, skip current-password check (first-time setup)
+  if (stored && btoa(cur) !== stored) return toast('❌ Current password incorrect', 'error');
   if (nw.length < 8) return toast('Password must be at least 8 characters', 'error');
   if (nw !== cnf) return toast('New passwords do not match', 'error');
   localStorage.setItem('psots_admin_pw', btoa(nw));
@@ -963,10 +979,10 @@ async function loadLinkedAccounts() {
     if (!linked.length) { el.innerHTML = '<div style="color:var(--lbr);font-size:.8rem">No residents have linked accounts yet.</div>'; return; }
     el.innerHTML = `<table class="con-table" style="margin-top:.5rem"><thead><tr><th>Name</th><th>Email</th><th>Flat</th><th>Mobile</th><th></th></tr></thead><tbody>` +
       linked.map(p => `<tr>
-        <td>${p.name||'—'}</td>
-        <td style="font-size:.72rem">${p.email||'—'}</td>
-        <td><strong>${p.flat||'—'}</strong></td>
-        <td>${p.mobile||'—'}</td>
+        <td>${escHtml(p.name)}</td>
+        <td style="font-size:.72rem">${escHtml(p.email)}</td>
+        <td><strong>${escHtml(p.flat)}</strong></td>
+        <td>${escHtml(p.mobile)}</td>
         <td><button onclick="clearResidentProfile('${escAdm(p.uid)}','${escAdm(p.name)}')" style="background:#fff0f0;color:var(--red);border:1px solid rgba(200,0,0,.2);border-radius:6px;padding:.2rem .55rem;font-size:.7rem;cursor:pointer">Unlink</button></td>
       </tr>`).join('') +
       `</tbody></table>`;
@@ -1143,7 +1159,10 @@ function prefillManualFromDir(flat) {
   }, 80);
 }
 
-function escAdm(s) { return String(s||'').replace(/'/g,"\\'"); }
+// Escape for use inside JS string literals in onclick attributes (single-quote safe)
+function escAdm(s) { return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'"); }
+// Escape for HTML text content (prevents XSS in innerHTML)
+function escHtml(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#x27;'); }
 
 /* ═══════════════════════════════════════════════════
    CONTRIBUTORS

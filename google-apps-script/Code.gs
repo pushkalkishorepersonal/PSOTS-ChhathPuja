@@ -361,6 +361,14 @@ function actionMyContribs(flat, mobile) {
    ACTION: Add new contribution (POST from payment page)
 ══════════════════════════════════════════════════════════ */
 function actionAddContribution(body) {
+  // Server-side validation
+  if (!body.name || !String(body.name).trim()) return { error: 'Name is required' };
+  if (!body.flat || !String(body.flat).trim()) return { error: 'Flat number is required' };
+  const mobile = String(body.mobile || '').replace(/\D/g, '');
+  if (!mobile || mobile.length !== 10) return { error: 'Valid 10-digit mobile number is required' };
+  const amount = Math.round(Number(body.amount) || 0);
+  if (amount < 1 || amount > 100000) return { error: 'Amount must be between ₹1 and ₹1,00,000' };
+
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
   if (!sheet) return { error: 'Contributions sheet not found' };
 
@@ -368,10 +376,10 @@ function actionAddContribution(body) {
 
   sheet.appendRow([
     body.timestamp || new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
-    body.name   || '',
-    body.flat   || '',
-    body.mobile || '',
-    Math.round(Number(body.amount) || 0),
+    String(body.name).trim(),
+    String(body.flat).trim(),
+    mobile,
+    amount,
     body.method || 'UPI',
     body.date   || '',
     body.status || 'Pending Verification',
@@ -535,7 +543,9 @@ function actionSendOtp(email) {
     // getRemainingDailyQuota may fail if MailApp not authorized — continue and let sendEmail surface the real error
   }
 
-  const otp = String(Math.floor(100000 + Math.random() * 900000));
+  // Use UUID-based entropy (cryptographically secure in GAS) instead of Math.random()
+  const uuid = Utilities.getUuid().replace(/-/g, '');
+  const otp = String(100000 + (parseInt(uuid.substring(0, 8), 16) % 900000));
   const expiry = Date.now() + 10 * 60 * 1000; // 10 minutes
   PropertiesService.getScriptProperties().setProperty(
     'otp_' + email,
