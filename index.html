@@ -375,7 +375,7 @@
     </a>
 
     <a class="tile t-contrib" href="pages/contributors.html">
-      <div class="ch"><div class="ch-title" id="conTitle">🙏 Contributors</div><div class="ch-badge" id="conBadge">…</div></div>
+      <div class="ch"><div class="ch-title" id="conTitle">🙏 Contributors</div><div style="display:flex;flex-direction:column;align-items:center;gap:1px"><div class="ch-badge" id="conBadge">…</div><div style="font-size:.58rem;font-weight:700;color:rgba(255,237,200,.6);letter-spacing:.04em" id="conBadgeYear"></div></div></div>
       <div class="cl" id="conPreview"><div class="crl">Loading…</div></div>
       <span class="ta">See Full List →</span>
     </a>
@@ -476,7 +476,7 @@ if(!_li){
 async function loadPrev(){
   const el=document.getElementById('conPreview'),bd=document.getElementById('conBadge'),titleEl=document.getElementById('conTitle');
   function renderRows(list){return list.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat||'-'}</div></div><div class="cra">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');}
-  function setYear(yr){if(titleEl)titleEl.textContent='🙏 Contributors '+yr;}
+  function setYear(yr){if(titleEl)titleEl.textContent='🙏 Contributors '+yr;const yrTag=document.getElementById('conBadgeYear');if(yrTag)yrTag.textContent=yr;}
 
   /* Fallback: history.json (no script URL) */
   if(!su||su.includes('YOUR_APPS')){
