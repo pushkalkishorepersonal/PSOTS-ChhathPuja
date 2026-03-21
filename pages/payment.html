@@ -633,8 +633,8 @@ async function initiatePayU(){
   const surl=cfg.payuSurl||'https://chhath.psots.in/pages/payu-success.html';
   const furl=cfg.payuFurl||'https://chhath.psots.in/pages/payu-failure.html';
   // Hash: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
-  const userId=currentUser?currentUser.id:'';
-  const hashStr=`${key}|${txnid}|${amtStr}|${productinfo}|${firstname}|${email}|${userId}|${flat}||||||||||${salt}`;
+  // udf1=phone (10-digit string, safe precision), udf2=flat
+  const hashStr=`${key}|${txnid}|${amtStr}|${productinfo}|${firstname}|${email}|${phone}|${flat}||||||||||${salt}`;
   const btn=document.getElementById('payuPayBtn');
   btn.disabled=true;btn.textContent='Generating secure hash…';
   let hash;
@@ -646,7 +646,7 @@ async function initiatePayU(){
   set('key',key);set('txnid',txnid);set('amount',amtStr);set('productinfo',productinfo);
   set('firstname',firstname);set('email',email);set('phone',phone);
   set('surl',surl);set('furl',furl);set('hash',hash);
-  set('udf1',userId);set('udf2',flat);
+  set('udf1',phone);set('udf2',flat);
   form.submit();
 }
 </script>
