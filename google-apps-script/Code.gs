@@ -357,6 +357,9 @@ function actionAddContribution(body) {
     year
   ]);
 
+  // Notify committee on WhatsApp (fire-and-forget)
+  try { notifyCommitteeWhatsApp(body); } catch(e) {}
+
   return { success: true, message: 'Contribution recorded!' };
 }
 
@@ -984,6 +987,42 @@ function actionFindByFlat(flat) {
   }
 
   return { ok: true, found: false };
+}
+
+/* ══════════════════════════════════════════════════════════
+   HELPER: Notify committee on WhatsApp via CallMeBot (free)
+   Setup: Script Properties → CALLMEBOT_PHONE + CALLMEBOT_APIKEY
+   Activation: wa.me/+34644598973 → "I allow callmebot to send me messages"
+══════════════════════════════════════════════════════════ */
+function notifyCommitteeWhatsApp(body) {
+  const props   = PropertiesService.getScriptProperties();
+  const phone   = props.getProperty('CALLMEBOT_PHONE');   // e.g. 919482088904
+  const apikey  = props.getProperty('CALLMEBOT_APIKEY');  // e.g. 123456
+
+  if (!phone || !apikey) return; // not configured — skip silently
+
+  const amt    = body.amount ? '₹' + parseFloat(body.amount).toLocaleString('en-IN') : '?';
+  const name   = body.name  || 'Unknown';
+  const flat   = body.flat  || '?';
+  const method = body.method || 'UPI';
+  const date   = body.date  || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd MMM yyyy');
+
+  const msg = '🌅 *New Chhath 2026 Payment*\n' +
+              '👤 ' + name + ' · Flat ' + flat + '\n' +
+              '💰 ' + amt + ' via ' + method + '\n' +
+              '📅 ' + date + '\n' +
+              '⏳ Pending verification';
+
+  const url = 'https://api.callmebot.com/whatsapp.php' +
+              '?phone='  + encodeURIComponent(phone) +
+              '&text='   + encodeURIComponent(msg) +
+              '&apikey=' + encodeURIComponent(apikey);
+
+  try {
+    UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+  } catch(e) {
+    Logger.log('CallMeBot notification failed: ' + e.message);
+  }
 }
 
 /* ══════════════════════════════════════════════════════════
