@@ -1027,7 +1027,7 @@ function sendContributorWhatsApp(p) {
     (p.method ? ' via ' + p.method : '') + '\n' +
     (p.date   ? '📅 ' + p.date + '\n' : '') +
     ref + '\n\n' +
-    '⏳ Will be verified within 24 hours.\n' +
+    (p.verified ? '✅ Payment confirmed by gateway.\n' : '⏳ Will be verified by committee within 24 hours.\n') +
     '👉 View receipt: chhath.psots.in/portal.html\n\n' +
     'जय छठी मैया! 🙏';
 
@@ -1176,8 +1176,8 @@ function actionSendInvoiceEmail(params) {
           <td style="padding:14px 16px">
             <div style="font-size:12px;font-weight:700;color:#2e7d32;margin-bottom:6px">WHAT HAPPENS NEXT</div>
             <ul style="margin:0;padding-left:18px;font-size:13px;color:#1b5e20;line-height:1.8">
-              <li>The committee will verify your payment within 24 hours</li>
-              <li>Your name will appear on the Contributors page</li>
+              <li>✅ Your payment has been confirmed by the gateway</li>
+              <li>Your name will appear on the Contributors page shortly</li>
               <li>You can view your receipt anytime in the <a href="${portalUrl}" style="color:#c84800">Resident Portal</a></li>
             </ul>
           </td>
@@ -1222,13 +1222,14 @@ function actionSendInvoiceEmail(params) {
 
   // Send WhatsApp receipt to contributor via Fonnte (fire-and-forget)
   try { sendContributorWhatsApp({
-    phone:  params.phone    || '',
-    name:   name,
-    flat:   flat,
-    amount: amount,
-    method: mode,
-    date:   dateStr,
-    txnid:  mihpayid || txnid
+    phone:    params.phone    || '',
+    name:     name,
+    flat:     flat,
+    amount:   amount,
+    method:   mode,
+    date:     dateStr,
+    txnid:    mihpayid || txnid,
+    verified: true   // PayU gateway — instant confirmation
   }); } catch(e) {}
 
   return { ok: true };
