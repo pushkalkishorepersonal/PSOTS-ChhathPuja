@@ -231,15 +231,15 @@
   footer p{font-size:.74rem;color:rgba(255,220,120,.65);line-height:1.8}
   footer span{color:rgba(255,194,0,.88)}
   </style>
-  <link rel="icon" href="logo-hindi.png" type="image/png">
-  <link rel="apple-touch-icon" href="logo-main.png">
-  <meta property="og:image" content="https://chhath.psots.in/logo-main.png">
+  <link rel="icon" href="images/logo-hindi.png" type="image/png">
+  <link rel="apple-touch-icon" href="images/logo-main.png">
+  <meta property="og:image" content="https://chhath.psots.in/images/logo-main.png">
 </head>
 <body>
 
 <nav>
   <div class="nb">
-    <span class="nd"><img src="logo-main.png" alt="PSOTS" width="38" height="38" style="display:block;object-fit:contain"/></span>
+    <span class="nd"><img src="images/logo-main.png" alt="PSOTS" width="38" height="38" style="display:block;object-fit:contain"/></span>
     <div><div class="nn">PSOTS छठ महापर्व 2026</div><div class="ns">पंच वर्ष महोत्सव</div></div>
   </div>
   <a class="nav-portal-btn" href="portal.html" id="navPortalBtn">👤 My Account</a>
@@ -433,7 +433,7 @@
   </p>
 </footer>
 
-<script src="config.js"></script>
+<script src="js/config.js"></script>
 <script>
 const evt=new Date(window.PSOTS?PSOTS.eventStart:'2026-11-01T06:00:00');
 function tick(){const d=evt-new Date();if(d<=0){document.getElementById('countdown').innerHTML='<div style="font-family:\'Yatra One\',serif;font-size:1.3rem;color:var(--gold)">🌅 जय छठी मैया!</div>';return}const p=n=>String(Math.floor(n)).padStart(2,'0');document.getElementById('cd-d').textContent=p(d/864e5);document.getElementById('cd-h').textContent=p((d%864e5)/36e5);document.getElementById('cd-m').textContent=p((d%36e5)/6e4);document.getElementById('cd-s').textContent=p((d%6e4)/1e3)}
