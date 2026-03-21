@@ -379,7 +379,9 @@ async function submitPhoto() {
       await fetch(su, {
         method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'uploadPhoto', imageBase64: selectedImageBase64, year, moment, name, flat, caption })
+        body: JSON.stringify({ action: 'uploadPhoto', imageBase64: selectedImageBase64, year, moment, name, flat, caption,
+          adminUpload: (function(){ try { var u=JSON.parse(localStorage.getItem('psots_user')||localStorage.getItem('psots_admin_user')||'null'); return u&&u.email&&window.PSOTS&&(PSOTS.adminEmails||[]).indexOf(u.email)!==-1; } catch(e){return false;} })()
+        })
       });
     }
     document.getElementById('uploadSuccess').style.display = 'block';
