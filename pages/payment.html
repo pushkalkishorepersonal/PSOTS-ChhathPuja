@@ -247,6 +247,21 @@
         </div>
       </div>
 
+      <!-- PAYU SECTION: online payment gateway -->
+      <div id="payuSection" class="pay-section">
+        <button class="pay-sec-hdr" onclick="toggleSec('payuSection','payuArrow')">
+          <span>💳 Pay Online via PayU <span id="payuModeBadge" style="background:#ff9800;color:#fff;border-radius:50px;padding:.12rem .55rem;font-size:.62rem;font-weight:700;margin-left:.4rem;vertical-align:middle">TEST</span></span>
+          <span class="sec-arrow" id="payuArrow">▾</span>
+        </button>
+        <div class="pay-sec-body">
+          <p style="font-size:.82rem;color:#5a2e0c;line-height:1.65;margin-bottom:.95rem">Pay securely using Credit/Debit Card, Net Banking, Wallet, or UPI through PayU — India's trusted payment gateway.</p>
+          <button class="app-big-btn app-btn-any app-btn-full" id="payuPayBtn" onclick="initiatePayU()" style="font-size:.95rem;padding:.9rem">
+            💳 &nbsp;Pay <span id="payuAmtLabel">— enter amount above</span> via PayU
+          </button>
+          <p class="app-sec-note" style="margin-top:.6rem">Requires: name · mobile · email (sign in for auto-fill)</p>
+        </div>
+      </div>
+
     </div>
 
   </div>
@@ -301,6 +316,22 @@
 
 </div>
 <div id="toast"></div>
+
+<!-- Hidden form submitted to PayU -->
+<form id="payuForm" method="POST" style="display:none">
+  <input type="hidden" name="key"/>
+  <input type="hidden" name="txnid"/>
+  <input type="hidden" name="amount"/>
+  <input type="hidden" name="productinfo"/>
+  <input type="hidden" name="firstname"/>
+  <input type="hidden" name="email"/>
+  <input type="hidden" name="phone"/>
+  <input type="hidden" name="surl"/>
+  <input type="hidden" name="furl"/>
+  <input type="hidden" name="hash"/>
+  <input type="hidden" name="udf1"/>
+  <input type="hidden" name="udf2"/>
+</form>
 
 <script>
 const _cfg=window.PSOTS||{};
@@ -372,6 +403,12 @@ window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('f-date').valueAsDate=new Date();
   initLayout();
   initQR();
+  // PayU mode badge + initial button state
+  const _payuMode=(window.PSOTS||{}).payuMode||'TEST';
+  const _badge=document.getElementById('payuModeBadge');
+  if(_badge){_badge.textContent=_payuMode;_badge.style.background=_payuMode==='LIVE'?'#2e7d32':'#ff9800';}
+  const _pb=document.getElementById('payuPayBtn');
+  if(_pb){_pb.disabled=true;_pb.style.opacity='.6';}
   const u=localStorage.getItem('psots_user');
   if(u){
     currentUser=JSON.parse(u);
@@ -452,6 +489,11 @@ function onAmtInput(){
   }
   updateQRAmount(v);
   updateAppLinks(v);
+  // Sync PayU button label
+  const payuLbl=document.getElementById('payuAmtLabel');
+  if(payuLbl)payuLbl.textContent=v&&parseInt(v)>=1?'₹'+parseInt(v).toLocaleString('en-IN'):'— enter amount above';
+  const payuBtn=document.getElementById('payuPayBtn');
+  if(payuBtn){payuBtn.disabled=!(v&&parseInt(v)>=1);payuBtn.style.opacity=v&&parseInt(v)>=1?'1':'.6';}
 }
 
 function updateAppLinks(amount){
@@ -559,6 +601,51 @@ function sendReceipt(){
 
 function showErr(m){const e=document.getElementById('errBox');e.textContent='⚠️ '+m;e.style.display='block';e.scrollIntoView({behavior:'smooth',block:'center'});}
 function toast(m,t=''){const e=document.getElementById('toast');e.textContent=m;e.className=t?`show ${t}`:'show';setTimeout(()=>e.className='',3000);}
+
+// ── PayU integration ─────────────────────────────────────────
+async function sha512hex(str){
+  const buf=await crypto.subtle.digest('SHA-512',new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+async function initiatePayU(){
+  const amount=document.getElementById('payAmt').value;
+  if(!amount||parseInt(amount)<1){showErr('Please enter the contribution amount above first.');return;}
+  // Collect required fields
+  const name=(document.getElementById('f-name').value.trim())||(currentUser?(userProfile.name||currentUser.name||''):'');
+  const email=currentUser?currentUser.email:'';
+  const phone=(document.getElementById('f-mobile').value.trim())||(userProfile.mobile||'');
+  const flat=document.getElementById('f-flat').value.trim();
+  if(!name){showErr('Please enter your name in the Confirm section below.');document.getElementById('f-name').focus();return;}
+  if(!email){showErr('Please sign in to pay via PayU — your email is needed by the gateway.');return;}
+  if(!/^\d{10}$/.test(phone)){showErr('Please enter your 10-digit mobile number in the Confirm section below.');document.getElementById('f-mobile').focus();return;}
+  const cfg=window.PSOTS||{};
+  const key=cfg.payuMerchantKey||'';
+  const salt=cfg.payuSalt||'';
+  const mode=cfg.payuMode||'TEST';
+  if(!key||key==='YOUR_PAYU_MERCHANT_KEY'){showErr('PayU is not configured yet. Please use UPI to pay.');return;}
+  const txnid='PSOTS26-'+Date.now()+'-'+Math.floor(Math.random()*10000);
+  const productinfo='ChhathPuja2026';
+  const firstname=name.split(' ')[0];
+  const amtStr=parseFloat(amount).toFixed(2);
+  const surl=cfg.payuSurl||'https://chhath.psots.in/pages/payu-success.html';
+  const furl=cfg.payuFurl||'https://chhath.psots.in/pages/payu-failure.html';
+  // Hash: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
+  const userId=currentUser?currentUser.id:'';
+  const hashStr=`${key}|${txnid}|${amtStr}|${productinfo}|${firstname}|${email}|${userId}|${flat}||||||||||${salt}`;
+  const btn=document.getElementById('payuPayBtn');
+  btn.disabled=true;btn.textContent='Generating secure hash…';
+  let hash;
+  try{hash=await sha512hex(hashStr);}catch(e){btn.disabled=false;btn.innerHTML=`💳 &nbsp;Pay via PayU`;showErr('Could not generate payment hash. Try a different browser.');return;}
+  const endpoint=mode==='LIVE'?'https://secure.payu.in/_payment':'https://test.payu.in/_payment';
+  const form=document.getElementById('payuForm');
+  form.action=endpoint;
+  const set=(n,v)=>form.querySelector(`[name="${n}"]`).value=v;
+  set('key',key);set('txnid',txnid);set('amount',amtStr);set('productinfo',productinfo);
+  set('firstname',firstname);set('email',email);set('phone',phone);
+  set('surl',surl);set('furl',furl);set('hash',hash);
+  set('udf1',userId);set('udf2',flat);
+  form.submit();
+}
 </script>
 </body>
 </html>

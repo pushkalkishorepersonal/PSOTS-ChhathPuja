@@ -63,10 +63,12 @@ window.PSOTS = {
   adminKey: 'psots-admin-2026',
 
   /* ── PAYU PAYMENT GATEWAY ─────────
-     Fill these once your merchant account is approved by PayU.
-     surl = success return URL  |  furl = failure return URL    */
-  payuMerchantKey:  'YOUR_PAYU_MERCHANT_KEY',   // e.g. 'aBcDeF'
-  payuSalt:         'YOUR_PAYU_SALT',            // e.g. 'xYzAbCdEfGh12345'
+     TEST credentials — safe for client-side.
+     ⚠️  When going LIVE, move payuSalt to Apps Script (server-side only)
+         and generate the hash there — never expose LIVE salt in frontend JS.
+     surl = success return URL  |  furl = failure return URL               */
+  payuMerchantKey:  'XX9JSF',
+  payuSalt:         'QhvwoJ3RmrqOrOg6rRc3cbjLpQPzwAxa',
   payuMode:         'TEST',                      // 'TEST' or 'LIVE'
   payuSurl:         'https://chhath.psots.in/pages/payu-success.html',
   payuFurl:         'https://chhath.psots.in/pages/payu-failure.html',
