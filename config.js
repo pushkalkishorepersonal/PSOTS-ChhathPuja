@@ -62,6 +62,15 @@ window.PSOTS = {
   /* Set the same value in Google Apps Script → Project Settings → Script Properties: ADMIN_KEY */
   adminKey: 'psots-admin-2026',
 
+  /* ── PAYU PAYMENT GATEWAY ─────────
+     Fill these once your merchant account is approved by PayU.
+     surl = success return URL  |  furl = failure return URL    */
+  payuMerchantKey:  'YOUR_PAYU_MERCHANT_KEY',   // e.g. 'aBcDeF'
+  payuSalt:         'YOUR_PAYU_SALT',            // e.g. 'xYzAbCdEfGh12345'
+  payuMode:         'TEST',                      // 'TEST' or 'LIVE'
+  payuSurl:         'https://chhath.psots.in/pages/payu-success.html',
+  payuFurl:         'https://chhath.psots.in/pages/payu-failure.html',
+
   /* ══ FILL THESE AFTER SETUP ══════
      See README.md for exact steps.   */
   scriptUrl:      'https://script.google.com/macros/s/AKfycbzt0Dgs3P0gnV-6mLeYE-TdpLjUpNuWoB1_eGvppsPhnDsVSNQBwSvGaTH5Dx7qGk-3/exec',
