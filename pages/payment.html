@@ -634,7 +634,9 @@ async function initiatePayU(){
   const furl=cfg.payuFurl||'https://chhath.psots.in/pages/payu-failure.html';
   // Hash: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||salt
   // udf1=phone (10-digit string, safe precision), udf2=flat
-  const hashStr=`${key}|${txnid}|${amtStr}|${productinfo}|${firstname}|${email}|${phone}|${flat}||||||||||${salt}`;
+  // PayU formula: key|txnid|amount|productinfo|firstname|email|udf1|udf2|udf3|udf4|udf5||||||SALT
+  // udf3/udf4/udf5 empty + 6 pipes before SALT = 9 total pipes after udf2
+  const hashStr=`${key}|${txnid}|${amtStr}|${productinfo}|${firstname}|${email}|${phone}|${flat}|||||||||${salt}`;
   const btn=document.getElementById('payuPayBtn');
   btn.disabled=true;btn.textContent='Generating secure hash…';
   let hash;
