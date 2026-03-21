@@ -445,7 +445,7 @@
     </a>
 
     <a class="tile t-contrib" href="pages/contributors.html">
-      <div class="ch"><div class="ch-title">🙏 Contributors 2026</div><div class="ch-badge" id="conBadge">…</div></div>
+      <div class="ch"><div class="ch-title" id="conTitle">🙏 Contributors</div><div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div class="ch-badge" id="conBadge">…</div><div style="font-size:.56rem;font-weight:600;color:rgba(255,237,200,.65);letter-spacing:.05em;text-align:center" id="conBadgeYear"></div></div></div>
       <div class="cl" id="conPreview"><div class="crl">Loading…</div></div>
       <span class="ta">See Full List →</span>
     </a>
@@ -543,7 +543,58 @@ if(!_li){
   const _cl=document.getElementById('conPreview');if(_cl)_cl.innerHTML=_lockHtml;
   const _cb=document.getElementById('conBadge');if(_cb)_cb.textContent='';
 }
-async function loadPrev(){const el=document.getElementById('conPreview'),bd=document.getElementById('conBadge');if(!su||su.includes('YOUR_APPS')){try{const res=await fetch('data/history.json');if(res.ok){const g=await res.json(),h=g.history||[];const y2025=h.filter(r=>r.year===2025).slice(0,4);if(y2025.length>0){bd.textContent=h.filter(r=>r.year===2025).length+'';el.innerHTML=y2025.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat||'-'}</div></div><div class="cra">₹${(c.amount||0).toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');return;}}}catch(e){}}if(!su||su.includes('YOUR_APPS')){const demo=[{name:'Pushkal Kishore',flat:'15167',amount:5001},{name:'Ratnesh Singh',flat:'15165',amount:1100},{name:'Rekha Sinha',flat:'9045',amount:11000}];bd.textContent='demo';el.innerHTML=demo.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat}</div></div><div class="cra">₹${c.amount.toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');return;}try{const r=await fetch(su+'?action=list'),d=await r.json(),l=(d.contributors||[]).slice(0,4);bd.textContent=(d.contributors||[]).length+'';el.innerHTML=l.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat}</div></div><div class="cra">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');}catch(e){el.innerHTML='<div class="crl">Tap to view →</div>';}}
+async function loadPrev(){
+  const el=document.getElementById('conPreview'),bd=document.getElementById('conBadge'),titleEl=document.getElementById('conTitle');
+  const yrTag=document.getElementById('conBadgeYear');
+
+  function buildYearStats(list){
+    const map={};
+    list.forEach(c=>{
+      const y=Number(c.year)||0;if(!y)return;
+      if(!map[y])map[y]={count:0,total:0};
+      map[y].count++;map[y].total+=parseFloat(c.amount)||0;
+    });
+    return Object.entries(map).map(([y,s])=>({year:Number(y),...s})).sort((a,b)=>b.year-a.year);
+  }
+
+  function renderYearRows(stats){
+    if(!stats.length)return'<div class="crl">No data yet</div>';
+    return stats.map(s=>`<div class="cr" style="justify-content:space-between">
+      <div style="font-size:.88rem;font-weight:700;color:var(--ink);min-width:38px">${s.year}</div>
+      <div style="font-size:.72rem;color:var(--lbr);flex:1;text-align:center">${s.count} contributors</div>
+      <div style="font-family:'DM Sans',sans-serif;font-weight:700;font-size:.8rem;color:var(--or)">₹${Math.round(s.total).toLocaleString('en-IN')}</div>
+    </div>`).join('');
+  }
+
+  function setStats(stats){
+    const total=stats.reduce((s,r)=>s+r.count,0);
+    if(bd)bd.textContent=total||'…';
+    if(yrTag)yrTag.textContent=stats.length>1?'all years':stats[0]?stats[0].year+'':'';
+    if(titleEl)titleEl.textContent='🙏 Contributors';
+    if(el)el.innerHTML=renderYearRows(stats);
+  }
+
+  /* Fallback: history.json */
+  if(!su||su.includes('YOUR_APPS')){
+    try{
+      const res=await fetch('data/history.json');
+      if(res.ok){
+        const g=await res.json(),h=g.history||[];
+        const stats=buildYearStats(h);
+        if(stats.length){setStats(stats);return;}
+      }
+    }catch(e){}
+    /* Demo */
+    setStats([{year:2025,count:429,total:1234567},{year:2024,count:312,total:987654}]);return;
+  }
+
+  /* Live API */
+  try{
+    const r=await fetch(su+'?action=list'),d=await r.json(),all=d.contributors||[];
+    const stats=buildYearStats(all);
+    setStats(stats);
+  }catch(e){el.innerHTML='<div class="crl">Tap to view →</div>';}
+}
 if(_li) loadPrev(); // only load contributor data when signed in
 // Load live finance + arghya timings from Google Sheet
 if(su){
