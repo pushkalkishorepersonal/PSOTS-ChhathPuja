@@ -132,24 +132,40 @@
   .live::before{content:'';position:absolute;inset:-5px;border-radius:50%;border:2px solid rgba(255,255,255,.52);animation:pr 2s ease-out infinite}
   @keyframes pr{0%{transform:scale(1);opacity:1}100%{transform:scale(2.8);opacity:0}}
 
-  /* SCHEDULE TILE */
+  /* SCHEDULE TILE — swipeable carousel */
   .t-sched{background:#fff;border:1px solid rgba(200,100,0,.09);box-shadow:0 4px 20px rgba(26,8,0,.07)}
   .sh{background:linear-gradient(135deg,#8b2800,#c94000);padding:1.05rem 1.25rem;display:flex;align-items:center;justify-content:space-between}
   .sh-ey{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.88);margin-bottom:.15rem}
   .sh-title{font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;color:#fff;display:flex;align-items:center;gap:.38rem}
   .sh-ico{font-size:1.8rem;opacity:.78}
-  .sb{padding:.8rem 1.15rem}
-  .sr{display:flex;align-items:center;gap:.7rem;padding:.42rem 0;border-bottom:1px solid #f5e8d8}
-  .sr:last-child{border-bottom:none}
-  .sd{background:linear-gradient(135deg,var(--or),#a03800);color:#fff;border-radius:8px;width:33px;height:33px;display:flex;flex-direction:column;align-items:center;justify-content:center;flex-shrink:0}
-  .sdn{font-family:'DM Sans',sans-serif;font-size:.9rem;font-weight:900;line-height:1}
-  .sdm{font-size:.62rem;text-transform:uppercase;letter-spacing:.04em;opacity:1}
-  .si{flex:1}
-  .snm{font-weight:600;font-size:.78rem;color:var(--ink)}
-  .shi{font-family:'Yatra One',serif;font-size:.68rem;color:var(--or)}
-  .stm{font-size:.74rem;color:#6b3a18;font-weight:500}
-  .stm-hi{color:var(--or);font-weight:700}
-  .ta{display:block;text-align:center;padding:.6rem;font-size:.68rem;font-weight:600;color:var(--or);border-top:1px solid #f5e8d8;letter-spacing:.06em;text-transform:uppercase}
+  /* Carousel wrapper */
+  .sc-wrap{position:relative;overflow:hidden;padding:.8rem 0 .4rem;background:#fff}
+  .sc-track{display:flex;gap:.65rem;overflow-x:scroll;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 12%;cursor:grab;user-select:none}
+  .sc-track::-webkit-scrollbar{display:none}
+  .sc-track.dragging{cursor:grabbing;scroll-behavior:auto}
+  /* Each day card */
+  .sc-card{scroll-snap-align:center;flex-shrink:0;width:76%;border-radius:16px;overflow:hidden;position:relative;aspect-ratio:3/2;transition:transform .35s cubic-bezier(.25,.46,.45,.94),box-shadow .35s;transform:scale(.88);box-shadow:0 2px 10px rgba(0,0,0,.1);will-change:transform}
+  .sc-card.sc-active{transform:scale(1);box-shadow:0 10px 32px rgba(180,60,0,.32)}
+  .sc-img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
+  /* Gradient overlay */
+  .sc-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(25,6,0,.95) 0%,rgba(25,6,0,.45) 42%,rgba(0,0,0,.15) 72%,transparent 100%);display:flex;flex-direction:column;justify-content:space-between;padding:.7rem .85rem}
+  /* Date badge top-left */
+  .sc-badge{background:linear-gradient(135deg,#e85c00,#a03800);color:#fff;border-radius:9px;width:38px;height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;align-self:flex-start;box-shadow:0 2px 8px rgba(0,0,0,.3)}
+  .sc-bdn{font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:900;line-height:1}
+  .sc-bdm{font-size:.58rem;text-transform:uppercase;letter-spacing:.05em;opacity:.92}
+  /* Bottom info */
+  .sc-info{color:#fff}
+  .sc-nm{font-family:'DM Sans',sans-serif;font-size:.92rem;font-weight:700;line-height:1.1;margin-bottom:.08rem}
+  .sc-hi{font-family:'Yatra One',serif;font-size:.74rem;color:rgba(255,194,0,.92);margin-bottom:.25rem}
+  .sc-tm{display:inline-block;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:800;color:#ffc200;background:rgba(255,194,0,.14);border:1px solid rgba(255,194,0,.3);border-radius:20px;padding:.12rem .55rem;letter-spacing:.02em}
+  .sc-tm.sc-hi-time{color:#fff;background:rgba(232,92,0,.35);border-color:rgba(232,92,0,.5)}
+  /* Dot indicators */
+  .sc-dots{display:flex;justify-content:center;gap:.42rem;padding:.5rem 0 .55rem}
+  .sc-dot{width:6px;height:6px;border-radius:50%;background:rgba(200,100,0,.2);transition:background .25s,width .25s,border-radius .25s;cursor:pointer}
+  .sc-dot.sc-active{background:var(--or);width:18px;border-radius:3px}
+  /* Footer link */
+  .ta{display:block;text-align:center;padding:.58rem;font-size:.68rem;font-weight:600;color:var(--or);border-top:1px solid #f5e8d8;letter-spacing:.06em;text-transform:uppercase;text-decoration:none}
+  .ta:hover{background:#fff8f0}
 
   /* FINANCE TILE */
   .t-fin{background:linear-gradient(145deg,#1a0800,#3d1200);border:1px solid rgba(255,194,0,.14);box-shadow:0 4px 20px rgba(0,0,0,.3)}
@@ -340,16 +356,70 @@
     </a>
 
     <!-- ROW 2: KEY INFO (span 2 each) -->
-    <a class="tile t-sched" href="pages/schedule.html">
-      <div class="sh"><div class="ts-head-left"><div class="sh-ey">Four Holy Days</div><div class="sh-title">📅 Event Schedule</div></div><div class="sh-ico">🌅</div></div>
-      <div class="sb">
-        <div class="sr"><div class="sd"><div class="sdn">01</div><div class="sdm">Nov</div></div><div class="si"><div class="snm">Nahay Khay</div><div class="shi">नहाय खाय</div></div><div class="stm">5:30 AM</div></div>
-        <div class="sr"><div class="sd"><div class="sdn">02</div><div class="sdm">Nov</div></div><div class="si"><div class="snm">Kharna</div><div class="shi">खरना</div></div><div class="stm">7:00 PM</div></div>
-        <div class="sr"><div class="sd"><div class="sdn">03</div><div class="sdm">Nov</div></div><div class="si"><div class="snm">Sandhya Arghya</div><div class="shi">संध्या अर्घ्य</div></div><div class="stm stm-hi" id="sch-eve-time">5:45 PM 🌇</div></div>
-        <div class="sr"><div class="sd"><div class="sdn">04</div><div class="sdm">Nov</div></div><div class="si"><div class="snm">Usha Arghya</div><div class="shi">उषा अर्घ्य</div></div><div class="stm stm-hi" id="sch-morn-time">6:15 AM 🌅</div></div>
+    <div class="tile t-sched">
+      <!-- Header -->
+      <div class="sh">
+        <div class="ts-head-left"><div class="sh-ey">Four Holy Days</div><div class="sh-title">📅 Event Schedule</div></div>
+        <div class="sh-ico">🌅</div>
       </div>
-      <span class="ta">View Full Schedule →</span>
-    </a>
+      <!-- Swipeable carousel -->
+      <div class="sc-wrap">
+        <div class="sc-track" id="schedTrack">
+          <div class="sc-card sc-active">
+            <img class="sc-img" src="images/chhath-vrati-water-diyas.png" alt="Nahay Khay">
+            <div class="sc-overlay">
+              <div class="sc-badge"><div class="sc-bdn">01</div><div class="sc-bdm">Nov</div></div>
+              <div class="sc-info">
+                <div class="sc-nm">Nahay Khay</div>
+                <div class="sc-hi">नहाय खाय</div>
+                <div class="sc-tm">5:30 AM</div>
+              </div>
+            </div>
+          </div>
+          <div class="sc-card">
+            <img class="sc-img" src="images/chhath-prasad-thali.png" alt="Kharna">
+            <div class="sc-overlay">
+              <div class="sc-badge"><div class="sc-bdn">02</div><div class="sc-bdm">Nov</div></div>
+              <div class="sc-info">
+                <div class="sc-nm">Kharna</div>
+                <div class="sc-hi">खरना</div>
+                <div class="sc-tm" id="sch-eve-time-kh">7:00 PM</div>
+              </div>
+            </div>
+          </div>
+          <div class="sc-card">
+            <img class="sc-img" src="images/chhath-arghya-sunset.png" alt="Sandhya Arghya">
+            <div class="sc-overlay">
+              <div class="sc-badge"><div class="sc-bdn">03</div><div class="sc-bdm">Nov</div></div>
+              <div class="sc-info">
+                <div class="sc-nm">Sandhya Arghya</div>
+                <div class="sc-hi">संध्या अर्घ्य</div>
+                <div class="sc-tm sc-hi-time" id="sch-eve-time">5:45 PM 🌇</div>
+              </div>
+            </div>
+          </div>
+          <div class="sc-card">
+            <img class="sc-img" src="images/chhath-vrati-water-offering.png" alt="Usha Arghya">
+            <div class="sc-overlay">
+              <div class="sc-badge"><div class="sc-bdn">04</div><div class="sc-bdm">Nov</div></div>
+              <div class="sc-info">
+                <div class="sc-nm">Usha Arghya</div>
+                <div class="sc-hi">उषा अर्घ्य</div>
+                <div class="sc-tm sc-hi-time" id="sch-morn-time">6:15 AM 🌅</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- Dot indicators -->
+        <div class="sc-dots" id="schedDots">
+          <span class="sc-dot sc-active" data-idx="0"></span>
+          <span class="sc-dot" data-idx="1"></span>
+          <span class="sc-dot" data-idx="2"></span>
+          <span class="sc-dot" data-idx="3"></span>
+        </div>
+      </div>
+      <a class="ta" href="pages/schedule.html">View Full Schedule →</a>
+    </div>
 
     <a class="tile t-ann" href="pages/announcements.html">
       <div class="anh"><div class="an-title">📢 Announcements <span class="an-new">New</span></div></div>
@@ -584,6 +654,75 @@ if(su){
 window.addEventListener('pageshow', function(e) {
   if (e.persisted) { location.reload(); }
 });
+
+// ── SCHEDULE CAROUSEL ──
+(function(){
+  var track = document.getElementById('schedTrack');
+  if (!track) return;
+  var cards = track.querySelectorAll('.sc-card');
+  var dots  = document.querySelectorAll('#schedDots .sc-dot');
+  var activeIdx = 0;
+
+  function setActive(idx) {
+    if (idx < 0 || idx >= cards.length) return;
+    cards[activeIdx].classList.remove('sc-active');
+    dots[activeIdx].classList.remove('sc-active');
+    activeIdx = idx;
+    cards[activeIdx].classList.add('sc-active');
+    dots[activeIdx].classList.add('sc-active');
+  }
+
+  // Scroll to card by index
+  function scrollTo(idx) {
+    var card = cards[idx];
+    var wrapWidth = track.offsetWidth;
+    var cardLeft  = card.offsetLeft;
+    var cardWidth = card.offsetWidth;
+    track.scrollTo({ left: cardLeft - (wrapWidth - cardWidth) / 2, behavior: 'smooth' });
+  }
+
+  // Update active on scroll end
+  var scrollTimer;
+  track.addEventListener('scroll', function() {
+    clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(function() {
+      var center = track.scrollLeft + track.offsetWidth / 2;
+      var closest = 0, minDist = Infinity;
+      cards.forEach(function(c, i) {
+        var dist = Math.abs(c.offsetLeft + c.offsetWidth / 2 - center);
+        if (dist < minDist) { minDist = dist; closest = i; }
+      });
+      setActive(closest);
+    }, 60);
+  }, { passive: true });
+
+  // Dot click
+  dots.forEach(function(dot) {
+    dot.addEventListener('click', function() {
+      var idx = parseInt(dot.getAttribute('data-idx'), 10);
+      scrollTo(idx);
+    });
+  });
+
+  // Mouse drag support
+  var isDragging = false, startX = 0, startScroll = 0;
+  track.addEventListener('mousedown', function(e) {
+    isDragging = true; startX = e.pageX; startScroll = track.scrollLeft;
+    track.classList.add('dragging');
+  });
+  document.addEventListener('mousemove', function(e) {
+    if (!isDragging) return;
+    track.scrollLeft = startScroll - (e.pageX - startX);
+  });
+  document.addEventListener('mouseup', function() {
+    if (!isDragging) return;
+    isDragging = false;
+    track.classList.remove('dragging');
+  });
+
+  // Init: scroll first card to center
+  requestAnimationFrame(function() { scrollTo(0); });
+})();
 </script>
 </body>
 </html>
