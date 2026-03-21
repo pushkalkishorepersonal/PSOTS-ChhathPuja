@@ -126,3 +126,37 @@ body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--i
 #toast.show { transform: translateX(-50%) translateY(0); }
 #toast.success { background: var(--green); }
 #toast.error { background: var(--red); }
+
+/* ══════════════════════════════════════════
+   SCROLL REVEAL SYSTEM
+   Add class "reveal", "reveal-l", "reveal-r", or "reveal-scale"
+   to any element. JS observer adds .seen when in viewport.
+   Use .d1–.d6 for stagger delays.
+═══════════════════════════════════════════ */
+.reveal       { opacity:0; transform:translateY(30px);  transition:opacity .6s ease,transform .6s cubic-bezier(.22,1,.36,1); }
+.reveal-l     { opacity:0; transform:translateX(-30px); transition:opacity .6s ease,transform .6s cubic-bezier(.22,1,.36,1); }
+.reveal-r     { opacity:0; transform:translateX(30px);  transition:opacity .6s ease,transform .6s cubic-bezier(.22,1,.36,1); }
+.reveal-scale { opacity:0; transform:scale(.93);        transition:opacity .5s ease,transform .5s cubic-bezier(.34,1.56,.64,1); }
+.reveal.seen,.reveal-l.seen,.reveal-r.seen,.reveal-scale.seen { opacity:1; transform:none; }
+.d1{transition-delay:.07s}.d2{transition-delay:.14s}.d3{transition-delay:.21s}
+.d4{transition-delay:.28s}.d5{transition-delay:.35s}.d6{transition-delay:.42s}
+
+/* ── Skeleton shimmer ── */
+.skel { background:linear-gradient(90deg,#f0e8d8 25%,#ffe8cc 50%,#f0e8d8 75%); background-size:200% 100%; animation:shimmer 1.5s infinite; border-radius:8px; }
+.skel-line { height:13px; margin-bottom:9px; border-radius:4px; }
+.skel-line.w60 { width:60%; } .skel-line.w80 { width:80%; } .skel-line.w40 { width:40%; }
+@keyframes shimmer { to{ background-position:-200% 0; } }
+
+/* ── Glass card variant ── */
+.card-glass {
+  background:rgba(255,248,240,.88); backdrop-filter:blur(18px);
+  border:1px solid rgba(232,92,0,.14); border-radius:20px;
+  box-shadow:0 8px 32px rgba(26,8,0,.1), inset 0 1px 0 rgba(255,255,255,.65);
+}
+
+/* ── Glow pulse (for key CTAs / live badges) ── */
+@keyframes glowPulse { 0%,100%{box-shadow:0 0 0 0 rgba(232,92,0,.35)} 50%{box-shadow:0 0 0 8px rgba(232,92,0,0)} }
+.glow-pulse { animation:glowPulse 2.2s ease-in-out infinite; }
+
+/* ── Number counter (tabular nums) ── */
+.count-num { font-variant-numeric:tabular-nums; font-feature-settings:'tnum'; }

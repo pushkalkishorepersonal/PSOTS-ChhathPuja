@@ -8,58 +8,221 @@
   <script src="../config.js"></script>
   <script src="../js/auth-gate.js"></script>
   <style>
-  .ann{background:rgba(255,130,0,.05);border:1px solid rgba(255,194,0,.12);border-left:3px solid var(--saff);border-radius:0 12px 12px 0;padding:1.1rem 1.3rem;margin-bottom:.9rem;transition:background .2s}
-  .ann:hover{background:rgba(255,130,0,.09)}
-  .ann-meta{font-size:.74rem;letter-spacing:.1em;text-transform:uppercase;color:#6b3a18;margin-bottom:.35rem;font-weight:500}
-  .ann-tag{display:inline-block;font-size:.7rem;padding:.15rem .5rem;border-radius:3px;background:rgba(232,92,0,.14);color:#c04800;margin-bottom:.4rem;letter-spacing:.08em;text-transform:uppercase;font-weight:600}
-  .ann p{font-size:.9rem;color:var(--br);line-height:1.65}
-  .ann p b{color:var(--or)}
+  /* ── Announcement card ── */
+  .ann{background:#fff;border-radius:16px;border:1px solid rgba(200,100,0,.1);border-left:4px solid var(--saff);overflow:hidden;margin-bottom:1rem;box-shadow:0 3px 16px rgba(26,8,0,.07);transition:box-shadow .25s,transform .25s;opacity:0;transform:translateY(22px)}
+  .ann.seen{opacity:1;transform:none;transition:opacity .5s ease,transform .5s cubic-bezier(.22,1,.36,1),box-shadow .25s,border-left-color .25s}
+  .ann:hover{box-shadow:0 8px 28px rgba(26,8,0,.12);transform:translateY(-2px)}
+
+  /* ── Pinned / important ── */
+  .ann.pinned{border-left-color:var(--or);background:linear-gradient(135deg,#fffdf8 0%,#fff8ee 100%)}
+  .ann.pinned .ann-head{background:linear-gradient(135deg,rgba(232,92,0,.06),transparent)}
+
+  /* ── Card head ── */
+  .ann-head{display:flex;align-items:flex-start;justify-content:space-between;padding:.95rem 1.2rem .6rem;gap:.6rem}
+  .ann-tags{display:flex;gap:.35rem;flex-wrap:wrap;align-items:center;flex:1}
+  .ann-tag{display:inline-flex;align-items:center;gap:.25rem;font-size:.67rem;padding:.16rem .5rem;border-radius:4px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+  .tag-5yr {background:rgba(232,92,0,.12);color:#c04800}
+  .tag-prasad {background:rgba(46,125,50,.1);color:#2e7d32}
+  .tag-volunteer {background:rgba(21,101,192,.1);color:#1565c0}
+  .tag-deadline {background:rgba(198,40,40,.1);color:#c62828}
+  .tag-info {background:rgba(107,58,24,.1);color:#6b3a18}
+  .tag-pinned {background:var(--or);color:#fff}
+  .ann-meta{font-size:.7rem;color:rgba(107,58,24,.7);white-space:nowrap;padding-top:.1rem}
+
+  /* ── Card body ── */
+  .ann-body{padding:.1rem 1.2rem 1.1rem}
+  .ann-title{font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;color:var(--ink);margin-bottom:.35rem;line-height:1.35}
+  .ann-text{font-size:.88rem;color:#3d1800;line-height:1.72}
+  .ann-text b,.ann-text strong{color:var(--or)}
+  .ann-text a{color:var(--or);text-decoration:underline}
+
+  /* ── Card action ── */
+  .ann-action{display:flex;gap:.5rem;padding:.2rem 1.2rem .9rem;flex-wrap:wrap}
+  .ann-btn{display:inline-flex;align-items:center;gap:.35rem;background:#fff5e8;border:1.5px solid rgba(232,92,0,.25);color:var(--or);border-radius:8px;padding:.32rem .75rem;font-size:.76rem;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:none;transition:background .15s}
+  .ann-btn:hover{background:#ffe8cc}
+  .ann-btn.wa{background:#e8faf0;border-color:rgba(37,211,102,.3);color:#1a8a4a}
+  .ann-btn.wa:hover{background:#d0f5e0}
+
+  /* ── Section header ── */
+  .ann-section-head{display:flex;align-items:center;gap:.6rem;margin:.5rem 0 .9rem;font-size:.72rem;letter-spacing:.14em;text-transform:uppercase;font-weight:700;color:var(--or)}
+  .ann-section-head::after{content:'';flex:1;height:1px;background:rgba(232,92,0,.15)}
+
+  /* ── WhatsApp subscribe card ── */
+  .wa-card{background:linear-gradient(135deg,#0d5c32,#1a7a45);border-radius:16px;padding:1.3rem 1.5rem;margin-top:1.5rem;display:flex;align-items:center;gap:1.1rem;flex-wrap:wrap}
+  .wa-card-icon{font-size:2.2rem;flex-shrink:0;filter:drop-shadow(0 2px 8px rgba(0,0,0,.2))}
+  .wa-card-text{flex:1;min-width:180px}
+  .wa-card-title{font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;color:#fff;margin-bottom:.25rem}
+  .wa-card-sub{font-size:.8rem;color:rgba(255,255,255,.78);line-height:1.55}
+  .btn-wa2{background:#25d366;color:#fff;border:none;border-radius:10px;padding:.65rem 1.2rem;font-size:.86rem;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;text-decoration:none;display:inline-block;white-space:nowrap;transition:background .2s}
+  .btn-wa2:hover{background:#1aab55}
   </style>
 </head>
 <body>
+
 <nav class="page-nav">
   <a class="page-nav-back" href="../index.html"><span class="page-nav-back-icon">←</span> Home</a>
   <div class="page-nav-title">📢 Announcements</div>
   <div></div>
 </nav>
+
 <div class="page-hero" style="background:linear-gradient(135deg,#2d1200,#1a0800)">
   <span class="ph-icon">📢</span>
   <div class="ph-title">Announcements</div>
   <div class="ph-sub">Latest updates from the PSOTS Chhath 2026 Committee</div>
 </div>
+
 <div class="page-content">
+
   <div id="ann-list">
-    <!-- Fallback static announcements shown until dynamic data loads -->
-    <div class="ann"><div class="ann-meta">Oct 2026 — Grand Celebration</div><div class="ann-tag">🎊 5th Year</div><p>This year marks our <b>पंच वर्ष महोत्सव!</b> Grander ghat decoration, extended cultural programme, and prasad for all 200+ families. We carry forward <b>₹1,04,670</b> from 2025 to make this extra special.</p></div>
-    <div class="ann"><div class="ann-meta">Oct 2026 — Prasad Details</div><div class="ann-tag">🙏 Prasad</div><p>दो बार प्रसाद की व्यवस्था — <b>Nov 2</b> खरना प्रसाद for all PSOTS residents (Dinner at Community Hall) and <b>Nov 4</b> ठेकुआ प्रसाद after Usha Arghya at the Ghat.</p></div>
-    <div class="ann"><div class="ann-meta">Oct 2026 — Volunteers</div><div class="ann-tag">🤝 Volunteer</div><p>Volunteers needed for ghat decoration and lighting setup on November 2nd. Contact the committee to join. <b>Breakfast will be provided</b> for all volunteers.</p></div>
-    <div class="ann"><div class="ann-meta">Oct 2026 — Payment Deadline</div><div class="ann-tag">⏰ Important</div><p>Contribution portal is now open. Please complete your payment before <b>October 25, 2026</b> to be included in the prasad list.</p></div>
-  </div>
-  <div class="card" style="text-align:center;margin-top:1.5rem">
-    <div class="card-title" style="justify-content:center">📲 Get Updates on WhatsApp</div>
-    <p style="font-size:.85rem;color:var(--br);margin:.5rem 0 1rem">Subscribe to receive future announcements, event reminders and prasad timings directly on WhatsApp.</p>
-    <a href="subscribe.html" style="text-decoration:none"><button class="btn-wa">📲 Subscribe to Updates</button></a>
-  </div>
-</div>
-<script>
-function renderAnns(list){
-  if(!list.length)return;
-  document.getElementById('ann-list').innerHTML=list.map(a=>`
+    <div class="ann-section-head">📌 Pinned</div>
+
+    <!-- 1 — 5th Year Grand Celebration (pinned) -->
+    <div class="ann pinned">
+      <div class="ann-head">
+        <div class="ann-tags">
+          <span class="ann-tag tag-pinned">📌 Pinned</span>
+          <span class="ann-tag tag-5yr">🎊 5th Year</span>
+        </div>
+        <div class="ann-meta">Oct 2026</div>
+      </div>
+      <div class="ann-body">
+        <div class="ann-title">पंच वर्ष महोत्सव — 5th Year Grand Celebration! 🌅</div>
+        <div class="ann-text">
+          This year marks a historic milestone — <strong>5 years of Chhath Puja at Prestige Song of the South!</strong> We carry forward <strong>₹1,04,670</strong> from last year and have set a grander budget for 2026. Expect bigger ghat decorations, extended cultural programme, live bhajans by a professional group, and prasad for all 200+ families.<br/><br/>
+          The committee sincerely thanks each and every contributor and volunteer from the past 4 years who made this journey possible. <strong>जय छठ मइया!</strong>
+        </div>
+      </div>
+      <div class="ann-action">
+        <a href="payment.html" class="ann-btn">💰 Contribute to 2026</a>
+        <a href="finance.html" class="ann-btn">📊 View Finances</a>
+      </div>
+    </div>
+
+    <!-- 2 — Prasad details (pinned) -->
+    <div class="ann pinned">
+      <div class="ann-head">
+        <div class="ann-tags">
+          <span class="ann-tag tag-pinned">📌 Pinned</span>
+          <span class="ann-tag tag-prasad">🙏 Prasad</span>
+        </div>
+        <div class="ann-meta">Oct 2026</div>
+      </div>
+      <div class="ann-body">
+        <div class="ann-title">Two Community Prasad Events — Open to All Residents</div>
+        <div class="ann-text">
+          This year we are organising prasad for all PSOTS residents on both the key nights:<br/><br/>
+          🍚 <strong>Nov 2 — खरना प्रसाद (Dinner)</strong> at the Community Hall, from 7:00 PM onwards. खीर, चावल, और सब्जी — traditional Chhath prasad for the whole community.<br/><br/>
+          🙏 <strong>Nov 4 — ठेकुआ प्रसाद</strong> distributed at the Society Ghat after Usha Arghya (approx. 6:30 AM). Take home the blessings of Chhathi Maiya.
+        </div>
+      </div>
+      <div class="ann-action">
+        <a href="schedule.html" class="ann-btn">📅 Full Schedule</a>
+      </div>
+    </div>
+
+    <div class="ann-section-head" style="margin-top:1.5rem">📋 General Updates</div>
+
+    <!-- 3 — Volunteers needed -->
     <div class="ann">
-      <div class="ann-meta">${a.meta||''}</div>
-      <div class="ann-tag">${a.tag||''}</div>
-      <p>${(a.text||'').replace(/\*([^*]+)\*/g,'<b>$1</b>')}</p>
+      <div class="ann-head">
+        <div class="ann-tags"><span class="ann-tag tag-volunteer">🤝 Volunteer</span></div>
+        <div class="ann-meta">Oct 2026</div>
+      </div>
+      <div class="ann-body">
+        <div class="ann-title">Volunteers Needed — Ghat Decoration &amp; Setup</div>
+        <div class="ann-text">
+          We need enthusiastic volunteers for <strong>ghat decoration and lighting setup on November 2nd</strong> (from 8:00 AM). This is a community effort that truly makes our ghat beautiful. Tasks include arranging marigold garlands, setting up diyas, managing lighting cables, and general setup.<br/><br/>
+          <strong>Breakfast will be provided</strong> for all volunteers. It's a fun morning — bring your family!
+        </div>
+      </div>
+      <div class="ann-action">
+        <a href="volunteer.html" class="ann-btn">🙋 Sign Up to Volunteer</a>
+      </div>
+    </div>
+
+    <!-- 4 — Payment deadline -->
+    <div class="ann">
+      <div class="ann-head">
+        <div class="ann-tags"><span class="ann-tag tag-deadline">⏰ Deadline</span></div>
+        <div class="ann-meta">Oct 2026</div>
+      </div>
+      <div class="ann-body">
+        <div class="ann-title">Contribution Deadline — October 25, 2026</div>
+        <div class="ann-text">
+          The contribution portal is open and accepting payments. Please complete your contribution before <strong>October 25, 2026</strong> to be counted in the prasad list and to support timely procurement of materials.<br/><br/>
+          You can pay via <strong>GPay, PhonePe, Paytm, or any UPI app</strong>. Signed-in portal users get a quick-pay experience with details pre-filled. Online card/net-banking payment via PayU is also available.
+        </div>
+      </div>
+      <div class="ann-action">
+        <a href="payment.html" class="ann-btn">💰 Contribute Now</a>
+        <a href="contributors.html" class="ann-btn">🙏 See Contributors</a>
+      </div>
+    </div>
+
+    <!-- 5 — Gallery -->
+    <div class="ann">
+      <div class="ann-head">
+        <div class="ann-tags"><span class="ann-tag tag-info">📸 Gallery</span></div>
+        <div class="ann-meta">Nov 2025 — Archive</div>
+      </div>
+      <div class="ann-body">
+        <div class="ann-title">2025 Photo Gallery Now Open</div>
+        <div class="ann-text">
+          Photos from Chhath Puja 2025 are now available in the gallery. Relive the beautiful arghya moments, the lit-up ghat, and the community coming together. You can also <strong>submit your own photos</strong> from 2025 or earlier years.
+        </div>
+      </div>
+      <div class="ann-action">
+        <a href="gallery.html" class="ann-btn">📸 Open Gallery</a>
+      </div>
+    </div>
+
+  </div><!-- /ann-list -->
+
+  <!-- WhatsApp subscribe card -->
+  <div class="wa-card">
+    <div class="wa-card-icon">📲</div>
+    <div class="wa-card-text">
+      <div class="wa-card-title">Get Updates Directly on WhatsApp</div>
+      <div class="wa-card-sub">Event reminders, prasad timings, last-minute changes — all on WhatsApp. Subscribe once, stay informed.</div>
+    </div>
+    <a href="subscribe.html" class="btn-wa2">Subscribe →</a>
+  </div>
+
+</div><!-- /page-content -->
+
+<script>
+/* ── Staggered scroll reveal ── */
+const ro = new IntersectionObserver(entries => {
+  entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('seen'); ro.unobserve(e.target); }});
+}, { threshold: 0.08 });
+document.querySelectorAll('.ann').forEach((el, i) => {
+  el.style.transitionDelay = (i * 70) + 'ms';
+  ro.observe(el);
+});
+
+/* ── Load dynamic announcements ── */
+function renderAnns(list) {
+  if (!list.length) return;
+  const el = document.getElementById('ann-list');
+  el.innerHTML = list.map((a, i) => `
+    <div class="ann" style="transition-delay:${i*70}ms">
+      <div class="ann-head">
+        <div class="ann-tags"><span class="ann-tag tag-info">${a.tag||'📢 Update'}</span></div>
+        <div class="ann-meta">${a.meta||''}</div>
+      </div>
+      <div class="ann-body">
+        <div class="ann-text">${(a.text||'').replace(/\*([^*]+)\*/g,'<strong>$1</strong>')}</div>
+      </div>
     </div>`).join('');
+  document.querySelectorAll('.ann').forEach(el => ro.observe(el));
 }
-// Try localStorage first (saved by admin panel)
-const cached=localStorage.getItem('psots_announcements');
-if(cached){try{renderAnns(JSON.parse(cached));}catch(e){}}
-// Then fetch latest from sheet
-const su=(window.PSOTS&&window.PSOTS.scriptUrl)||localStorage.getItem('psots_script_url')||'';
-if(su){
+const cached = localStorage.getItem('psots_announcements');
+if (cached) { try { renderAnns(JSON.parse(cached)); } catch(e) {} }
+const su = (window.PSOTS&&window.PSOTS.scriptUrl)||localStorage.getItem('psots_script_url')||'';
+if (su) {
   fetch(su+'?action=getAnnouncements').then(r=>r.json()).then(d=>{
     const list=d.announcements||[];
-    if(list.length){renderAnns(list);localStorage.setItem('psots_announcements',JSON.stringify(list));}
+    if(list.length){ renderAnns(list); localStorage.setItem('psots_announcements',JSON.stringify(list)); }
   }).catch(()=>{});
 }
 </script>
