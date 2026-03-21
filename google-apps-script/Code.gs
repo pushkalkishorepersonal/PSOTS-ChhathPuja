@@ -360,6 +360,17 @@ function actionAddContribution(body) {
   // Notify committee on WhatsApp (fire-and-forget)
   try { notifyCommitteeWhatsApp(body); } catch(e) {}
 
+  // Send WhatsApp receipt to contributor (fire-and-forget)
+  try { sendContributorWhatsApp({
+    phone:  body.mobile || '',
+    name:   body.name   || '',
+    flat:   body.flat   || '',
+    amount: body.amount || '',
+    method: body.method || 'UPI',
+    date:   body.date   || '',
+    txnid:  ''
+  }); } catch(e) {}
+
   return { success: true, message: 'Contribution recorded!' };
 }
 
@@ -990,6 +1001,53 @@ function actionFindByFlat(flat) {
 }
 
 /* ══════════════════════════════════════════════════════════
+   HELPER: Send WhatsApp receipt to contributor via Fonnte
+   Setup: fonnte.com → add device → scan QR with your WhatsApp
+          → Script Properties: FONNTE_TOKEN
+══════════════════════════════════════════════════════════ */
+function sendContributorWhatsApp(p) {
+  const token = PropertiesService.getScriptProperties().getProperty('FONNTE_TOKEN');
+  if (!token) return; // not configured — skip silently
+
+  // Normalise phone: strip leading 0, add 91
+  let phone = String(p.phone || '').replace(/\D/g, '');
+  if (!phone) return;
+  if (phone.startsWith('0')) phone = phone.slice(1);
+  if (!phone.startsWith('91')) phone = '91' + phone;
+
+  const amt  = p.amount ? '₹' + parseFloat(p.amount).toLocaleString('en-IN') : '';
+  const ref  = p.txnid  ? '\n🔖 Ref: ' + p.txnid : '';
+
+  const msg =
+    '🌅 *PSOTS Chhath Puja 2026*\n' +
+    '✅ *Payment Received*\n\n' +
+    '👤 ' + (p.name || 'Contributor') + '\n' +
+    (p.flat   ? '🏠 Flat ' + p.flat + ' · Prestige Song of the South\n' : '') +
+    '💰 *' + amt + '*' +
+    (p.method ? ' via ' + p.method : '') + '\n' +
+    (p.date   ? '📅 ' + p.date + '\n' : '') +
+    ref + '\n\n' +
+    '⏳ Will be verified within 24 hours.\n' +
+    '👉 View receipt: chhath.psots.in/portal.html\n\n' +
+    'जय छठी मैया! 🙏';
+
+  try {
+    UrlFetchApp.fetch('https://api.fonnte.com/send', {
+      method:  'post',
+      headers: { 'Authorization': token },
+      payload: {
+        target:      phone,
+        message:     msg,
+        countryCode: '91'
+      },
+      muteHttpExceptions: true
+    });
+  } catch(e) {
+    Logger.log('Fonnte WhatsApp failed: ' + e.message);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
    HELPER: Notify committee on WhatsApp via CallMeBot (free)
    Setup: Script Properties → CALLMEBOT_PHONE + CALLMEBOT_APIKEY
    Activation: wa.me/+34644598973 → "I allow callmebot to send me messages"
@@ -1157,11 +1215,23 @@ function actionSendInvoiceEmail(params) {
       htmlBody: html,
       name:     'PSOTS Chhath Puja Committee'
     });
-    return { ok: true };
   } catch (err) {
     Logger.log('Invoice email failed: ' + err.message);
     return { ok: false, msg: err.message };
   }
+
+  // Send WhatsApp receipt to contributor via Fonnte (fire-and-forget)
+  try { sendContributorWhatsApp({
+    phone:  params.phone    || '',
+    name:   name,
+    flat:   flat,
+    amount: amount,
+    method: mode,
+    date:   dateStr,
+    txnid:  mihpayid || txnid
+  }); } catch(e) {}
+
+  return { ok: true };
 }
 
 /* ══════════════════════════════════════════════════════════
