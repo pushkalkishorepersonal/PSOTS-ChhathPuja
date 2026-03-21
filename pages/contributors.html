@@ -17,8 +17,21 @@
   .search-wrap{position:relative}
   .search-icon{position:absolute;left:.9rem;top:50%;transform:translateY(-50%);color:var(--lbr);font-size:.9rem;pointer-events:none}
 
+  /* ── Year section ── */
+  .year-section{margin-bottom:.75rem;border-radius:14px;overflow:hidden;border:1.5px solid #f0dfc8}
+  .year-header{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;background:var(--warm);cursor:pointer;user-select:none;transition:background .15s}
+  .year-header:hover{background:#fff0e0}
+  .year-header-left{display:flex;align-items:center;gap:.6rem}
+  .year-badge{font-family:'Yatra One',serif;font-size:1rem;color:var(--or);font-weight:700}
+  .year-meta{font-size:.74rem;color:#6b3a18}
+  .year-total{font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;color:var(--or)}
+  .year-chevron{font-size:.75rem;color:var(--lbr);transition:transform .25s;flex-shrink:0}
+  .year-header.open .year-chevron{transform:rotate(180deg)}
+  .year-body{display:none;padding:.5rem .6rem .6rem}
+  .year-body.open{display:block}
+
   /* ── Top-3 podium ── */
-  .podium{display:flex;align-items:flex-end;justify-content:center;gap:.75rem;margin-bottom:1.5rem;padding:.5rem 0}
+  .podium{display:flex;align-items:flex-end;justify-content:center;gap:.75rem;margin-bottom:1.2rem;padding:.5rem 0}
   .pod-item{display:flex;flex-direction:column;align-items:center;gap:.4rem;flex:1;max-width:120px;animation:podIn .6s cubic-bezier(.34,1.56,.64,1) both}
   .pod-item:nth-child(1){animation-delay:.3s}.pod-item:nth-child(2){animation-delay:.1s}.pod-item:nth-child(3){animation-delay:.5s}
   @keyframes podIn{from{opacity:0;transform:translateY(20px) scale(.9)}to{opacity:1;transform:none}}
@@ -33,7 +46,7 @@
   .pod-amt{font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:900;color:var(--or)}
 
   /* ── Contributor rows ── */
-  .con-item{display:grid;grid-template-columns:40px 40px 1fr auto auto;align-items:center;gap:.6rem;padding:.7rem .95rem;background:var(--warm);border-radius:12px;border:1px solid #f0dfc8;margin-bottom:.42rem;transition:background .15s,transform .15s,box-shadow .15s;opacity:0;transform:translateY(12px)}
+  .con-item{display:grid;grid-template-columns:40px 40px 1fr auto auto;align-items:center;gap:.6rem;padding:.7rem .95rem;background:#fff;border-radius:10px;border:1px solid #f0dfc8;margin-bottom:.38rem;transition:background .15s,transform .15s,box-shadow .15s;opacity:0;transform:translateY(12px)}
   .con-item.seen{opacity:1;transform:none;transition:opacity .4s ease,transform .4s ease,background .15s,box-shadow .15s}
   .con-item:hover{background:#fff5e8;transform:translateX(3px);box-shadow:0 3px 14px rgba(26,8,0,.07)}
   .ci-rank{font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:700;color:rgba(107,58,24,.55);text-align:center}
@@ -76,7 +89,7 @@
 
 <div class="page-hero" style="background:linear-gradient(135deg,#c94000,#8b2800)">
   <span class="ph-icon">🙏</span>
-  <div class="ph-title">Contributors 2026</div>
+  <div class="ph-title">Contributors</div>
   <div class="ph-sub" id="subLine">Loading…</div>
 </div>
 
@@ -86,10 +99,10 @@
     <!-- Search -->
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
-      <input class="con-search" type="text" id="searchInp" placeholder="Search by name or flat number…" oninput="filterList()"/>
+      <input class="con-search" type="text" id="searchInp" placeholder="Search by name or flat number…" oninput="renderList(allData)"/>
     </div>
 
-    <!-- Filters -->
+    <!-- Status Filters -->
     <div class="filter-row">
       <span style="font-size:.76rem;color:#6b3a18;font-weight:600">Show:</span>
       <div class="fchip on" onclick="setFilter('all',this)">All</div>
@@ -104,23 +117,16 @@
       <div class="leg-item"><div class="leg-dot" style="background:var(--gold)"></div>Pending verification</div>
     </div>
 
-    <!-- Top-3 podium (hidden until data loads) -->
-    <div id="podiumWrap" style="display:none">
-      <div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--or);font-weight:700;text-align:center;margin-bottom:.6rem">🏆 Top Contributors</div>
-      <div class="podium" id="podium"></div>
-    </div>
-
-    <!-- Contributor list -->
+    <!-- Year sections rendered here -->
     <div id="conList">
-      <!-- skeleton -->
       <div class="skel-row"><div class="skel-av skel"></div><div class="skel-body"><div class="skel-line skel" style="width:65%"></div><div class="skel-line skel" style="width:40%"></div></div></div>
       <div class="skel-row"><div class="skel-av skel"></div><div class="skel-body"><div class="skel-line skel" style="width:55%"></div><div class="skel-line skel" style="width:35%"></div></div></div>
       <div class="skel-row"><div class="skel-av skel"></div><div class="skel-body"><div class="skel-line skel" style="width:70%"></div><div class="skel-line skel" style="width:42%"></div></div></div>
     </div>
 
-    <!-- Total bar -->
+    <!-- Grand total bar -->
     <div class="total-bar">
-      <div><div class="tb-label">Total Collected 2026</div><div class="tb-count" id="verCount">—</div></div>
+      <div><div class="tb-label">Grand Total — All Years</div><div class="tb-count" id="verCount">—</div></div>
       <div class="tb-value count-num" id="totalAmt">—</div>
     </div>
 
@@ -136,18 +142,18 @@ let allData = [], filterMode = 'all';
 const cfg = window.PSOTS || {};
 const su = cfg.scriptUrl || localStorage.getItem('psots_script_url') || '';
 
-/* Avatar colour based on initial */
 const AV_COLORS = ['#e85c00','#c93800','#8b2800','#1a5276','#1a7a4e','#7b1fa2','#c62828'];
 function avColor(name){ const c=(name||'?').toUpperCase().charCodeAt(0); return AV_COLORS[c % AV_COLORS.length]; }
 function initial(name){ return (name||'?').charAt(0).toUpperCase(); }
 
-function buildPodium(sorted) {
-  const top = sorted.filter(r => r.status?.includes('Received')).slice(0, 3);
-  if (top.length < 2) return;
+function buildPodiumHTML(sorted) {
+  const top = sorted.slice(0, 3);
+  if (top.length < 2) return '';
   const medals = ['🥇','🥈','🥉'];
-  const order = top.length >= 2 ? [1, 0, 2] : [0]; /* show 2nd-1st-3rd layout */
+  const order = top.length >= 2 ? [1, 0, 2] : [0];
   const items = order.filter(i => top[i]);
-  document.getElementById('podium').innerHTML = items.map(idx => {
+  return `<div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--or);font-weight:700;text-align:center;margin-bottom:.6rem">🏆 Top Contributors</div>
+  <div class="podium">${items.map(idx => {
     const c = top[idx];
     const col = avColor(c.name);
     return `<div class="pod-item">
@@ -157,11 +163,9 @@ function buildPodium(sorted) {
       <div class="pod-amt">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div>
       <div class="pod-pedestal pod-${idx+1}"><div class="pod-rank">${medals[idx]}</div></div>
     </div>`;
-  }).join('');
-  document.getElementById('podiumWrap').style.display = 'block';
+  }).join('')}</div>`;
 }
 
-/* Animated counter */
 function animateCount(el, target) {
   const dur = 900, start = Date.now(), from = 0;
   const tick = () => {
@@ -171,6 +175,31 @@ function animateCount(el, target) {
     if (p < 1) requestAnimationFrame(tick);
   };
   requestAnimationFrame(tick);
+}
+
+function rowsHTML(list) {
+  return list.map((c, i) => {
+    const isV = c.status?.includes('Received');
+    const col = avColor(c.name);
+    const rankLabel = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+    return `<div class="con-item" style="transition-delay:${Math.min(i*30,300)}ms">
+      <div class="ci-rank">${rankLabel}</div>
+      <div class="ci-av" style="background:linear-gradient(135deg,${col},${col}cc)">${initial(c.name)}</div>
+      <div>
+        <div class="ci-name">${c.name}</div>
+        <div class="ci-flat">Flat ${c.flat}</div>
+      </div>
+      <div class="ci-amt">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div>
+      <div class="ci-dot ${isV?'':'p'}" title="${isV?'Verified ✅':'Pending verification'}"></div>
+    </div>`;
+  }).join('');
+}
+
+function toggleYear(yr) {
+  const body = document.getElementById('yb-' + yr);
+  const hdr  = document.getElementById('yh-' + yr);
+  const open = body.classList.toggle('open');
+  hdr.classList.toggle('open', open);
 }
 
 async function loadList() {
@@ -193,6 +222,8 @@ async function loadList() {
 
 function renderList(data) {
   const q = document.getElementById('searchInp').value.toLowerCase();
+
+  /* Apply status filter */
   let f = data.filter(r => {
     const m = !q || r.name.toLowerCase().includes(q) || String(r.flat).toLowerCase().includes(q);
     if (!m) return false;
@@ -201,23 +232,23 @@ function renderList(data) {
     if (filterMode==='guest')    return r.accountType?.includes('Guest');
     return true;
   });
-  const verified = f.filter(r => r.status?.includes('Received'));
-  const total = verified.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
 
-  /* Sub-line */
-  document.getElementById('subLine').textContent = data.length + ' contributors · ₹' + total.toLocaleString('en-IN') + ' collected';
+  /* Grand total */
+  const grandVerified = f.filter(r => r.status?.includes('Received'));
+  const grandTotal = grandVerified.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
+  document.getElementById('subLine').textContent = f.length + ' contributors across all years · ₹' + grandTotal.toLocaleString('en-IN') + ' total';
+  animateCount(document.getElementById('totalAmt'), grandTotal);
+  document.getElementById('verCount').textContent = grandVerified.length + ' verified contributions';
 
-  /* Total bar animated */
-  const totalEl = document.getElementById('totalAmt');
-  animateCount(totalEl, total);
-  document.getElementById('verCount').textContent = verified.length + ' verified contributions';
+  /* Group by year, sorted newest first */
+  const byYear = {};
+  f.forEach(r => {
+    const yr = r.year || 2026;
+    (byYear[yr] = byYear[yr] || []).push(r);
+  });
+  const years = Object.keys(byYear).map(Number).sort((a,b) => b-a);
 
-  /* Podium from full verified list (not filtered) */
-  const allVerified = data.filter(r=>r.status?.includes('Received')).sort((a,b)=>(parseFloat(b.amount)||0)-(parseFloat(a.amount)||0));
-  if (allVerified.length >= 2 && !q && filterMode==='all') buildPodium(allVerified);
-  else document.getElementById('podiumWrap').style.display='none';
-
-  if (!f.length) {
+  if (!years.length) {
     const isSearch = q || filterMode !== 'all';
     document.getElementById('conList').innerHTML = isSearch
       ? '<div class="empty"><span class="empty-icon">🔍</span>No contributors match your search.</div>'
@@ -225,29 +256,40 @@ function renderList(data) {
            <div style="font-size:2.4rem;margin-bottom:.6rem">🌅</div>
            <div style="font-family:'Yatra One',serif;font-size:1rem;color:var(--or);margin-bottom:.4rem">Contributions opening soon</div>
            <div style="font-size:.84rem;color:#6b3a18;line-height:1.65;max-width:280px;margin:0 auto">
-             2026 contributions have not yet been collected. Be among the first to support PSOTS Chhath Puja 2026!
+             Be among the first to support PSOTS Chhath Puja 2026!
            </div>
            <a href="payment.html" style="display:inline-block;margin-top:1.1rem;text-decoration:none;background:linear-gradient(135deg,var(--or),#c93800);color:#fff;border-radius:50px;padding:.65rem 1.6rem;font-size:.88rem;font-weight:700;font-family:'DM Sans',sans-serif">💰 Contribute Now</a>
          </div>`;
     return;
   }
 
-  /* Sort by amount desc */
-  f.sort((a,b) => (parseFloat(b.amount)||0)-(parseFloat(a.amount)||0));
+  const currentYear = new Date().getFullYear();
 
-  document.getElementById('conList').innerHTML = f.map((c, i) => {
-    const isV = c.status?.includes('Received');
-    const col = avColor(c.name);
-    const rankLabel = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
-    return `<div class="con-item" style="transition-delay:${Math.min(i*30,300)}ms">
-      <div class="ci-rank">${rankLabel}</div>
-      <div class="ci-av" style="background:linear-gradient(135deg,${col},${col}cc)">${initial(c.name)}</div>
-      <div>
-        <div class="ci-name">${c.name}</div>
-        <div class="ci-flat">Flat ${c.flat}</div>
+  document.getElementById('conList').innerHTML = years.map(yr => {
+    const list = byYear[yr].sort((a,b) => (parseFloat(b.amount)||0)-(parseFloat(a.amount)||0));
+    const verList = list.filter(r => r.status?.includes('Received'));
+    const yrTotal = verList.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
+    const isOpen = yr === currentYear; /* expand current year by default */
+
+    const podium = isOpen && verList.length >= 2
+      ? buildPodiumHTML(verList)
+      : '';
+
+    return `<div class="year-section">
+      <div class="year-header ${isOpen ? 'open' : ''}" id="yh-${yr}" onclick="toggleYear(${yr})">
+        <div class="year-header-left">
+          <span class="year-badge">${yr}</span>
+          <span class="year-meta">${list.length} contributor${list.length!==1?'s':''} · ${verList.length} verified</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.6rem">
+          <span class="year-total">₹${yrTotal.toLocaleString('en-IN')}</span>
+          <span class="year-chevron">▼</span>
+        </div>
       </div>
-      <div class="ci-amt">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div>
-      <div class="ci-dot ${isV?'':'p'}" title="${isV?'Verified ✅':'Pending verification'}"></div>
+      <div class="year-body ${isOpen ? 'open' : ''}" id="yb-${yr}">
+        ${podium}
+        ${rowsHTML(list)}
+      </div>
     </div>`;
   }).join('');
 
@@ -258,10 +300,9 @@ function renderList(data) {
   document.querySelectorAll('.con-item').forEach(el => ro.observe(el));
 }
 
-function filterList(){ renderList(allData); }
 function setFilter(m, el){
   filterMode = m;
-  document.querySelectorAll('.fchip').forEach(c => c.classList.remove('on'));
+  document.querySelectorAll('.filter-row .fchip').forEach(c => c.classList.remove('on'));
   el.classList.add('on');
   renderList(allData);
 }

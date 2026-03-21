@@ -311,7 +311,7 @@
 
     <div class="success-box" id="successBox">
       <div class="sb-icon">🎉</div>
-      <h4>जय छठ मइया!</h4>
+      <h4>जय छठी मैया!</h4>
       <p id="successTxt">Your contribution has been recorded. The committee will verify and confirm within 24 hours.</p>
       <button class="btn-wa btn-block" onclick="sendReceipt()">📲 Send Receipt to My WhatsApp</button>
     </div>
@@ -598,7 +598,7 @@ async function submitForm(){
 
 function sendReceipt(){
   const{name,flat,mobile,amount,dateStr,method}=lastSubmit;
-  const msg=encodeURIComponent(`🌅 *जय छठ मइया!*\n\nनमस्ते ${name} जी 🙏\n\nYour contribution for *PSOTS Chhath Puja 2026* has been received!\n\n🏠 Flat: ${flat}\n💰 ₹${parseInt(amount).toLocaleString('en-IN')}\n📲 ${method}\n📅 ${dateStr}\n\nजय छठ मइया! 🌅\n— PSOTS Chhath Committee`);
+  const msg=encodeURIComponent(`🌅 *जय छठी मैया!*\n\nनमस्ते ${name} जी 🙏\n\nYour contribution for *PSOTS Chhath Puja 2026* has been received!\n\n🏠 Flat: ${flat}\n💰 ₹${parseInt(amount).toLocaleString('en-IN')}\n📲 ${method}\n📅 ${dateStr}\n\nजय छठी मैया! 🌅\n— PSOTS Chhath Committee`);
   window.open(`https://wa.me/91${mobile}?text=${msg}`,'_blank');
 }
 

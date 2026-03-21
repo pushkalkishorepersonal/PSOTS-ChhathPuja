@@ -262,7 +262,8 @@ function actionList() {
     amount: Number(r[4]) || 0,
     method: String(r[5]),
     date:   String(r[6]),
-    status: String(r[7])
+    status: String(r[7]),
+    year:   Number(r[10]) || new Date().getFullYear()
   }));
 
   // Sort by amount descending

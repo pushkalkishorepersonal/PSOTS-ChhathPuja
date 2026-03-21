@@ -1218,7 +1218,7 @@ function sendWAConfirm(name, flat, amount, mobile) {
   const fp = parseFlatNumber(flat);
   const towerLine = fp.tower ? `Tower ${fp.tower}, Floor ${fp.floor}, Unit ${fp.unit}` : '';
   const msg = encodeURIComponent(
-    `*जय छठ मइया!* ✨\n\nनमस्ते, *${name}* जी 🙏\n\nआपका योगदान *₹${parseInt(amount).toLocaleString('en-IN')}* PSOTS Chhath Puja 2026 के लिए committee द्वारा *verified* ✅ हो गया है!\n\nFlat: ${flat}${towerLine ? `  (${towerLine})` : ''}\nAmount: ₹${parseInt(amount).toLocaleString('en-IN')}\n\nEvent: Nov 1–4, 2026\nKharna: Nov 2  |  Thekua: Nov 4\n\nआपके योगदान के लिए हृदय से धन्यवाद!\n— PSOTS Chhath Committee`
+    `*जय छठी मैया!* ✨\n\nनमस्ते, *${name}* जी 🙏\n\nआपका योगदान *₹${parseInt(amount).toLocaleString('en-IN')}* PSOTS Chhath Puja 2026 के लिए committee द्वारा *verified* ✅ हो गया है!\n\nFlat: ${flat}${towerLine ? `  (${towerLine})` : ''}\nAmount: ₹${parseInt(amount).toLocaleString('en-IN')}\n\nEvent: Nov 1–4, 2026\nKharna: Nov 2  |  Thekua: Nov 4\n\nआपके योगदान के लिए हृदय से धन्यवाद!\n— PSOTS Chhath Committee`
   );
   window.open(`https://wa.me/91${mobile}?text=${msg}`, '_blank');
 }
@@ -1489,10 +1489,10 @@ async function saveTimings() {
    BROADCAST
 ═══════════════════════════════════════════════════ */
 const TEMPLATES = {
-  reminder: `🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\nनमस्ते 🙏\n\nKindly contribute before *25th October 2026* to be included in the prasad list.\n\n💰 Pay via UPI: Visit psots.in\n📱 UPI: 9482088904-3@ybl\n\nDue dates:\n• Kharna Prasad: Nov 2\n• Thekua Prasad: Nov 4\n\nजय छठ मइया! 🌅`,
-  timing:   `🌇🌅 *PSOTS Chhath Puja 2026 — Arghya Timings*\n\n📅 Schedule:\n\n🌊 Nov 1 — Nahay Khay: 5:30 AM\n🍚 Nov 2 — Kharna Prasad: 7:00 PM\n🌇 Nov 3 — *Sandhya Arghya: 5:45 PM*\n🌅 Nov 4 — *Usha Arghya: 6:15 AM*\n\nVenue: Society Ghat — Prestige Song of the South\n\nजय छठ मइया! 🙏`,
-  prasad:   `🙏 *PSOTS Chhath Puja 2026 — Prasad Update*\n\nप्रसाद की व्यवस्था:\n\n🍚 *खरना प्रसाद* — Nov 2, 7:00 PM\n(Community Hall)\n\n🪄 *ठेकुआ प्रसाद* — Nov 4, After Arghya\n(Society Ghat)\n\nसभी PSOTS निवासियों का स्वागत है 🙏\nजय छठ मइया! 🌅`,
-  thankyou: `🎉🌅 *PSOTS Chhath Puja 2026 — Thank You!*\n\nप्रिय निवासी जी,\n\nहमारा छठ पूजा 2026 का पंच वर्ष महोत्सव आपके सहयोग से सफल रहा!\n\nThank you for your contribution and participation. May Chhath Maiya bless you and your family with health, happiness and prosperity. 🙏\n\nजय छठ मइया! 🌅\n— PSOTS Chhath Committee`
+  reminder: `🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\nनमस्ते 🙏\n\nKindly contribute before *25th October 2026* to be included in the prasad list.\n\n💰 Pay via UPI: Visit psots.in\n📱 UPI: 9482088904-3@ybl\n\nDue dates:\n• Kharna Prasad: Nov 2\n• Thekua Prasad: Nov 4\n\nजय छठी मैया! 🌅`,
+  timing:   `🌇🌅 *PSOTS Chhath Puja 2026 — Arghya Timings*\n\n📅 Schedule:\n\n🌊 Nov 1 — Nahay Khay: 5:30 AM\n🍚 Nov 2 — Kharna Prasad: 7:00 PM\n🌇 Nov 3 — *Sandhya Arghya: 5:45 PM*\n🌅 Nov 4 — *Usha Arghya: 6:15 AM*\n\nVenue: Society Ghat — Prestige Song of the South\n\nजय छठी मैया! 🙏`,
+  prasad:   `🙏 *PSOTS Chhath Puja 2026 — Prasad Update*\n\nप्रसाद की व्यवस्था:\n\n🍚 *खरना प्रसाद* — Nov 2, 7:00 PM\n(Community Hall)\n\n🪄 *ठेकुआ प्रसाद* — Nov 4, After Arghya\n(Society Ghat)\n\nसभी PSOTS निवासियों का स्वागत है 🙏\nजय छठी मैया! 🌅`,
+  thankyou: `🎉🌅 *PSOTS Chhath Puja 2026 — Thank You!*\n\nप्रिय निवासी जी,\n\nहमारा छठ पूजा 2026 का पंच वर्ष महोत्सव आपके सहयोग से सफल रहा!\n\nThank you for your contribution and participation. May Chhathi Maiya bless you and your family with health, happiness and prosperity. 🙏\n\nजय छठी मैया! 🌅\n— PSOTS Chhath Committee`
 };
 
 function initBroadcast() {
@@ -1824,7 +1824,7 @@ async function submitManualEntry() {
   const waTarget = waSend === 'proxy' ? proxy : (waSend === 'yes' ? mobile : null);
   if (waTarget && /^\d{10}$/.test(waTarget)) {
     const msg = encodeURIComponent(
-      `*जय छठ मइया!* ✨\n\nनमस्ते, *${name}* जी 🙏\n\nYour contribution of *₹${parseInt(amount).toLocaleString('en-IN')}* for *PSOTS Chhath Puja 2026* has been recorded by the committee.\n\nFlat: ${flat||'—'}${parseFlatNumber(flat||'').tower ? `  (Tower ${parseFlatNumber(flat||'').tower})` : ''}\nAmount: ₹${parseInt(amount).toLocaleString('en-IN')}\nDate: ${dateStr}\n\n*जय छठ मइया!* ✨\n— PSOTS Chhath Committee`
+      `*जय छठी मैया!* ✨\n\nनमस्ते, *${name}* जी 🙏\n\nYour contribution of *₹${parseInt(amount).toLocaleString('en-IN')}* for *PSOTS Chhath Puja 2026* has been recorded by the committee.\n\nFlat: ${flat||'—'}${parseFlatNumber(flat||'').tower ? `  (Tower ${parseFlatNumber(flat||'').tower})` : ''}\nAmount: ₹${parseInt(amount).toLocaleString('en-IN')}\nDate: ${dateStr}\n\n*जय छठी मैया!* ✨\n— PSOTS Chhath Committee`
     );
     window.open(`https://wa.me/91${waTarget}?text=${msg}`, '_blank');
   }
