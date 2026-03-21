@@ -375,7 +375,7 @@
     </a>
 
     <a class="tile t-contrib" href="pages/contributors.html">
-      <div class="ch"><div class="ch-title" id="conTitle">🙏 Contributors</div><div style="display:flex;flex-direction:column;align-items:center;gap:1px"><div class="ch-badge" id="conBadge">…</div><div style="font-size:.58rem;font-weight:700;color:rgba(255,237,200,.6);letter-spacing:.04em" id="conBadgeYear"></div></div></div>
+      <div class="ch"><div class="ch-title" id="conTitle">🙏 Contributors</div><div style="display:flex;flex-direction:column;align-items:center;gap:2px"><div class="ch-badge" id="conBadge">…</div><div style="font-size:.56rem;font-weight:600;color:rgba(255,237,200,.65);letter-spacing:.05em;text-align:center" id="conBadgeYear"></div></div></div>
       <div class="cl" id="conPreview"><div class="crl">Loading…</div></div>
       <span class="ta">See Full List →</span>
     </a>
@@ -475,35 +475,54 @@ if(!_li){
 }
 async function loadPrev(){
   const el=document.getElementById('conPreview'),bd=document.getElementById('conBadge'),titleEl=document.getElementById('conTitle');
-  function renderRows(list){return list.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat||'-'}</div></div><div class="cra">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');}
-  function setYear(yr){if(titleEl)titleEl.textContent='🙏 Contributors '+yr;const yrTag=document.getElementById('conBadgeYear');if(yrTag)yrTag.textContent=yr;}
+  const yrTag=document.getElementById('conBadgeYear');
 
-  /* Fallback: history.json (no script URL) */
+  function buildYearStats(list){
+    const map={};
+    list.forEach(c=>{
+      const y=Number(c.year)||0;if(!y)return;
+      if(!map[y])map[y]={count:0,total:0};
+      map[y].count++;map[y].total+=parseFloat(c.amount)||0;
+    });
+    return Object.entries(map).map(([y,s])=>({year:Number(y),...s})).sort((a,b)=>b.year-a.year);
+  }
+
+  function renderYearRows(stats){
+    if(!stats.length)return'<div class="crl">No data yet</div>';
+    return stats.map(s=>`<div class="cr" style="justify-content:space-between">
+      <div style="font-size:.88rem;font-weight:700;color:var(--ink);min-width:38px">${s.year}</div>
+      <div style="font-size:.72rem;color:var(--lbr);flex:1;text-align:center">${s.count} contributors</div>
+      <div style="font-family:'DM Sans',sans-serif;font-weight:700;font-size:.8rem;color:var(--or)">₹${Math.round(s.total).toLocaleString('en-IN')}</div>
+    </div>`).join('');
+  }
+
+  function setStats(stats){
+    const total=stats.reduce((s,r)=>s+r.count,0);
+    if(bd)bd.textContent=total||'…';
+    if(yrTag)yrTag.textContent=stats.length>1?'all years':stats[0]?stats[0].year+'':'';
+    if(titleEl)titleEl.textContent='🙏 Contributors';
+    if(el)el.innerHTML=renderYearRows(stats);
+  }
+
+  /* Fallback: history.json */
   if(!su||su.includes('YOUR_APPS')){
     try{
       const res=await fetch('data/history.json');
       if(res.ok){
         const g=await res.json(),h=g.history||[];
-        const years=[...new Set(h.map(r=>Number(r.year)))].filter(Boolean).sort((a,b)=>b-a);
-        const yr=years[0]||2025;
-        const yList=h.filter(r=>Number(r.year)===yr).sort((a,b)=>(b.amount||0)-(a.amount||0));
-        if(yList.length>0){setYear(yr);bd.textContent=yList.length+'';el.innerHTML=renderRows(yList.slice(0,4));return;}
+        const stats=buildYearStats(h);
+        if(stats.length){setStats(stats);return;}
       }
     }catch(e){}
     /* Demo */
-    const demo=[{name:'Pushkal Kishore',flat:'15167',amount:5001},{name:'Ratnesh Singh',flat:'15165',amount:1100},{name:'Rekha Sinha',flat:'9045',amount:11000}];
-    bd.textContent='demo';el.innerHTML=renderRows(demo);return;
+    setStats([{year:2025,count:429,total:1234567},{year:2024,count:312,total:987654}]);return;
   }
 
   /* Live API */
   try{
     const r=await fetch(su+'?action=list'),d=await r.json(),all=d.contributors||[];
-    const years=[...new Set(all.map(c=>Number(c.year)))].filter(Boolean).sort((a,b)=>b-a);
-    const yr=years[0]||new Date().getFullYear();
-    const yList=all.filter(c=>Number(c.year)===yr).sort((a,b)=>(parseFloat(b.amount)||0)-(parseFloat(a.amount)||0));
-    setYear(yr);
-    bd.textContent=yList.length+'';
-    el.innerHTML=renderRows(yList.slice(0,4));
+    const stats=buildYearStats(all);
+    setStats(stats);
   }catch(e){el.innerHTML='<div class="crl">Tap to view →</div>';}
 }
 if(_li) loadPrev(); // only load contributor data when signed in
