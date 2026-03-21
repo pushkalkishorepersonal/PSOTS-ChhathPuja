@@ -263,7 +263,7 @@ function actionList() {
     method: String(r[5]),
     date:   String(r[6]),
     status: String(r[7]),
-    year:   Number(r[10]) || new Date().getFullYear()
+    year:   Number(r[10]) || extractYear(String(r[6])) || new Date().getFullYear()
   }));
 
   // Sort by amount descending
@@ -294,7 +294,7 @@ function actionListAll(key) {
     date:   String(r[6]),
     status: String(r[7]),
     accountType: String(r[8]),
-    year:   Number(r[10]) || new Date().getFullYear()
+    year:   Number(r[10]) || extractYear(String(r[6])) || new Date().getFullYear()
   }));
 
   return { all };
@@ -316,7 +316,7 @@ function actionMyContribs(flat, mobile) {
   });
 
   const contributions = mine.map(r => ({
-    year:   Number(r[10]) || new Date().getFullYear(),
+    year:   Number(r[10]) || extractYear(String(r[6])) || new Date().getFullYear(),
     amount: Number(r[4]) || 0,
     method: String(r[5]),
     date:   String(r[6]),

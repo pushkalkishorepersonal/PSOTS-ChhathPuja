@@ -111,7 +111,7 @@
   .sp{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
   @keyframes spin{to{transform:rotate(360deg)}}
   </style>
-  <script src="config.js"></script>
+  <script src="js/config.js"></script>
 </head>
 <body>
 
@@ -865,7 +865,7 @@ async function loadBaseSheet() {
   status.style.color = '#7a5000';
   status.innerHTML = '<span class="sp"></span> Fetching BaseSheet data…';
   try {
-    const res = await fetch('import_all.js');
+    const res = await fetch('js/import_all.js');
     if (!res.ok) throw new Error('File not found — merge the PR on GitHub first');
     const text = await res.text();
     const start = text.indexOf('var d = ') + 8;
