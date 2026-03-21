@@ -70,8 +70,8 @@ window.PSOTS = {
   payuMerchantKey:  'XX9JSF',
   payuSalt:         'QhvwoJ3RmrqOrOg6rRc3cbjLpQPzwAxa',
   payuMode:         'TEST',                      // 'TEST' or 'LIVE'
-  payuSurl:         'https://chhath.psots.in/.netlify/functions/payu-handler',
-  payuFurl:         'https://chhath.psots.in/.netlify/functions/payu-handler',
+  payuSurl:         'https://chhath.psots.in/payu-handler',
+  payuFurl:         'https://chhath.psots.in/payu-handler',
 
   /* ══ FILL THESE AFTER SETUP ══════
      See README.md for exact steps.   */
