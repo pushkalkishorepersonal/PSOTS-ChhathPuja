@@ -59,11 +59,22 @@
   .dash-title{font-family:'DM Sans',sans-serif;font-weight:900;font-size:clamp(1.4rem,3.5vw,2rem);color:var(--ink)}
   .dash-sub{font-size:.82rem;color:#6b3a18;margin-top:.3rem}
   .tgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;max-width:1200px;margin:0 auto}
-  .tile{border-radius:20px;overflow:hidden;cursor:pointer;text-decoration:none;display:block;color:inherit;transition:transform .25s,box-shadow .25s;position:relative}
-  .tile:hover{transform:translateY(-5px);box-shadow:0 16px 45px rgba(26,8,0,.18)}
-  .tile:active{transform:translateY(-2px)}
+  .tile{border-radius:20px;overflow:hidden;cursor:pointer;text-decoration:none;display:block;color:inherit;transition:transform .32s cubic-bezier(.34,1.56,.64,1),box-shadow .32s;position:relative;opacity:0;transform:translateY(28px);animation:tileIn .55s cubic-bezier(.34,1.2,.64,1) forwards}
+  @keyframes tileIn{to{opacity:1;transform:translateY(0)}}
+  .tile:nth-child(1){animation-delay:.05s}
+  .tile:nth-child(2){animation-delay:.12s}
+  .tile:nth-child(3){animation-delay:.19s}
+  .tile:nth-child(4){animation-delay:.26s}
+  .tile:nth-child(5){animation-delay:.31s}
+  .tile:nth-child(6){animation-delay:.36s}
+  .tile:nth-child(7){animation-delay:.41s}
+  .tile:nth-child(8){animation-delay:.46s}
+  .tile:nth-child(9){animation-delay:.5s}
+  .tile:nth-child(10){animation-delay:.54s}
+  .tile:hover{transform:translateY(-6px) scale(1.012);box-shadow:0 20px 55px rgba(180,60,0,.22)}
+  .tile:active{transform:translateY(-2px) scale(1.005)}
+  .t-sched   {grid-column:span 4}
   .t-pay     {grid-column:span 4}
-  .t-sched   {grid-column:span 2}
   .t-ann     {grid-column:span 2}
   .t-fin     {grid-column:span 1}
   .t-contrib {grid-column:span 1}
@@ -115,40 +126,58 @@
   .live::before{content:'';position:absolute;inset:-5px;border-radius:50%;border:2px solid rgba(255,255,255,.52);animation:pr 2s ease-out infinite}
   @keyframes pr{0%{transform:scale(1);opacity:1}100%{transform:scale(2.8);opacity:0}}
 
-  /* SCHEDULE TILE — swipeable carousel */
-  .t-sched{background:#fff;border:1px solid rgba(200,100,0,.09);box-shadow:0 4px 20px rgba(26,8,0,.07)}
-  .sh{background:linear-gradient(135deg,#8b2800,#c94000);padding:1.05rem 1.25rem;display:flex;align-items:center;justify-content:space-between}
-  .sh-ey{font-size:.68rem;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.88);margin-bottom:.15rem}
-  .sh-title{font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;color:#fff;display:flex;align-items:center;gap:.38rem}
-  .sh-ico{font-size:1.8rem;opacity:.78}
-  /* Carousel wrapper */
-  .sc-wrap{position:relative;overflow:hidden;padding:.8rem 0 .4rem;background:#fff}
-  .sc-track{display:flex;gap:.65rem;overflow-x:scroll;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 12%;cursor:grab;user-select:none}
+  /* ══ SCHEDULE TILE — hero carousel ══ */
+  .t-sched{background:#0d0400;border:none;box-shadow:0 16px 60px rgba(180,60,0,.35);overflow:hidden;position:relative}
+  /* Header */
+  .sh{background:linear-gradient(135deg,#6b1a00 0%,#c94000 55%,#e85c00 100%);padding:1.1rem 1.6rem;display:flex;align-items:center;justify-content:space-between;position:relative;overflow:hidden}
+  .sh::after{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.04'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");pointer-events:none}
+  .sh-ey{font-size:.65rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.75);margin-bottom:.2rem}
+  .sh-title{font-family:'DM Sans',sans-serif;font-size:clamp(1.05rem,2.5vw,1.4rem);font-weight:900;color:#fff;display:flex;align-items:center;gap:.45rem;text-shadow:0 2px 10px rgba(0,0,0,.3)}
+  .sh-right{display:flex;align-items:center;gap:.6rem}
+  .sh-ico{font-size:2rem;filter:drop-shadow(0 2px 8px rgba(0,0,0,.4))}
+  .sh-nav{display:flex;gap:.4rem}
+  .sh-btn{width:30px;height:30px;border-radius:50%;background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.3);color:#fff;font-size:.85rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .2s;backdrop-filter:blur(4px)}
+  .sh-btn:hover{background:rgba(255,255,255,.32)}
+  /* Carousel track */
+  .sc-wrap{position:relative;overflow:hidden;background:#0d0400;padding:1.2rem 0 0}
+  .sc-track{display:flex;gap:.9rem;overflow-x:scroll;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;padding:0 8% 0;cursor:grab;user-select:none}
   .sc-track::-webkit-scrollbar{display:none}
-  .sc-track.dragging{cursor:grabbing;scroll-behavior:auto}
-  /* Each day card */
-  .sc-card{scroll-snap-align:center;flex-shrink:0;width:76%;border-radius:16px;overflow:hidden;position:relative;aspect-ratio:3/2;transition:transform .35s cubic-bezier(.25,.46,.45,.94),box-shadow .35s;transform:scale(.88);box-shadow:0 2px 10px rgba(0,0,0,.1);will-change:transform}
-  .sc-card.sc-active{transform:scale(1);box-shadow:0 10px 32px rgba(180,60,0,.32)}
-  .sc-img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none}
-  /* Gradient overlay */
-  .sc-overlay{position:absolute;inset:0;background:linear-gradient(to top,rgba(25,6,0,.95) 0%,rgba(25,6,0,.45) 42%,rgba(0,0,0,.15) 72%,transparent 100%);display:flex;flex-direction:column;justify-content:space-between;padding:.7rem .85rem}
-  /* Date badge top-left */
-  .sc-badge{background:linear-gradient(135deg,#e85c00,#a03800);color:#fff;border-radius:9px;width:38px;height:38px;display:flex;flex-direction:column;align-items:center;justify-content:center;align-self:flex-start;box-shadow:0 2px 8px rgba(0,0,0,.3)}
-  .sc-bdn{font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:900;line-height:1}
-  .sc-bdm{font-size:.58rem;text-transform:uppercase;letter-spacing:.05em;opacity:.92}
-  /* Bottom info */
+  .sc-track.dragging{cursor:grabbing}
+  /* Card */
+  .sc-card{scroll-snap-align:center;flex-shrink:0;width:58%;border-radius:20px;overflow:hidden;position:relative;aspect-ratio:3/2;transition:transform .5s cubic-bezier(.34,1.56,.64,1),box-shadow .5s,opacity .4s,filter .4s;transform:scale(.84) translateZ(0);box-shadow:0 4px 16px rgba(0,0,0,.4);opacity:.55;filter:saturate(.5) brightness(.8);will-change:transform,opacity,filter}
+  .sc-card.sc-active{transform:scale(1) translateZ(0);box-shadow:0 20px 60px rgba(200,60,0,.55),0 0 0 2px rgba(232,92,0,.6);opacity:1;filter:saturate(1) brightness(1)}
+  .sc-img{width:100%;height:100%;object-fit:cover;display:block;pointer-events:none;transition:transform 6s ease}
+  .sc-card.sc-active .sc-img{transform:scale(1.04)}
+  /* Auto-play progress bar */
+  .sc-prog{position:absolute;top:0;left:0;right:0;height:3px;background:rgba(255,255,255,.15);z-index:10;overflow:hidden;border-radius:0 0 3px 3px}
+  .sc-prog-bar{height:100%;width:0;background:linear-gradient(90deg,#ffc200,#e85c00);border-radius:3px;transition:width .1s linear}
+  .sc-card.sc-active .sc-prog-bar{animation:scProg var(--sc-dur,4s) linear forwards}
+  @keyframes scProg{from{width:0}to{width:100%}}
+  /* Overlay gradient */
+  .sc-overlay{position:absolute;inset:0;background:linear-gradient(160deg,rgba(0,0,0,.05) 0%,transparent 30%,rgba(10,2,0,.6) 65%,rgba(10,2,0,.97) 100%);display:flex;flex-direction:column;justify-content:space-between;padding:.9rem 1.1rem}
+  /* Date badge */
+  .sc-badge{background:linear-gradient(135deg,#e85c00,#8b2800);color:#fff;border-radius:12px;width:48px;height:52px;display:flex;flex-direction:column;align-items:center;justify-content:center;align-self:flex-start;box-shadow:0 4px 14px rgba(0,0,0,.45);border:1px solid rgba(255,255,255,.15)}
+  .sc-bdn{font-family:'DM Sans',sans-serif;font-size:1.25rem;font-weight:900;line-height:1}
+  .sc-bdm{font-size:.6rem;text-transform:uppercase;letter-spacing:.07em;opacity:.9;font-weight:600}
+  /* Bottom content */
   .sc-info{color:#fff}
-  .sc-nm{font-family:'DM Sans',sans-serif;font-size:.92rem;font-weight:700;line-height:1.1;margin-bottom:.08rem}
-  .sc-hi{font-family:'Yatra One',serif;font-size:.74rem;color:rgba(255,194,0,.92);margin-bottom:.25rem}
-  .sc-tm{display:inline-block;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:800;color:#ffc200;background:rgba(255,194,0,.14);border:1px solid rgba(255,194,0,.3);border-radius:20px;padding:.12rem .55rem;letter-spacing:.02em}
-  .sc-tm.sc-hi-time{color:#fff;background:rgba(232,92,0,.35);border-color:rgba(232,92,0,.5)}
+  .sc-nm{font-family:'DM Sans',sans-serif;font-size:clamp(1rem,2.5vw,1.5rem);font-weight:800;line-height:1.1;margin-bottom:.18rem;text-shadow:0 2px 12px rgba(0,0,0,.6)}
+  .sc-hi{font-family:'Yatra One',serif;font-size:clamp(.78rem,1.6vw,1rem);color:rgba(255,200,80,.95);margin-bottom:.38rem;text-shadow:0 1px 8px rgba(0,0,0,.5)}
+  .sc-tm{display:inline-flex;align-items:center;gap:.3rem;font-family:'DM Sans',sans-serif;font-size:clamp(.8rem,1.8vw,1rem);font-weight:800;color:#ffc200;background:rgba(0,0,0,.45);border:1.5px solid rgba(255,194,0,.5);border-radius:50px;padding:.22rem .8rem;letter-spacing:.02em;backdrop-filter:blur(6px)}
+  .sc-tm.sc-hi-time{color:#fff;border-color:rgba(232,92,0,.8);background:rgba(180,50,0,.5);box-shadow:0 0 14px rgba(232,92,0,.4)}
   /* Dot indicators */
-  .sc-dots{display:flex;justify-content:center;gap:.42rem;padding:.5rem 0 .55rem}
-  .sc-dot{width:6px;height:6px;border-radius:50%;background:rgba(200,100,0,.2);transition:background .25s,width .25s,border-radius .25s;cursor:pointer}
-  .sc-dot.sc-active{background:var(--or);width:18px;border-radius:3px}
-  /* Footer link */
-  .ta{display:block;text-align:center;padding:.58rem;font-size:.68rem;font-weight:600;color:var(--or);border-top:1px solid #f5e8d8;letter-spacing:.06em;text-transform:uppercase;text-decoration:none}
-  .ta:hover{background:#fff8f0}
+  .sc-dots{display:flex;justify-content:center;align-items:center;gap:.5rem;padding:.85rem 0 .9rem;background:#0d0400}
+  .sc-dot{height:6px;border-radius:3px;background:rgba(255,120,0,.25);transition:width .35s cubic-bezier(.34,1.56,.64,1),background .3s;cursor:pointer;width:6px}
+  .sc-dot.sc-active{background:linear-gradient(90deg,#ffc200,#e85c00);width:28px;box-shadow:0 0 8px rgba(255,194,0,.5)}
+  /* Footer */
+  .ta{display:block;text-align:center;padding:.75rem;font-size:.72rem;font-weight:700;color:#e85c00;background:#0d0400;border-top:1px solid rgba(255,100,0,.18);letter-spacing:.1em;text-transform:uppercase;text-decoration:none;transition:background .2s,color .2s}
+  .ta:hover{background:#1a0600;color:#ffc200}
+  @media(max-width:680px){
+    .sc-card{width:78%;aspect-ratio:3/2}
+    .sc-track{padding:0 11%}
+    .sc-badge{width:40px;height:44px}
+    .sc-bdn{font-size:1.05rem}
+  }
 
   /* FINANCE TILE */
   .t-fin{background:linear-gradient(145deg,#1a0800,#3d1200);border:1px solid rgba(255,194,0,.14);box-shadow:0 4px 20px rgba(0,0,0,.3)}
@@ -285,7 +314,88 @@
 
   <div class="tgrid">
 
-    <!-- ROW 1: PRIMARY ACTION -->
+    <!-- ROW 1: SCHEDULE HERO — full width, top priority -->
+    <div class="tile t-sched">
+      <!-- Header -->
+      <div class="sh">
+        <div><div class="sh-ey">✦ Four Holy Days · Nov 1–4, 2026</div><div class="sh-title">📅 Event Schedule</div></div>
+        <div class="sh-right">
+          <div class="sh-nav">
+            <button class="sh-btn" id="schedPrev" aria-label="Previous">‹</button>
+            <button class="sh-btn" id="schedNext" aria-label="Next">›</button>
+          </div>
+          <div class="sh-ico">🌅</div>
+        </div>
+      </div>
+      <!-- Swipeable carousel -->
+      <div class="sc-wrap">
+        <div class="sc-track" id="schedTrack">
+
+          <div class="sc-card sc-active">
+            <div class="sc-prog"><div class="sc-prog-bar"></div></div>
+            <img class="sc-img" src="images/chhath-vrati-water-diyas.png" alt="Nahay Khay">
+            <div class="sc-overlay">
+              <div class="sc-badge"><div class="sc-bdn">01</div><div class="sc-bdm">Nov</div></div>
+              <div class="sc-info">
+                <div class="sc-nm">Nahay Khay</div>
+                <div class="sc-hi">नहाय खाय</div>
+                <div class="sc-tm">🌊 5:30 AM</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sc-card">
+            <div class="sc-prog"><div class="sc-prog-bar"></div></div>
+            <img class="sc-img" src="images/chhath-prasad-thali.png" alt="Kharna">
+            <div class="sc-overlay">
+              <div class="sc-badge"><div class="sc-bdn">02</div><div class="sc-bdm">Nov</div></div>
+              <div class="sc-info">
+                <div class="sc-nm">Kharna</div>
+                <div class="sc-hi">खरना</div>
+                <div class="sc-tm" id="sch-eve-time-kh">🍚 7:00 PM</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sc-card">
+            <div class="sc-prog"><div class="sc-prog-bar"></div></div>
+            <img class="sc-img" src="images/chhath-arghya-sunset.png" alt="Sandhya Arghya">
+            <div class="sc-overlay">
+              <div class="sc-badge"><div class="sc-bdn">03</div><div class="sc-bdm">Nov</div></div>
+              <div class="sc-info">
+                <div class="sc-nm">Sandhya Arghya</div>
+                <div class="sc-hi">संध्या अर्घ्य</div>
+                <div class="sc-tm sc-hi-time" id="sch-eve-time">🌇 5:45 PM</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="sc-card">
+            <div class="sc-prog"><div class="sc-prog-bar"></div></div>
+            <img class="sc-img" src="images/chhath-vrati-water-offering.png" alt="Usha Arghya">
+            <div class="sc-overlay">
+              <div class="sc-badge"><div class="sc-bdn">04</div><div class="sc-bdm">Nov</div></div>
+              <div class="sc-info">
+                <div class="sc-nm">Usha Arghya</div>
+                <div class="sc-hi">उषा अर्घ्य</div>
+                <div class="sc-tm sc-hi-time" id="sch-morn-time">🌅 6:15 AM</div>
+              </div>
+            </div>
+          </div>
+
+        </div>
+        <!-- Dot indicators -->
+        <div class="sc-dots" id="schedDots">
+          <span class="sc-dot sc-active" data-idx="0"></span>
+          <span class="sc-dot" data-idx="1"></span>
+          <span class="sc-dot" data-idx="2"></span>
+          <span class="sc-dot" data-idx="3"></span>
+        </div>
+      </div>
+      <a class="ta" href="pages/schedule.html">View Full Schedule →</a>
+    </div>
+
+    <!-- ROW 2: PRIMARY ACTION -->
     <a class="tile t-pay" href="pages/payment.html">
       <div class="live"></div>
       <div class="pi">
@@ -301,72 +411,7 @@
       </div>
     </a>
 
-    <!-- ROW 2: KEY INFO (span 2 each) -->
-    <div class="tile t-sched">
-      <!-- Header -->
-      <div class="sh">
-        <div class="ts-head-left"><div class="sh-ey">Four Holy Days</div><div class="sh-title">📅 Event Schedule</div></div>
-        <div class="sh-ico">🌅</div>
-      </div>
-      <!-- Swipeable carousel -->
-      <div class="sc-wrap">
-        <div class="sc-track" id="schedTrack">
-          <div class="sc-card sc-active">
-            <img class="sc-img" src="images/chhath-vrati-water-diyas.png" alt="Nahay Khay">
-            <div class="sc-overlay">
-              <div class="sc-badge"><div class="sc-bdn">01</div><div class="sc-bdm">Nov</div></div>
-              <div class="sc-info">
-                <div class="sc-nm">Nahay Khay</div>
-                <div class="sc-hi">नहाय खाय</div>
-                <div class="sc-tm">5:30 AM</div>
-              </div>
-            </div>
-          </div>
-          <div class="sc-card">
-            <img class="sc-img" src="images/chhath-prasad-thali.png" alt="Kharna">
-            <div class="sc-overlay">
-              <div class="sc-badge"><div class="sc-bdn">02</div><div class="sc-bdm">Nov</div></div>
-              <div class="sc-info">
-                <div class="sc-nm">Kharna</div>
-                <div class="sc-hi">खरना</div>
-                <div class="sc-tm" id="sch-eve-time-kh">7:00 PM</div>
-              </div>
-            </div>
-          </div>
-          <div class="sc-card">
-            <img class="sc-img" src="images/chhath-arghya-sunset.png" alt="Sandhya Arghya">
-            <div class="sc-overlay">
-              <div class="sc-badge"><div class="sc-bdn">03</div><div class="sc-bdm">Nov</div></div>
-              <div class="sc-info">
-                <div class="sc-nm">Sandhya Arghya</div>
-                <div class="sc-hi">संध्या अर्घ्य</div>
-                <div class="sc-tm sc-hi-time" id="sch-eve-time">5:45 PM 🌇</div>
-              </div>
-            </div>
-          </div>
-          <div class="sc-card">
-            <img class="sc-img" src="images/chhath-vrati-water-offering.png" alt="Usha Arghya">
-            <div class="sc-overlay">
-              <div class="sc-badge"><div class="sc-bdn">04</div><div class="sc-bdm">Nov</div></div>
-              <div class="sc-info">
-                <div class="sc-nm">Usha Arghya</div>
-                <div class="sc-hi">उषा अर्घ्य</div>
-                <div class="sc-tm sc-hi-time" id="sch-morn-time">6:15 AM 🌅</div>
-              </div>
-            </div>
-          </div>
-        </div>
-        <!-- Dot indicators -->
-        <div class="sc-dots" id="schedDots">
-          <span class="sc-dot sc-active" data-idx="0"></span>
-          <span class="sc-dot" data-idx="1"></span>
-          <span class="sc-dot" data-idx="2"></span>
-          <span class="sc-dot" data-idx="3"></span>
-        </div>
-      </div>
-      <a class="ta" href="pages/schedule.html">View Full Schedule →</a>
-    </div>
-
+    <!-- ROW 3: KEY INFO (span 2 each) -->
     <a class="tile t-ann" href="pages/announcements.html">
       <div class="anh"><div class="an-title">📢 Announcements <span class="an-new">New</span></div></div>
       <div class="al">
@@ -605,29 +650,59 @@ window.addEventListener('pageshow', function(e) {
 (function(){
   var track = document.getElementById('schedTrack');
   if (!track) return;
-  var cards = track.querySelectorAll('.sc-card');
-  var dots  = document.querySelectorAll('#schedDots .sc-dot');
+  var cards   = Array.from(track.querySelectorAll('.sc-card'));
+  var dots    = Array.from(document.querySelectorAll('#schedDots .sc-dot'));
+  var prevBtn = document.getElementById('schedPrev');
+  var nextBtn = document.getElementById('schedNext');
   var activeIdx = 0;
+  var autoTimer = null;
+  var AUTO_DELAY = 4000;
+  var userPaused = false;
 
-  function setActive(idx) {
+  function restartProgBar(card) {
+    var bar = card.querySelector('.sc-prog-bar');
+    if (!bar) return;
+    bar.style.animation = 'none';
+    bar.offsetWidth; // reflow
+    bar.style.setProperty('animation', '');
+    card.style.setProperty('--sc-dur', AUTO_DELAY + 'ms');
+  }
+
+  function setActive(idx, fromUser) {
     if (idx < 0 || idx >= cards.length) return;
     cards[activeIdx].classList.remove('sc-active');
     dots[activeIdx].classList.remove('sc-active');
     activeIdx = idx;
     cards[activeIdx].classList.add('sc-active');
     dots[activeIdx].classList.add('sc-active');
+    restartProgBar(cards[activeIdx]);
+    if (fromUser) { userPaused = true; resetAuto(); }
   }
 
-  // Scroll to card by index
-  function scrollTo(idx) {
+  function scrollToIdx(idx) {
     var card = cards[idx];
-    var wrapWidth = track.offsetWidth;
-    var cardLeft  = card.offsetLeft;
-    var cardWidth = card.offsetWidth;
-    track.scrollTo({ left: cardLeft - (wrapWidth - cardWidth) / 2, behavior: 'smooth' });
+    var wrapW = track.offsetWidth;
+    var cardW = card.offsetWidth;
+    track.scrollTo({ left: card.offsetLeft - (wrapW - cardW) / 2, behavior: 'smooth' });
   }
 
-  // Update active on scroll end
+  function goTo(idx, fromUser) {
+    idx = (idx + cards.length) % cards.length;
+    setActive(idx, fromUser);
+    scrollToIdx(idx);
+  }
+
+  // Auto-advance
+  function startAuto() {
+    clearInterval(autoTimer);
+    autoTimer = setInterval(function() {
+      if (!userPaused) goTo(activeIdx + 1, false);
+      userPaused = false;
+    }, AUTO_DELAY);
+  }
+  function resetAuto() { clearInterval(autoTimer); startAuto(); }
+
+  // Detect scroll end → sync active
   var scrollTimer;
   track.addEventListener('scroll', function() {
     clearTimeout(scrollTimer);
@@ -635,22 +710,29 @@ window.addEventListener('pageshow', function(e) {
       var center = track.scrollLeft + track.offsetWidth / 2;
       var closest = 0, minDist = Infinity;
       cards.forEach(function(c, i) {
-        var dist = Math.abs(c.offsetLeft + c.offsetWidth / 2 - center);
-        if (dist < minDist) { minDist = dist; closest = i; }
+        var d = Math.abs(c.offsetLeft + c.offsetWidth / 2 - center);
+        if (d < minDist) { minDist = d; closest = i; }
       });
-      setActive(closest);
-    }, 60);
+      if (closest !== activeIdx) setActive(closest, true);
+    }, 80);
   }, { passive: true });
 
   // Dot click
   dots.forEach(function(dot) {
     dot.addEventListener('click', function() {
-      var idx = parseInt(dot.getAttribute('data-idx'), 10);
-      scrollTo(idx);
+      goTo(parseInt(dot.getAttribute('data-idx'), 10), true);
     });
   });
 
-  // Mouse drag support
+  // Nav buttons
+  if (prevBtn) prevBtn.addEventListener('click', function() { goTo(activeIdx - 1, true); });
+  if (nextBtn) nextBtn.addEventListener('click', function() { goTo(activeIdx + 1, true); });
+
+  // Pause auto on hover (desktop)
+  track.addEventListener('mouseenter', function() { clearInterval(autoTimer); });
+  track.addEventListener('mouseleave', function() { startAuto(); });
+
+  // Mouse drag
   var isDragging = false, startX = 0, startScroll = 0;
   track.addEventListener('mousedown', function(e) {
     isDragging = true; startX = e.pageX; startScroll = track.scrollLeft;
@@ -662,12 +744,15 @@ window.addEventListener('pageshow', function(e) {
   });
   document.addEventListener('mouseup', function() {
     if (!isDragging) return;
-    isDragging = false;
-    track.classList.remove('dragging');
+    isDragging = false; track.classList.remove('dragging');
   });
 
-  // Init: scroll first card to center
-  requestAnimationFrame(function() { scrollTo(0); });
+  // Init
+  requestAnimationFrame(function() {
+    scrollToIdx(0);
+    restartProgBar(cards[0]);
+    startAuto();
+  });
 })();
 </script>
 </body>
