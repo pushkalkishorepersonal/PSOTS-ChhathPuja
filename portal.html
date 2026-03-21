@@ -1463,7 +1463,7 @@ function _renderReceipt() {
       <div class="rc-flat">Flat ${_receiptFlat} · Prestige Song of the South</div>
       <div class="rc-amount">₹${total.toLocaleString('en-IN')}</div>
       <div class="rc-label">Total Contribution · ${contribs.length} payment${contribs.length > 1 ? 's' : ''}</div>
-      <div class="rc-year">${footerLine}<br/>जय छठ मइया! 🙏</div>
+      <div class="rc-year">${footerLine}<br/>जय छठी मैया! 🙏</div>
     </div>`;
 }
 
@@ -1482,7 +1482,7 @@ function shareReceipt() {
   const name = _receiptName || userProfile.name || currentUser?.name || '';
   const flat = _receiptFlat || userProfile.flat || '';
   const yr = _receiptYear === 'all' ? 'all years' : _receiptYear;
-  const text = `🌅 *PSOTS Chhath Puja ${_receiptYear === 'all' ? '— All Years' : _receiptYear}*\n\nI've contributed to Chhath Puja at Prestige Song of the South! 🙏\n\n👤 ${name}\n🏠 Flat ${flat}\n\nJoin us: Nov 1-4, 2026 at Society Ghat\nContribute: ${(window.PSOTS && window.PSOTS.siteUrl) || 'chhath.psots.in'}\n\nजय छठ मइया! 🌅`;
+  const text = `🌅 *PSOTS Chhath Puja ${_receiptYear === 'all' ? '— All Years' : _receiptYear}*\n\nI've contributed to Chhath Puja at Prestige Song of the South! 🙏\n\n👤 ${name}\n🏠 Flat ${flat}\n\nJoin us: Nov 1-4, 2026 at Society Ghat\nContribute: ${(window.PSOTS && window.PSOTS.siteUrl) || 'chhath.psots.in'}\n\nजय छठी मैया! 🌅`;
   if (navigator.share) {
     navigator.share({ title: `Chhath Puja ${yr} — My Contribution`, text }).catch(() => {});
   } else {
@@ -1584,7 +1584,7 @@ function downloadReceipt() {
   ctx.fillText('Prestige Song of the South', W/2, 568);
   ctx.font = '20px "Yatra One", serif';
   ctx.fillStyle = 'rgba(255,194,0,0.7)';
-  ctx.fillText('जय छठ मइया! 🙏', W/2, 610);
+  ctx.fillText('जय छठी मैया! 🙏', W/2, 610);
 
   // Website
   ctx.font = '12px "DM Sans", sans-serif';
