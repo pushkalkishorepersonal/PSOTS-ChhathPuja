@@ -95,7 +95,7 @@
   </div>
 
   <div class="action-btns">
-    <a id="waReceiptBtn" class="btn-wa2" href="#" style="display:none">📲 Share Receipt on WhatsApp</a>
+    <a id="waReceiptBtn" class="btn-wa2" href="#" style="display:none">📲 Notify Committee on WhatsApp</a>
     <a href="../portal.html" class="btn-home">👤 Go to My Portal</a>
     <a href="../index.html" class="btn-outline">← Back to Home</a>
   </div>
@@ -114,6 +114,8 @@
   const mode     = p.get('mode');
   const product  = p.get('productinfo');
   const phone    = p.get('phone');
+  const email    = p.get('email');
+  const flat     = p.get('udf2') || p.get('flat');
 
   function show(rowId, valId, val){
     if(val){ document.getElementById(rowId).style.display='flex'; document.getElementById(valId).textContent=val; }
@@ -124,6 +126,37 @@
   if(name)     show('rowName',    'txnName',    name);
   if(mode)     show('rowMode',    'txnMode',    mode);
   if(product)  show('rowProduct', 'txnProduct', product);
+
+  // ── Send invoice email via Apps Script ──
+  if(email && amount){
+    const cfg = window.PSOTS || {};
+    const su  = cfg.scriptUrl || '';
+    if(su && !su.includes('YOUR_APPS')){
+      const today = new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+      const qs = new URLSearchParams({
+        action:   'sendInvoiceEmail',
+        email:    email,
+        name:     name || '',
+        flat:     flat || '',
+        amount:   amount,
+        txnid:    txnid || '',
+        mihpayid: mihpayid || '',
+        mode:     mode || '',
+        date:     today
+      });
+      fetch(su + '?' + qs.toString())
+        .then(r => r.json())
+        .then(d => {
+          if(d.ok && !d.skipped){
+            const notice = document.createElement('div');
+            notice.style.cssText = 'margin:.6rem 0;padding:.55rem 1rem;background:#e8f5e9;border-radius:8px;font-size:.82rem;color:#2e7d32;font-weight:600;text-align:center';
+            notice.textContent = '📧 Invoice sent to ' + email;
+            document.querySelector('.note-box').insertAdjacentElement('beforebegin', notice);
+          }
+        })
+        .catch(()=>{});
+    }
+  }
 
   // ── WhatsApp receipt button ──
   if(phone || amount){

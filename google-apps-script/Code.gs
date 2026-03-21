@@ -195,6 +195,9 @@ function doGet(e) {
     case 'findByFlat':
       result = actionFindByFlat(e.parameter.flat);
       break;
+    case 'sendInvoiceEmail':
+      result = actionSendInvoiceEmail(e.parameter);
+      break;
     default:
       result = { error: 'Unknown action: ' + action };
   }
@@ -231,6 +234,8 @@ function doPost(e) {
       result = actionUploadPhoto(body);
     } else if (body.action === 'updateGalleryStatus') {
       result = actionUpdateGalleryStatus(body);
+    } else if (body.action === 'sendInvoiceEmail') {
+      result = actionSendInvoiceEmail(body);
     } else {
       // Default: new contribution
       result = actionAddContribution(body);
@@ -979,6 +984,145 @@ function actionFindByFlat(flat) {
   }
 
   return { ok: true, found: false };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Send payment invoice email
+══════════════════════════════════════════════════════════ */
+function actionSendInvoiceEmail(params) {
+  const email     = String(params.email     || '').trim();
+  const name      = String(params.name      || 'Contributor').trim();
+  const flat      = String(params.flat      || '').trim();
+  const amount    = String(params.amount    || '').trim();
+  const txnid     = String(params.txnid     || '').trim();
+  const mihpayid  = String(params.mihpayid  || '').trim();
+  const mode      = String(params.mode      || 'Online').trim();
+  const dateStr   = String(params.date      || '').trim() ||
+                    Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd MMM yyyy');
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    return { ok: false, msg: 'Invalid or missing email' };
+  }
+
+  // Avoid re-sending for the same txnid (idempotency guard)
+  if (txnid) {
+    const sentKey = 'inv_sent_' + txnid;
+    const alreadySent = PropertiesService.getScriptProperties().getProperty(sentKey);
+    if (alreadySent) return { ok: true, skipped: true };
+    PropertiesService.getScriptProperties().setProperty(sentKey, '1');
+  }
+
+  const amtFormatted = amount ? '₹' + parseFloat(amount).toLocaleString('en-IN') : '';
+  const refLine      = mihpayid ? mihpayid : (txnid || '—');
+  const portalUrl    = 'https://chhath.psots.in/portal.html';
+
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"/></head>
+<body style="margin:0;padding:0;background:#f5ede0;font-family:'DM Sans',Arial,sans-serif">
+<table width="100%" cellpadding="0" cellspacing="0" style="background:#f5ede0;padding:32px 16px">
+<tr><td align="center">
+<table width="520" cellpadding="0" cellspacing="0" style="background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,.10);max-width:520px;width:100%">
+
+  <!-- Header -->
+  <tr>
+    <td style="background:linear-gradient(135deg,#1a0800,#3d1200);padding:32px 28px;text-align:center">
+      <div style="font-size:36px;margin-bottom:8px">🌅</div>
+      <div style="font-family:serif;font-size:22px;color:#ffc200;font-weight:bold;letter-spacing:.03em">PSOTS Chhath Puja 2026</div>
+      <div style="font-size:11px;color:#c8a880;letter-spacing:.12em;margin-top:4px;text-transform:uppercase">Payment Receipt &amp; Thank You</div>
+    </td>
+  </tr>
+
+  <!-- Greeting -->
+  <tr>
+    <td style="padding:28px 28px 0">
+      <p style="margin:0;font-size:16px;color:#3d1200;font-weight:600">Dear ${name},</p>
+      <p style="margin:12px 0 0;font-size:14px;color:#5a3010;line-height:1.7">
+        Thank you for your generous contribution to <strong>PSOTS Chhath Puja 2026</strong>.<br/>
+        Your payment has been received and a committee member will verify it within <strong>24 hours</strong>.
+      </p>
+    </td>
+  </tr>
+
+  <!-- Amount highlight -->
+  <tr>
+    <td style="padding:20px 28px">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:linear-gradient(135deg,#fff8ed,#ffefd4);border-radius:12px;border:1.5px solid #ffd080">
+        <tr>
+          <td style="padding:20px;text-align:center">
+            <div style="font-size:13px;color:#7a4010;text-transform:uppercase;letter-spacing:.1em;margin-bottom:6px">Amount Contributed</div>
+            <div style="font-size:36px;font-weight:800;color:#c84800">${amtFormatted}</div>
+            <div style="font-size:12px;color:#9a6030;margin-top:4px">✅ Payment Received</div>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- Transaction details -->
+  <tr>
+    <td style="padding:0 28px 20px">
+      <table width="100%" cellpadding="0" cellspacing="0" style="border-radius:10px;border:1px solid #f0e0cc;overflow:hidden">
+        ${flat      ? `<tr style="background:#fdf8f4"><td style="padding:10px 14px;font-size:12px;color:#7a4010;font-weight:600;width:42%;border-bottom:1px solid #f0e0cc">FLAT</td><td style="padding:10px 14px;font-size:13px;color:#2a1000;font-weight:700;border-bottom:1px solid #f0e0cc">${flat} · Prestige Song of the South</td></tr>` : ''}
+        ${mode      ? `<tr style="background:#fff"><td style="padding:10px 14px;font-size:12px;color:#7a4010;font-weight:600;border-bottom:1px solid #f0e0cc">MODE</td><td style="padding:10px 14px;font-size:13px;color:#2a1000;border-bottom:1px solid #f0e0cc">${mode}</td></tr>` : ''}
+        ${dateStr   ? `<tr style="background:#fdf8f4"><td style="padding:10px 14px;font-size:12px;color:#7a4010;font-weight:600;border-bottom:1px solid #f0e0cc">DATE</td><td style="padding:10px 14px;font-size:13px;color:#2a1000;border-bottom:1px solid #f0e0cc">${dateStr}</td></tr>` : ''}
+        <tr style="background:#fff"><td style="padding:10px 14px;font-size:12px;color:#7a4010;font-weight:600">REFERENCE</td><td style="padding:10px 14px;font-size:12px;color:#2a1000;font-family:monospace">${refLine}</td></tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- What's next -->
+  <tr>
+    <td style="padding:0 28px 24px">
+      <table width="100%" cellpadding="0" cellspacing="0" style="background:#f0fff4;border-radius:10px;border:1px solid #a5d6a7">
+        <tr>
+          <td style="padding:14px 16px">
+            <div style="font-size:12px;font-weight:700;color:#2e7d32;margin-bottom:6px">WHAT HAPPENS NEXT</div>
+            <ul style="margin:0;padding-left:18px;font-size:13px;color:#1b5e20;line-height:1.8">
+              <li>The committee will verify your payment within 24 hours</li>
+              <li>Your name will appear on the Contributors page</li>
+              <li>You can view your receipt anytime in the <a href="${portalUrl}" style="color:#c84800">Resident Portal</a></li>
+            </ul>
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+
+  <!-- Event info -->
+  <tr>
+    <td style="background:#1a0800;padding:18px 28px;text-align:center">
+      <div style="font-size:13px;color:#ffc200;font-weight:700;margin-bottom:4px">🌅 Chhath Puja 2026</div>
+      <div style="font-size:12px;color:#c8a880">Nov 1–4, 2026 · Society Ghat · Bengaluru</div>
+      <div style="font-size:14px;color:#ffd060;margin-top:8px">जय छठी मैया! 🙏</div>
+    </td>
+  </tr>
+
+  <!-- Footer -->
+  <tr>
+    <td style="padding:14px 28px;text-align:center">
+      <p style="margin:0;font-size:11px;color:#9a7050">This is an auto-generated receipt from PSOTS Chhath Puja Committee.<br/>For queries contact the committee via the <a href="${portalUrl}" style="color:#c84800">portal</a>.</p>
+    </td>
+  </tr>
+
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+
+  try {
+    MailApp.sendEmail({
+      to:       email,
+      subject:  '🌅 Payment Received — PSOTS Chhath Puja 2026 (' + amtFormatted + ')',
+      htmlBody: html,
+      name:     'PSOTS Chhath Puja Committee'
+    });
+    return { ok: true };
+  } catch (err) {
+    Logger.log('Invoice email failed: ' + err.message);
+    return { ok: false, msg: err.message };
+  }
 }
 
 /* ══════════════════════════════════════════════════════════
