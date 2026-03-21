@@ -25,7 +25,7 @@
   .upload-area{border:2px dashed #f0d5b8;border-radius:16px;padding:2rem;text-align:center;cursor:pointer;transition:all .2s;background:var(--warm)}
   .upload-area:hover{border-color:var(--or);background:#fff5e8}
   .lightbox{position:fixed;inset:0;background:rgba(0,0,0,.92);z-index:9999;display:none;align-items:center;justify-content:center;padding:1rem;cursor:pointer}
-  .lightbox img{max-width:95vw;max-height:90vh;border-radius:8px;object-fit:contain}
+  .lightbox img{max-width:95vw;max-height:90vh;border-radius:8px;object-fit:contain;background:#f5ede0}
   .lightbox-close{position:absolute;top:1rem;right:1.5rem;font-size:2rem;color:#fff;cursor:pointer;background:none;border:none;z-index:10}
   </style>
   <link rel="icon" href="../images/logo-hindi.png" type="image/png">
@@ -46,7 +46,8 @@
 <div class="page-content">
 
   <div class="year-tabs" id="yearTabs">
-    <button class="year-tab active" onclick="showYear(2025,this)">2025</button>
+    <button class="year-tab active" onclick="showYear(2026,this)">2026</button>
+    <button class="year-tab" onclick="showYear(2025,this)">2025</button>
     <button class="year-tab" onclick="showYear(2024,this)">2024</button>
     <button class="year-tab" onclick="showYear(2023,this)">2023</button>
     <button class="year-tab" onclick="showYear(2022,this)">2022</button>
@@ -173,6 +174,11 @@
 
 <script>
 const GALLERY_DATA = {
+  2026: {
+    stats: { contributors: 0, vratis: 0, collected: '0' },
+    caption: '5th year of Chhath Puja at PSOTS — preparations underway!',
+    photos: []
+  },
   2025: {
     stats: { contributors: 141, vratis: 15, collected: '2,35,553' },
     caption: 'Our 4th year — bigger than ever! 15 Vrati families, grand ghat with LED lighting, community kharna dinner for 400+ residents.',
@@ -238,21 +244,34 @@ async function showYear(year, btn) {
   _renderApprovedPhotos(year, d, _galCache[year]);
 }
 
+function _driveImgUrl(url) {
+  // Convert drive.google.com/uc?id=XXX or /file/d/XXX/ to thumbnail endpoint
+  const m = url.match(/[?&]id=([a-zA-Z0-9_-]+)/) || url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (m) return `https://lh3.googleusercontent.com/d/${m[1]}`;
+  return url;
+}
+
 function _renderApprovedPhotos(year, d, community) {
   const grid = document.getElementById('galleryGrid');
   if (!grid) return;
-  const staticPhotos = d.photos.map(p => `
-    <div class="gallery-item" onclick="openLightbox('${p.url}')">
-      <img src="${p.url}" alt="${p.caption || 'Chhath Puja ' + year}" loading="lazy"/>
-    </div>`).join('');
-  const communityPhotos = community.map(p => `
-    <div class="gallery-item" onclick="openLightbox('${p.url}')">
-      <img src="${p.url}" alt="${p.caption || p.moment + ' ' + p.year}" loading="lazy"/>
+  const staticPhotos = d.photos.map(p => {
+    const imgUrl = _driveImgUrl(p.url);
+    return `
+    <div class="gallery-item" onclick="openLightbox('${imgUrl}')">
+      <img src="${imgUrl}" alt="${p.caption || 'Chhath Puja ' + year}" loading="lazy"/>
+    </div>`;
+  }).join('');
+  const communityPhotos = community.map(p => {
+    const imgUrl = _driveImgUrl(p.url);
+    return `
+    <div class="gallery-item" onclick="openLightbox('${imgUrl}')">
+      <img src="${imgUrl}" alt="${p.caption || p.moment + ' ' + p.year}" loading="lazy"/>
       <div style="position:absolute;bottom:0;left:0;right:0;padding:.4rem .6rem;background:linear-gradient(transparent,rgba(0,0,0,.65));font-size:.65rem;color:#fff;line-height:1.3">
         ${p.caption ? `<div>${p.caption}</div>` : ''}
         <div style="opacity:.75">${p.name} · ${p.moment}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   const combined = staticPhotos + communityPhotos;
   grid.innerHTML = combined || generatePlaceholders(year);
 }
@@ -291,7 +310,7 @@ function closeLightbox() {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeLightbox(); });
 
 // Load default year
-showYear(2025, document.querySelector('.year-tab.active')).catch(() => {});
+showYear(2026, document.querySelector('.year-tab.active')).catch(() => {});
 
 // ── PHOTO UPLOAD ─────────────────────────────────────────
 let selectedImageBase64 = null;
