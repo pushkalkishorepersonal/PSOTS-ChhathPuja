@@ -375,7 +375,7 @@
     </a>
 
     <a class="tile t-contrib" href="pages/contributors.html">
-      <div class="ch"><div class="ch-title">🙏 Contributors 2026</div><div class="ch-badge" id="conBadge">…</div></div>
+      <div class="ch"><div class="ch-title" id="conTitle">🙏 Contributors</div><div class="ch-badge" id="conBadge">…</div></div>
       <div class="cl" id="conPreview"><div class="crl">Loading…</div></div>
       <span class="ta">See Full List →</span>
     </a>
@@ -473,7 +473,39 @@ if(!_li){
   const _cl=document.getElementById('conPreview');if(_cl)_cl.innerHTML=_lockHtml;
   const _cb=document.getElementById('conBadge');if(_cb)_cb.textContent='';
 }
-async function loadPrev(){const el=document.getElementById('conPreview'),bd=document.getElementById('conBadge');if(!su||su.includes('YOUR_APPS')){try{const res=await fetch('data/history.json');if(res.ok){const g=await res.json(),h=g.history||[];const y2025=h.filter(r=>r.year===2025).slice(0,4);if(y2025.length>0){bd.textContent=h.filter(r=>r.year===2025).length+'';el.innerHTML=y2025.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat||'-'}</div></div><div class="cra">₹${(c.amount||0).toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');return;}}}catch(e){}}if(!su||su.includes('YOUR_APPS')){const demo=[{name:'Pushkal Kishore',flat:'15167',amount:5001},{name:'Ratnesh Singh',flat:'15165',amount:1100},{name:'Rekha Sinha',flat:'9045',amount:11000}];bd.textContent='demo';el.innerHTML=demo.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat}</div></div><div class="cra">₹${c.amount.toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');return;}try{const r=await fetch(su+'?action=list'),d=await r.json(),l=(d.contributors||[]).slice(0,4);bd.textContent=(d.contributors||[]).length+'';el.innerHTML=l.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat}</div></div><div class="cra">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');}catch(e){el.innerHTML='<div class="crl">Tap to view →</div>';}}
+async function loadPrev(){
+  const el=document.getElementById('conPreview'),bd=document.getElementById('conBadge'),titleEl=document.getElementById('conTitle');
+  function renderRows(list){return list.map((c,i)=>`<div class="cr"><span class="crk">#${i+1}</span><div><div class="crn">${c.name}</div><div class="crf">Flat ${c.flat||'-'}</div></div><div class="cra">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div><div class="crd"></div></div>`).join('');}
+  function setYear(yr){if(titleEl)titleEl.textContent='🙏 Contributors '+yr;}
+
+  /* Fallback: history.json (no script URL) */
+  if(!su||su.includes('YOUR_APPS')){
+    try{
+      const res=await fetch('data/history.json');
+      if(res.ok){
+        const g=await res.json(),h=g.history||[];
+        const years=[...new Set(h.map(r=>Number(r.year)))].filter(Boolean).sort((a,b)=>b-a);
+        const yr=years[0]||2025;
+        const yList=h.filter(r=>Number(r.year)===yr).sort((a,b)=>(b.amount||0)-(a.amount||0));
+        if(yList.length>0){setYear(yr);bd.textContent=yList.length+'';el.innerHTML=renderRows(yList.slice(0,4));return;}
+      }
+    }catch(e){}
+    /* Demo */
+    const demo=[{name:'Pushkal Kishore',flat:'15167',amount:5001},{name:'Ratnesh Singh',flat:'15165',amount:1100},{name:'Rekha Sinha',flat:'9045',amount:11000}];
+    bd.textContent='demo';el.innerHTML=renderRows(demo);return;
+  }
+
+  /* Live API */
+  try{
+    const r=await fetch(su+'?action=list'),d=await r.json(),all=d.contributors||[];
+    const years=[...new Set(all.map(c=>Number(c.year)))].filter(Boolean).sort((a,b)=>b-a);
+    const yr=years[0]||new Date().getFullYear();
+    const yList=all.filter(c=>Number(c.year)===yr).sort((a,b)=>(parseFloat(b.amount)||0)-(parseFloat(a.amount)||0));
+    setYear(yr);
+    bd.textContent=yList.length+'';
+    el.innerHTML=renderRows(yList.slice(0,4));
+  }catch(e){el.innerHTML='<div class="crl">Tap to view →</div>';}
+}
 if(_li) loadPrev(); // only load contributor data when signed in
 // Load live finance + arghya timings from Google Sheet
 if(su){
