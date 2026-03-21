@@ -7,10 +7,15 @@
   <link rel="stylesheet" href="../css/style.css"/>
   <script src="../config.js"></script>
   <script src="../js/auth-gate.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSi2BTRuu7PkXE8AHa012XqgVYjTIyrUsoA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <style>
-  .qr-img-wrap{background:#fff;border-radius:12px;padding:12px;box-shadow:0 4px 18px rgba(26,8,0,.1);position:relative}
-  .qr-img-wrap img{display:block;width:180px;height:180px;border-radius:6px}
-  .qr-placeholder{width:180px;height:180px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.5rem;color:#b08060;font-size:.8rem;text-align:center;border:2px dashed #f0d5b8;border-radius:6px}
+  .qr-canvas-wrap{background:#fff;border-radius:12px;padding:14px;box-shadow:0 4px 18px rgba(26,8,0,.1);display:flex;flex-direction:column;align-items:center;gap:8px}
+  #qrContainer{position:relative;line-height:0}
+  #qrContainer canvas,#qrContainer img{display:block;border-radius:4px}
+  .qr-amt-badge{position:absolute;bottom:-10px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--or),#c93800);color:#fff;border-radius:50px;padding:.2rem .75rem;font-size:.7rem;font-weight:700;white-space:nowrap;box-shadow:0 2px 8px rgba(232,92,0,.4);pointer-events:none}
+  .qr-upi-id{font-size:.72rem;color:#6b3a18;font-weight:700;text-align:center;letter-spacing:.02em;margin-top:4px}
+  .qr-dl-btn{background:none;border:1.5px solid rgba(232,92,0,.3);color:var(--or);border-radius:8px;padding:.3rem .75rem;font-size:.7rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:background .15s}
+  .qr-dl-btn:hover{background:rgba(232,92,0,.06)}
   .qr-label{font-size:.78rem;color:#6b3a18;font-weight:600;text-align:center;line-height:1.5}
   .upi-id-row{display:flex;align-items:center;gap:.6rem;background:#fff;border-radius:10px;padding:.7rem 1rem;border:1.5px solid rgba(232,92,0,.25);width:100%;box-sizing:border-box}
   .upi-id-text{flex:1;font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;color:var(--or)}
@@ -229,14 +234,15 @@
         </button>
         <div class="pay-sec-body">
           <div class="qr-inner">
-            <div class="qr-img-wrap">
-              <div id="qrPlaceholder" class="qr-placeholder">
-                <span style="font-size:2rem">📱</span>
-                <span>Enter amount above<br/>to generate QR</span>
+            <div class="qr-canvas-wrap">
+              <div id="qrContainer">
+                <!-- QR rendered here by qrcode.js -->
+                <div id="qrAmtBadge" class="qr-amt-badge" style="display:none">₹ —</div>
               </div>
-              <img id="qrImg" style="display:none;width:180px;height:180px;border-radius:6px" alt="UPI QR Code"/>
+              <div class="qr-upi-id" id="qrUpiText">Loading…</div>
+              <button class="qr-dl-btn" onclick="downloadQR()">⬇ Save QR</button>
             </div>
-            <div class="qr-label"><strong>Scan with any UPI app</strong></div>
+            <div class="qr-label"><strong>Scan with any UPI app</strong> · amount is pre-filled when entered above</div>
           </div>
         </div>
       </div>
@@ -297,13 +303,75 @@
 <div id="toast"></div>
 
 <script>
-const C={upiId:'9482088904-3@ybl',payeeName:'ChhathPuja2026PSOTS',waOrg:'919482088904',scriptUrl:localStorage.getItem('psots_script_url')||''};
-let currentUser=null,userProfile={},lastSubmit={};
+const _cfg=window.PSOTS||{};
+const C={
+  upiId:     _cfg.upiId     ||'9482088904-3@ybl',
+  payeeName: _cfg.payeeName ||'ChhathPuja2026PSOTS',
+  waOrg:     _cfg.waOrg     ||'919482088904',
+  scriptUrl: _cfg.scriptUrl ||localStorage.getItem('psots_script_url')||''
+};
+let currentUser=null,userProfile={},lastSubmit={},_qr=null;
+
+// ── QR helpers ──────────────────────────────────────────────
+function buildUpiUri(amount){
+  const base=`upi://pay?pa=${encodeURIComponent(C.upiId)}&pn=${encodeURIComponent(C.payeeName)}&cu=INR&tn=${encodeURIComponent('ChhathPuja2026')}`;
+  return(amount&&parseInt(amount)>=1)?base+`&am=${amount}`:base;
+}
+function initQR(){
+  const container=document.getElementById('qrContainer');
+  // Remove any stale canvas/img before first render
+  container.querySelectorAll('canvas,img').forEach(el=>el.remove());
+  const badge=document.getElementById('qrAmtBadge');
+  if(badge)container.appendChild(badge); // keep badge in DOM
+  const upiText=document.getElementById('qrUpiText');
+  if(upiText)upiText.textContent=C.upiId;
+  try{
+    _qr=new QRCode(container,{
+      text:buildUpiUri(''),width:180,height:180,
+      colorDark:'#1a0800',colorLight:'#ffffff',
+      correctLevel:QRCode.CorrectLevel.M
+    });
+  }catch(e){
+    // Fallback: external API
+    const img=document.createElement('img');
+    img.style.cssText='width:180px;height:180px;border-radius:4px;display:block';
+    img.alt='UPI QR Code';
+    img.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&qzone=2&data=${encodeURIComponent(buildUpiUri(''))}`;
+    container.insertBefore(img,container.firstChild);
+  }
+}
+function updateQRAmount(amount){
+  const uri=buildUpiUri(amount);
+  const badge=document.getElementById('qrAmtBadge');
+  if(amount&&parseInt(amount)>=1){
+    if(badge){badge.textContent='₹'+parseInt(amount).toLocaleString('en-IN');badge.style.display='block';}
+  }else{
+    if(badge)badge.style.display='none';
+  }
+  if(_qr){try{_qr.makeCode(uri);}catch(e){} return;}
+  // Fallback img update
+  const img=document.querySelector('#qrContainer img');
+  if(img)img.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&qzone=2&data=${encodeURIComponent(uri)}`;
+}
+function downloadQR(){
+  try{
+    const canvas=document.querySelector('#qrContainer canvas');
+    if(canvas){
+      const a=document.createElement('a');
+      a.download='ChhathPuja2026-UPI-QR.png';
+      a.href=canvas.toDataURL('image/png');
+      a.click();return;
+    }
+    const img=document.querySelector('#qrContainer img');
+    if(img)window.open(img.src,'_blank');
+  }catch(e){toast('Could not download QR');}
+}
 
 // Init
 window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('f-date').valueAsDate=new Date();
   initLayout();
+  initQR();
   const u=localStorage.getItem('psots_user');
   if(u){
     currentUser=JSON.parse(u);
@@ -372,24 +440,17 @@ function onAmtInput(){
   const f=v?'₹ '+parseInt(v).toLocaleString('en-IN'):'← enter amount above';
   document.getElementById('amtRo').textContent=f;
   document.getElementById('amtRoUser').textContent=f;
-  const qrImg=document.getElementById('qrImg');
-  const qrPh=document.getElementById('qrPlaceholder');
   const amtDisplay=document.getElementById('amtDisplay');
   if(v&&parseInt(v)>=1){
-    const upiUri=`upi://pay?pa=${encodeURIComponent(C.upiId)}&pn=${encodeURIComponent(C.payeeName)}&am=${v}&cu=INR&tn=ChhathPuja2026`;
-    qrImg.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&qzone=2&data=${encodeURIComponent(upiUri)}`;
-    qrImg.style.display='block';
-    qrPh.style.display='none';
-    amtDisplay.textContent='Amount: ₹'+parseInt(v).toLocaleString('en-IN')+' — pre-filled';
+    amtDisplay.textContent='Amount: ₹'+parseInt(v).toLocaleString('en-IN')+' — pre-filled in QR';
     amtDisplay.style.color='var(--or)';
     amtDisplay.style.fontWeight='700';
   }else{
-    qrImg.style.display='none';
-    qrPh.style.display='flex';
-    amtDisplay.textContent='Amount: enter above';
+    amtDisplay.textContent='Amount: enter above — QR ready to scan';
     amtDisplay.style.color='#6b3a18';
     amtDisplay.style.fontWeight='400';
   }
+  updateQRAmount(v);
   updateAppLinks(v);
 }
 
