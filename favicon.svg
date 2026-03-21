@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <defs>
+    <radialGradient id="s" cx="50%" cy="44%" r="50%">
+      <stop offset="0%"   stop-color="#ffe566"/>
+      <stop offset="30%"  stop-color="#ffb300"/>
+      <stop offset="68%"  stop-color="#f57c00"/>
+      <stop offset="100%" stop-color="#c93800"/>
+    </radialGradient>
+  </defs>
+  <!-- Sun -->
+  <circle cx="32" cy="34" r="24" fill="url(#s)"/>
+  <!-- Rays -->
+  <g stroke="#1a0800" stroke-width="1.6" stroke-linecap="round" opacity="0.7">
+    <line x1="32" y1="8"  x2="32" y2="14"/>
+    <line x1="40" y1="10" x2="38" y2="15"/>
+    <line x1="24" y1="10" x2="26" y2="15"/>
+    <line x1="46" y1="15" x2="43" y2="19"/>
+    <line x1="18" y1="15" x2="21" y2="19"/>
+  </g>
+  <!-- Water horizon -->
+  <line x1="4" y1="52" x2="60" y2="52" stroke="#c93800" stroke-width="1" opacity="0.5"/>
+  <!-- Water waves -->
+  <g stroke="#e85c00" stroke-width="1.2" fill="none" opacity="0.5" stroke-linecap="round">
+    <path d="M 6  55 Q 14 52 22 55 Q 30 58 38 55 Q 46 52 58 55"/>
+    <path d="M 10 59 Q 20 56 30 59 Q 40 62 52 59"/>
+  </g>
+  <!-- "छठ" tiny text -->
+  <text x="32" y="40" font-family="serif" font-size="14" font-weight="bold"
+        text-anchor="middle" fill="#1a0800">छठ</text>
+</svg>
