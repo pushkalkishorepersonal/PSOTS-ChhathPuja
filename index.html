@@ -437,6 +437,24 @@ function tick(){const d=evt-new Date();if(d<=0){document.getElementById('countdo
 tick();setInterval(tick,1000);
 const ob=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){const b=document.getElementById('tfBar');if(b)b.style.width=b.dataset.pct+'%'}})},{threshold:.3});
 const ds=document.querySelector('.dashboard');if(ds)ob.observe(ds);
+
+/* ── Scroll-reveal tiles ── */
+(function(){
+  const revOb=new IntersectionObserver(entries=>{
+    entries.forEach((e,i)=>{
+      if(e.isIntersecting){
+        e.target.style.transition='opacity .55s '+e.target.dataset.delay+'ms ease,transform .55s '+e.target.dataset.delay+'ms cubic-bezier(.22,1,.36,1),box-shadow .25s';
+        e.target.style.opacity='1';e.target.style.transform='none';
+        revOb.unobserve(e.target);
+      }
+    });
+  },{threshold:0.08});
+  document.querySelectorAll('.tile').forEach((t,i)=>{
+    t.style.opacity='0';t.style.transform='translateY(24px)';
+    t.dataset.delay=String(Math.min(i*55,320));
+    revOb.observe(t);
+  });
+})();
 const su=(window.PSOTS&&window.PSOTS.scriptUrl)||localStorage.getItem('psots_script_url')||'';
 // Check login state early so we can gate sensitive tile data
 const _pu=(function(){try{return JSON.parse(localStorage.getItem('psots_user')||localStorage.getItem('psots_admin_user')||'null');}catch(e){return null;}})();
