@@ -13,7 +13,7 @@
   body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--ink);overflow-x:hidden}
   nav{position:fixed;top:0;left:0;right:0;z-index:400;height:52px;padding:0 1.3rem;display:flex;align-items:center;justify-content:space-between;background:rgba(12,4,0,.93);backdrop-filter:blur(16px);border-bottom:1px solid rgba(255,194,0,.18)}
   .nb{display:flex;align-items:center;gap:.5rem}
-  .nd{font-size:1rem;animation:flicker 2.5s ease-in-out infinite}
+  .nd{font-size:1rem;line-height:0}
   @keyframes flicker{0%,100%{opacity:1}50%{opacity:.6}}
   .nn{font-family:'Yatra One',serif;font-size:.86rem;color:var(--gold);line-height:1.1}
   .ns{font-size:.65rem;color:rgba(255,198,0,.78);letter-spacing:.12em;text-transform:uppercase}
@@ -231,12 +231,15 @@
   footer p{font-size:.74rem;color:rgba(255,220,120,.65);line-height:1.8}
   footer span{color:rgba(255,194,0,.88)}
   </style>
+  <link rel="icon" href="psots-logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="logo-main.png">
+  <meta property="og:image" content="https://chhath.psots.in/logo-main.png">
 </head>
 <body>
 
 <nav>
   <div class="nb">
-    <span class="nd"><svg width="18" height="18" viewBox="0 0 24 24"><ellipse cx="12" cy="18" rx="10" ry="5" fill="#c68a3c" stroke="#8b5e1e" stroke-width=".8"/><path d="M2 18Q2 8 12 4Q22 8 22 18" fill="#d4a04a" stroke="#8b5e1e" stroke-width=".8"/><circle cx="9" cy="14" r="2.5" fill="#e85c00"/><circle cx="15" cy="14" r="2.5" fill="#2e7d32"/><circle cx="12" cy="11" r="2" fill="#ffc200"/></svg></span>
+    <span class="nd"><img src="logo-main.png" alt="PSOTS" width="38" height="38" style="display:block;object-fit:contain"/></span>
     <div><div class="nn">PSOTS छठ महापर्व 2026</div><div class="ns">पंच वर्ष महोत्सव</div></div>
   </div>
   <a class="nav-portal-btn" href="portal.html" id="navPortalBtn">👤 My Account</a>
