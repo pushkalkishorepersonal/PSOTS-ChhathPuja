@@ -1368,10 +1368,11 @@ async function loadReceipt() {
       const d = await fetch(su + '?action=list').then(r => r.json());
       const mine26 = (d.contributors || []).filter(c =>
         String(c.flat).trim() === String(flat).trim() && c.status && c.status.includes('Received'));
-      // Merge — avoid duplicates by amount+date
+      // Merge — avoid duplicates by year+amount+date
       mine26.forEach(c => {
-        const dup = combined.find(x => x.year === '2026' && String(x.amount) === String(c.amount) && x.date === (c.date || ''));
-        if (!dup) combined.push({ year: '2026', amount: c.amount, method: c.method || 'UPI', date: c.date || '', status: c.status });
+        const cYear = String(c.year || new Date().getFullYear());
+        const dup = combined.find(x => x.year === cYear && String(x.amount) === String(c.amount) && x.date === (c.date || ''));
+        if (!dup) combined.push({ year: cYear, amount: c.amount, method: c.method || 'UPI', date: c.date || '', status: c.status });
       });
     } catch(e) {}
   }
