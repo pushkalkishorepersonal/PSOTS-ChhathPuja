@@ -89,7 +89,18 @@
       <input class="con-search" type="text" id="searchInp" placeholder="Search by name or flat number…" oninput="filterList()"/>
     </div>
 
-    <!-- Filters -->
+    <!-- Year tabs -->
+    <div class="filter-row" id="yearRow">
+      <span style="font-size:.76rem;color:#6b3a18;font-weight:600">Year:</span>
+      <div class="fchip on"  onclick="setYear(2026,this)">2026</div>
+      <div class="fchip"     onclick="setYear(2025,this)">2025</div>
+      <div class="fchip"     onclick="setYear(2024,this)">2024</div>
+      <div class="fchip"     onclick="setYear(2023,this)">2023</div>
+      <div class="fchip"     onclick="setYear(2022,this)">2022</div>
+      <div class="fchip"     onclick="setYear('all',this)">All Years</div>
+    </div>
+
+    <!-- Status Filters -->
     <div class="filter-row">
       <span style="font-size:.76rem;color:#6b3a18;font-weight:600">Show:</span>
       <div class="fchip on" onclick="setFilter('all',this)">All</div>
@@ -120,7 +131,7 @@
 
     <!-- Total bar -->
     <div class="total-bar">
-      <div><div class="tb-label">Total Collected 2026</div><div class="tb-count" id="verCount">—</div></div>
+      <div><div class="tb-label" id="totalLabel">Total Collected 2026</div><div class="tb-count" id="verCount">—</div></div>
       <div class="tb-value count-num" id="totalAmt">—</div>
     </div>
 
@@ -132,7 +143,7 @@
 </div>
 
 <script>
-let allData = [], filterMode = 'all';
+let allData = [], filterMode = 'all', yearFilter = 2026;
 const cfg = window.PSOTS || {};
 const su = cfg.scriptUrl || localStorage.getItem('psots_script_url') || '';
 
@@ -185,6 +196,12 @@ async function loadList() {
     const r = await fetch(su + '?action=list');
     const d = await r.json();
     allData = d.contributors || [];
+    /* Show/hide year tabs based on available data */
+    const yearsInData = new Set(allData.map(c => c.year || 2026));
+    document.getElementById('yearRow').querySelectorAll('.fchip[onclick*="setYear(2"]').forEach(chip => {
+      const yr = parseInt(chip.textContent);
+      chip.style.display = yearsInData.has(yr) ? '' : 'none';
+    });
     renderList(allData);
   } catch(e) {
     el.innerHTML = '<div class="empty"><span class="empty-icon">⚠️</span>Could not load. Check connection and try again.</div>';
@@ -193,7 +210,12 @@ async function loadList() {
 
 function renderList(data) {
   const q = document.getElementById('searchInp').value.toLowerCase();
-  let f = data.filter(r => {
+
+  /* Apply year filter first */
+  const yearData = yearFilter === 'all' ? data : data.filter(r => (r.year || 2026) === yearFilter);
+  const showYear = yearFilter === 'all'; /* show year badge only in All Years view */
+
+  let f = yearData.filter(r => {
     const m = !q || r.name.toLowerCase().includes(q) || String(r.flat).toLowerCase().includes(q);
     if (!m) return false;
     if (filterMode==='verified') return r.status?.includes('Received');
@@ -204,16 +226,18 @@ function renderList(data) {
   const verified = f.filter(r => r.status?.includes('Received'));
   const total = verified.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
 
-  /* Sub-line */
-  document.getElementById('subLine').textContent = data.length + ' contributors · ₹' + total.toLocaleString('en-IN') + ' collected';
+  /* Sub-line & total label */
+  const yearLabel = yearFilter === 'all' ? 'All Years' : yearFilter;
+  document.getElementById('subLine').textContent = f.length + ' contributors · ₹' + total.toLocaleString('en-IN') + ' collected';
+  document.getElementById('totalLabel').textContent = 'Total Collected ' + yearLabel;
 
   /* Total bar animated */
   const totalEl = document.getElementById('totalAmt');
   animateCount(totalEl, total);
   document.getElementById('verCount').textContent = verified.length + ' verified contributions';
 
-  /* Podium from full verified list (not filtered) */
-  const allVerified = data.filter(r=>r.status?.includes('Received')).sort((a,b)=>(parseFloat(b.amount)||0)-(parseFloat(a.amount)||0));
+  /* Podium from year-filtered verified list */
+  const allVerified = yearData.filter(r=>r.status?.includes('Received')).sort((a,b)=>(parseFloat(b.amount)||0)-(parseFloat(a.amount)||0));
   if (allVerified.length >= 2 && !q && filterMode==='all') buildPodium(allVerified);
   else document.getElementById('podiumWrap').style.display='none';
 
@@ -239,11 +263,12 @@ function renderList(data) {
     const isV = c.status?.includes('Received');
     const col = avColor(c.name);
     const rankLabel = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+    const yearBadge = showYear ? `<span style="font-size:.66rem;font-weight:700;color:var(--or);background:rgba(232,92,0,.1);border-radius:4px;padding:.1rem .35rem;margin-left:.3rem">${c.year||'—'}</span>` : '';
     return `<div class="con-item" style="transition-delay:${Math.min(i*30,300)}ms">
       <div class="ci-rank">${rankLabel}</div>
       <div class="ci-av" style="background:linear-gradient(135deg,${col},${col}cc)">${initial(c.name)}</div>
       <div>
-        <div class="ci-name">${c.name}</div>
+        <div class="ci-name">${c.name}${yearBadge}</div>
         <div class="ci-flat">Flat ${c.flat}</div>
       </div>
       <div class="ci-amt">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div>
@@ -261,7 +286,13 @@ function renderList(data) {
 function filterList(){ renderList(allData); }
 function setFilter(m, el){
   filterMode = m;
-  document.querySelectorAll('.fchip').forEach(c => c.classList.remove('on'));
+  el.closest('.filter-row').querySelectorAll('.fchip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  renderList(allData);
+}
+function setYear(y, el){
+  yearFilter = y;
+  document.getElementById('yearRow').querySelectorAll('.fchip').forEach(c => c.classList.remove('on'));
   el.classList.add('on');
   renderList(allData);
 }
