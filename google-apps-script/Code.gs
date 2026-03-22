@@ -653,6 +653,7 @@ function actionUpdateFinance(body) {
   const cmteKeys = ['cmte_count'];
   for (let i = 0; i < 12; i++) cmteKeys.push('cmte_' + i);
   const keys = ['carry','collected','budget','expenses','expTent','expKharna','expThekua','expAV','expCultural','expMisc',
+                 'budTent','budKharna','budThekua','budAV','budCultural','budMisc',
                  'timEveTime','timEveDate','timEveLoc','timMornTime','timMornDate','timMornLoc','timKharnaTime','timKharnaDate',
                  ...cmteKeys];
   const data = sheet.getLastRow() >= 2
