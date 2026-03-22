@@ -306,6 +306,23 @@
   .t-faq-s{background:linear-gradient(140deg,#fff8f0,#fff2e4);border:1px solid rgba(200,100,0,.14);box-shadow:0 8px 28px rgba(93,30,0,.1);padding:1.45rem;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
   .t-faq-s::before{content:'❓';position:absolute;top:-8px;right:-8px;font-size:3.5rem;opacity:.06;pointer-events:none}
 
+  /* ══════ MOBILE COLLAPSIBLE SECTIONS ══════ */
+  @media(max-width:679px){
+    .mob-section{grid-column:1/-1;border-radius:16px;overflow:hidden;border:1.5px solid rgba(232,92,0,.18)}
+    .mob-sec-hdr{width:100%;display:flex;align-items:center;justify-content:space-between;padding:.85rem 1rem;background:linear-gradient(135deg,#fff5e8,#ffe0c4);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;color:#5a2e0c;text-align:left;transition:background .18s}
+    .mob-sec-hdr:active{background:linear-gradient(135deg,#ffe0c4,#ffd0a0)}
+    .mob-sec-arrow{font-size:.82rem;transition:transform .25s ease;display:inline-block;margin-left:.3rem}
+    .mob-section.open .mob-sec-arrow{transform:rotate(90deg)}
+    .mob-sec-tiles{display:none;flex-direction:column;gap:.65rem;padding:.65rem}
+    .mob-section.open .mob-sec-tiles{display:flex}
+    .mob-sec-count{font-size:.7rem;font-weight:500;color:#9b6b48;margin-left:.3rem;opacity:.75}
+  }
+  @media(min-width:680px){
+    .mob-section{display:contents}
+    .mob-sec-hdr{display:none}
+    .mob-sec-tiles{display:contents}
+  }
+
   /* ══════ FOOTER ══════ (warm deep maroon, no black) */
   footer{background:linear-gradient(180deg,#2a0800,#1e0600);padding:2.8rem 1.5rem;text-align:center;position:relative}
   footer::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,transparent,rgba(255,194,0,.45),rgba(255,140,0,.6),rgba(255,194,0,.45),transparent)}
@@ -547,6 +564,12 @@
       </div>
     </a>
 
+    <div class="mob-section" id="sec-updates">
+      <button class="mob-sec-hdr" onclick="toggleMobSec('sec-updates')">
+        <span>📢 Announcements &amp; Updates<span class="mob-sec-count">3 new</span></span>
+        <span class="mob-sec-arrow">▸</span>
+      </button>
+      <div class="mob-sec-tiles">
     <a class="tile t-wa" href="pages/subscribe.html">
       <div class="wt-top"><div class="wt-ico">📲</div><div class="wt-tag">Free Updates</div></div>
       <div><div class="wt-title">WhatsApp Updates</div><div class="wt-sub">Event reminders, Arghya timings, prasad details — direct to your WhatsApp.</div></div>
@@ -562,7 +585,15 @@
       </div>
       <span class="tad">All Announcements →</span>
     </a>
+      </div><!-- /mob-sec-tiles -->
+    </div><!-- /sec-updates -->
 
+    <div class="mob-section" id="sec-finance">
+      <button class="mob-sec-hdr" onclick="toggleMobSec('sec-finance')">
+        <span>💰 Finance &amp; Contributors</span>
+        <span class="mob-sec-arrow">▸</span>
+      </button>
+      <div class="mob-sec-tiles">
     <a class="tile t-fin" href="pages/finance.html">
       <div class="fh"><div class="fh-ey">Transparency · पारदर्शिता</div><div class="fh-title">💰 Finance 2026</div></div>
       <div class="fg">
@@ -580,7 +611,15 @@
       <div class="cl" id="conPreview"><div class="crl">Loading…</div></div>
       <span class="ta">See Full List →</span>
     </a>
+      </div><!-- /mob-sec-tiles -->
+    </div><!-- /sec-finance -->
 
+    <div class="mob-section" id="sec-more">
+      <button class="mob-sec-hdr" onclick="toggleMobSec('sec-more')">
+        <span>🔍 Explore More</span>
+        <span class="mob-sec-arrow">▸</span>
+      </button>
+      <div class="mob-sec-tiles">
     <a class="tile t-vol" href="pages/volunteer.html" style="padding:1.45rem;display:flex;flex-direction:column;justify-content:space-between;gap:.65rem">
       <div><div style="font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,194,0,.88);margin-bottom:.18rem;font-weight:700">Volunteer & RSVP</div><div style="font-family:'DM Sans',sans-serif;font-size:1.04rem;font-weight:800;color:var(--gilt);display:flex;align-items:center;gap:.4rem">🤝 Volunteer Sign-Up</div></div>
       <div style="font-size:.78rem;color:rgba(255,237,200,.88);line-height:1.55">Help with ghat setup, prasad, decoration & cultural events!</div>
@@ -612,6 +651,8 @@
       <div style="font-size:.78rem;color:var(--lbr);line-height:1.55;margin-bottom:.85rem">Answers to common questions from residents.</div>
       <span style="font-size:.68rem;font-weight:700;color:var(--or);letter-spacing:.07em;text-transform:uppercase">Read FAQ →</span>
     </a>
+      </div><!-- /mob-sec-tiles -->
+    </div><!-- /sec-more -->
 
   </div>
 </section>
@@ -634,6 +675,13 @@ function tick(){const d=evt-new Date();if(d<=0){document.getElementById('countdo
 tick();setInterval(tick,1000);
 const ob=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){const b=document.getElementById('tfBar');if(b)b.style.width=b.dataset.pct+'%'}})},{threshold:.3});
 const ds=document.querySelector('.dashboard');if(ds)ob.observe(ds);
+
+function toggleMobSec(id){
+  const sec=document.getElementById(id);
+  const arrow=sec.querySelector('.mob-sec-arrow');
+  sec.classList.toggle('open');
+  if(arrow)arrow.textContent=sec.classList.contains('open')?'▾':'▸';
+}
 
 /* ── Scroll-reveal tiles with stagger ── */
 (function(){
