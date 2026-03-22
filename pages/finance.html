@@ -137,7 +137,7 @@
 
     <!-- ══ Why ₹6L? — sentimental context ══ -->
     <div class="card reveal d1" style="background:linear-gradient(145deg,#2d0800,#2d1200,#1e0c00);border-color:rgba(255,194,0,.2)">
-      <div class="card-title" style="color:var(--gold)">🌅 Why ₹6,00,000 this year?</div>
+      <div class="card-title" style="color:var(--gold)">🌅 Why <span id="why-budget-title">₹6,00,000</span> this year?</div>
       <p style="font-size:.8rem;color:rgba(255,210,150,.78);line-height:1.7;margin-bottom:1.15rem">Five years ago, 58 families gathered at our ghat and lit the first diya together. What started as a quiet act of faith has grown into something none of us quite expected — and this year, we want to honour that journey the way it deserves.</p>
 
       <div style="display:flex;flex-direction:column;gap:1rem">
@@ -206,7 +206,7 @@
           </div>
           <!-- 2026 — ₹6L — full height, glowing -->
           <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:.3rem">
-            <div style="font-size:.6rem;color:var(--gold);font-weight:800">₹6L</div>
+            <div style="font-size:.6rem;color:var(--gold);font-weight:800" id="why-budget-bar">₹6L</div>
             <div style="width:100%;background:linear-gradient(180deg,#ffe680,var(--gold),var(--or));border-radius:4px 4px 0 0;height:50px;box-shadow:0 0 14px rgba(255,194,0,.45)"></div>
             <div style="font-size:.6rem;color:var(--gold);font-weight:800">2026 🌅</div>
           </div>
@@ -413,6 +413,9 @@ async function load2026() {
   document.getElementById('c26-count').textContent = count || '—';
   document.getElementById('c26-budget').textContent = fmt(budget);
   document.getElementById('c26-budget-sm').textContent = parseInt(budget).toLocaleString('en-IN');
+  const shortBgt = budget >= 100000 ? '₹' + Math.round(budget / 100000) + 'L' : fmt(budget);
+  const whyTitle = document.getElementById('why-budget-title'); if (whyTitle) whyTitle.textContent = fmt(budget);
+  const whyBar = document.getElementById('why-budget-bar'); if (whyBar) whyBar.textContent = shortBgt;
   document.getElementById('c26-pct').textContent = pct + '%';
   const bar = document.getElementById('c26-bar');
   bar.dataset.pct = pct;
