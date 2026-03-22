@@ -223,6 +223,9 @@
   .fs:hover{background:rgba(255,194,0,.12);border-color:rgba(255,194,0,.3);transform:translateY(-1px)}
   .fv{font-family:'DM Sans',sans-serif;font-size:1.02rem;font-weight:800;color:var(--gold);line-height:1}
   .fv.g{color:#81c784}
+  .fv.r{color:#ff8a50;animation:needPulse 2.8s ease-in-out infinite}
+  .fs-need{border-color:rgba(255,138,80,.35)!important;background:rgba(255,138,80,.08)!important}
+  @keyframes needPulse{0%,100%{text-shadow:0 0 6px rgba(255,138,80,.3)}50%{text-shadow:0 0 22px rgba(255,138,80,.9)}}
   .fl{font-size:.68rem;color:rgba(255,224,117,.8);margin-top:.2rem;line-height:1.3}
   .fb{padding:.18rem 1.4rem .7rem}
   .fbl{display:flex;justify-content:space-between;font-size:.68rem;color:rgba(255,224,117,.8);margin-bottom:.38rem}
@@ -575,7 +578,7 @@
     <a class="tile t-ann" href="pages/announcements.html">
       <div class="anh"><div class="an-title">📢 Announcements <span class="an-new">New</span></div></div>
       <div class="al">
-        <div class="ai"><div class="ai-m">2026 — 5th Year</div><div class="ai-tag">🎊 Grand</div><div class="ai-txt">पंच वर्ष महोत्सव! Grander ghat, bigger celebration. <b>₹1,04,670</b> surplus from 2025.</div></div>
+        <div class="ai"><div class="ai-m">2026 — 5th Year</div><div class="ai-tag">🎊 Grand</div><div class="ai-txt">पंच वर्ष महोत्सव! Grander ghat, bigger celebration — our grandest year yet!</div></div>
         <div class="ai"><div class="ai-m">2026 — Prasad</div><div class="ai-tag">🙏 Prasad</div><div class="ai-txt"><b>Nov 2</b> खरना & <b>Nov 4</b> ठेकुआ प्रसाद for all residents.</div></div>
         <div class="ai"><div class="ai-m">Deadline</div><div class="ai-tag">⏰ Important</div><div class="ai-txt">Contribute before <b>Oct 25</b> for prasad list.</div></div>
       </div>
@@ -593,12 +596,12 @@
     <a class="tile t-fin" href="pages/finance.html">
       <div class="fh"><div class="fh-ey">Transparency · पारदर्शिता</div><div class="fh-title">💰 Finance 2026</div></div>
       <div class="fg">
-        <div class="fs"><div class="fv g">₹1,04,670</div><div class="fl">Opening Balance ↑2025</div></div>
         <div class="fs"><div class="fv" id="tf-collected">—</div><div class="fl">Collected 2026</div></div>
         <div class="fs"><div class="fv" id="tf-count">—</div><div class="fl">Contributors 2026</div></div>
         <div class="fs"><div class="fv" id="tf-budget">₹6,00,000</div><div class="fl">Budget 2026</div></div>
+        <div class="fs fs-need"><div class="fv r" id="tf-need">₹4,95,330</div><div class="fl">Still Needed 🎯</div></div>
       </div>
-      <div class="fb"><div class="fbl"><span>2026 Collection vs Budget</span><span id="tf-pct" style="color:var(--gold)">0%</span></div><div class="fbt"><div class="fbf" id="tfBar" data-pct="0"></div></div></div>
+      <div class="fb"><div class="fbl"><span id="tf-need-lbl">₹4,95,330 more to reach ₹6L goal</span><span id="tf-pct" style="color:var(--gold)">0%</span></div><div class="fbt"><div class="fbf" id="tfBar" data-pct="0"></div></div></div>
       <span class="tad">Full Year-wise Breakdown →</span>
     </a>
 
@@ -765,6 +768,13 @@ if(su){
     const cnt=rows.length;
     document.getElementById('tf-collected').textContent='₹'+col.toLocaleString('en-IN');
     document.getElementById('tf-count').textContent=cnt||'0';
+    const openBal=104670,bgt=600000;
+    const need=Math.max(0,bgt-openBal-col);
+    const pct=Math.min(100,Math.round((openBal+col)/bgt*100));
+    const needEl=document.getElementById('tf-need');if(needEl)needEl.textContent='₹'+need.toLocaleString('en-IN');
+    const needLbl=document.getElementById('tf-need-lbl');if(needLbl)needLbl.textContent=(need>0?'₹'+need.toLocaleString('en-IN')+' more to reach ₹6L goal':'🎉 Goal reached!');
+    const pctEl=document.getElementById('tf-pct');if(pctEl)pctEl.textContent=pct+'%';
+    const tfBar=document.getElementById('tfBar');if(tfBar){tfBar.dataset.pct=pct;setTimeout(()=>{tfBar.style.width=pct+'%';},400);}
   }).catch(()=>{});
   fetch(su+'?action=getFinance').then(r=>r.json()).then(d=>{const f=d.finance||{};
     if(_li){
