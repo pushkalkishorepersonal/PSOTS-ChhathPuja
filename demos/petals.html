@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Marigold Petals</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital@1&family=Yatra+One&family=DM+Sans:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{width:100%;height:100vh;overflow:hidden;background:linear-gradient(180deg,#2d0800 0%,#7a1e00 30%,#e85c00 60%,#ffa500 80%,#1a3a5c 100%);font-family:'DM Sans',sans-serif}
+  canvas{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
+  .hero{position:relative;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;text-align:center;padding:2rem}
+  .badge{font-size:.72rem;letter-spacing:.22em;color:rgba(255,224,117,.85);margin-bottom:.8rem;text-transform:uppercase}
+  h1{font-family:'Playfair Display',serif;font-style:italic;font-size:clamp(3rem,8vw,5.5rem);color:#ffc200;line-height:1;text-shadow:0 0 40px rgba(255,140,0,.5)}
+  .hindi{font-family:'Yatra One',serif;font-size:clamp(1rem,2.5vw,1.4rem);color:rgba(255,224,117,.9);margin-top:.5rem}
+  .card{margin-top:2.5rem;background:rgba(45,8,0,.55);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,194,0,.3);border-radius:16px;padding:1rem 2rem;color:#ffe680;font-size:.88rem;max-width:340px}
+  .card strong{display:block;font-size:1rem;margin-bottom:.3rem}
+  .card span{color:rgba(255,230,128,.75);font-size:.8rem;line-height:1.5}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div class="hero">
+  <div class="badge">Animation Preview · Option 1</div>
+  <h1>Chhath</h1>
+  <div class="hindi">छठ महापर्व</div>
+  <div class="card">
+    <strong>🌸 Marigold Petals</strong>
+    <span>55 orange &amp; gold petals drift gently downward with natural swaying — like garlands falling at the ghat during the puja</span>
+  </div>
+</div>
+<script>
+const c=document.getElementById('c'),ctx=c.getContext('2d');
+const COLORS=['#ff8c00','#ffa500','#ffb700','#ffc200','#ff6600','#ffe080','#ffcc44','#ff9933'];
+let W,H,petals=[];
+function resize(){W=c.width=innerWidth;H=c.height=innerHeight;initPetals()}
+function makePetal(top){return{x:Math.random()*W,y:top?-20:Math.random()*H,size:6+Math.random()*10,sy:.6+Math.random()*1.2,sx:(Math.random()-.5)*.4,rot:Math.random()*Math.PI*2,rs:(Math.random()-.5)*.04,a:.6+Math.random()*.4,col:COLORS[Math.floor(Math.random()*COLORS.length)],wo:0,ws:.02+Math.random()*.02,wp:Math.random()*Math.PI*2}}
+function initPetals(){petals=Array.from({length:55},()=>makePetal(false))}
+function drawPetal(p){
+  ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.rot);ctx.globalAlpha=p.a;
+  ctx.fillStyle=p.col;ctx.beginPath();ctx.ellipse(0,0,p.size,p.size*.55,0,0,Math.PI*2);ctx.fill();
+  ctx.globalAlpha=p.a*.4;ctx.strokeStyle='#fff';ctx.lineWidth=.5;
+  ctx.beginPath();ctx.moveTo(-p.size*.6,0);ctx.bezierCurveTo(-p.size*.2,-p.size*.2,p.size*.2,-p.size*.2,p.size*.6,0);ctx.stroke();
+  ctx.restore();
+}
+function tick(){
+  ctx.clearRect(0,0,W,H);
+  for(let i=0;i<petals.length;i++){
+    const p=petals[i];
+    p.wo+=p.ws;p.x+=p.sx+Math.sin(p.wo+p.wp)*.7;p.y+=p.sy;p.rot+=p.rs;
+    drawPetal(p);
+    if(p.y>H+20)petals[i]=makePetal(true);
+  }
+  requestAnimationFrame(tick);
+}
+window.addEventListener('resize',resize);
+resize();tick();
+</script>
+</body>
+</html>

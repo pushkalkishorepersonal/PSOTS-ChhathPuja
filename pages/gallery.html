@@ -5,10 +5,13 @@
   <title>Gallery — PSOTS Chhath Puja</title>
   <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:ital,wght@0,700;0,900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css"/>
-  <script src="../config.js"></script>
+  <script src="../js/config.js"></script>
   <script src="../js/auth-gate.js"></script>
   <style>
-  .year-tabs{display:flex;gap:0;background:#fff;border-bottom:1px solid #f0d5b8;overflow-x:auto;position:sticky;top:52px;z-index:50;margin-bottom:1.5rem;border-radius:14px 14px 0 0}
+  .year-tabs{display:flex;gap:0;background:#fff;border-bottom:1px solid #f0d5b8;overflow-x:auto;position:sticky;top:56px;z-index:50;margin-bottom:1.5rem;border-radius:14px 14px 0 0}
+  @media(min-width:768px){.year-tabs{top:60px}}
+  @media(min-width:1024px){.year-tabs{top:64px;border-radius:18px 18px 0 0}}
+  @media(min-width:1024px){.gallery-grid{grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:1.1rem}}
   .year-tabs::-webkit-scrollbar{display:none}
   .year-tab{padding:.75rem 1.3rem;font-size:.82rem;font-weight:700;color:var(--lbr);background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;transition:all .2s}
   .year-tab.active{color:var(--or);border-bottom-color:var(--or)}
@@ -137,7 +140,7 @@
     </div>
   </div>
 
-  <div class="card" style="background:linear-gradient(135deg,#1a0800,#3d1200);color:#fff;text-align:center;margin-top:1rem">
+  <div class="card" style="background:linear-gradient(135deg,#2d0800,#3d1200);color:#fff;text-align:center;margin-top:1rem">
     <div style="font-size:2rem;margin-bottom:.5rem">🎬</div>
     <div class="card-title" style="color:var(--gilt);justify-content:center">5 Years of Chhath at PSOTS</div>
     <p style="font-size:.82rem;color:rgba(255,220,120,.8);line-height:1.6;margin-bottom:1rem">From 65 contributors in 2022 to 141 in 2025 — our Chhath celebration has grown into one of the biggest community events at Prestige Song of the South.</p>
