@@ -194,7 +194,7 @@
   /* Sign-out farewell overlay */
   #signoutOverlay{position:fixed;inset:0;background:rgba(18,12,6,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s ease}
   #signoutOverlay.visible{opacity:1;pointer-events:all}
-  #signoutOverlay .so-card{background:linear-gradient(160deg,rgba(60,35,8,.97) 0%,rgba(30,18,4,.97) 100%);border:1px solid rgba(255,180,40,.25);border-radius:24px;padding:2.8rem 2.4rem 2.4rem;max-width:380px;width:88%;text-align:center;box-shadow:0 8px 48px rgba(0,0,0,.6),0 0 0 1px rgba(255,180,40,.08);transform:scale(.88) translateY(20px);transition:transform .45s cubic-bezier(.34,1.3,.64,1),opacity .4s ease;opacity:0}
+  #signoutOverlay .so-card{background:linear-gradient(160deg,rgba(60,35,8,.97) 0%,rgba(30,18,4,.97) 100%);border:1px solid rgba(255,180,40,.25);border-radius:24px;padding:2.8rem 2.4rem 2.4rem;max-width:380px;width:88%;text-align:center;box-shadow:0 8px 48px rgba(0,0,0,.6),0 0 0 1px rgba(255,180,40,.08);transform:scale(.88) translateY(20px);transition:transform .45s cubic-bezier(.34,1.3,.64,1),opacity .4s ease;opacity:0;overflow:hidden}
   #signoutOverlay.visible .so-card{transform:scale(1) translateY(0);opacity:1}
   #signoutOverlay .so-sun{width:72px;height:72px;margin:0 auto .6rem;display:block;animation:soSpin 6s ease-in-out infinite;filter:drop-shadow(0 0 12px rgba(255,180,40,.5))}
   @keyframes soSpin{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
@@ -245,7 +245,7 @@
 <!-- NAV -->
 <nav>
   <div class="nb">
-    <span class="nd"><img src="images/psots-logo.svg" alt="PSOTS" style="width:32px;height:32px;display:block;object-fit:contain;filter:drop-shadow(0 1px 4px rgba(255,160,40,.4))"/></span>
+    <span class="nd"><img src="images/logo-main.png" alt="PSOTS" style="width:32px;height:32px;display:block;object-fit:contain;filter:drop-shadow(0 1px 4px rgba(255,160,40,.4))"/></span>
     <div><div class="nn">PSOTS — My Portal</div><div class="ns">Chhath 2026</div></div>
   </div>
   <div class="nav-r">
@@ -258,7 +258,7 @@
 <!-- ════ LOGIN SCREEN ════ -->
 <div id="loginScreen">
   <div class="login-box">
-    <img class="login-icon" src="images/psots-logo.svg" alt="PSOTS"/>
+    <img class="login-icon" src="images/logo-main.png" alt="PSOTS"/>
     <div class="login-title">My PSOTS Portal</div>
     <div id="loginSub" class="login-sub">Sign in to view your contributions, manage notifications and connect with the committee.</div>
     <div class="login-society">Prestige Song of the South · Chhath 2026</div>
@@ -591,7 +591,7 @@
 <!-- Sign-out farewell overlay -->
 <div id="signoutOverlay">
   <div class="so-card">
-    <img class="so-sun" src="images/psots-logo.svg" alt="PSOTS Logo"/>
+    <img class="so-sun" src="images/logo-main.png" alt="PSOTS Logo"/>
     <div class="so-title" id="soTitle">Thank you!</div>
     <div class="so-msg" id="soMsg">We hope to see you again soon.<br>Your devotion lights our community.</div>
     <div class="so-jay">🙏 Jay Chhathi Maiya 🙏</div>
