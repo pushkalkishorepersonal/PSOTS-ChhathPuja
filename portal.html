@@ -779,9 +779,13 @@ function signOut() {
   localStorage.removeItem('psots_admin_user');
   localStorage.removeItem('psots_returning');
   localStorage.setItem('psots_signed_out', '1');
+
+  const name = (currentUser && currentUser.name) ? currentUser.name.split(' ')[0] : '';
   currentUser = null;
-  // Redirect to home so user gets a clean, fully gated experience
-  window.location.href = 'index.html';
+
+  // Show warm goodbye, then redirect to home
+  toast('🙏 Jay Chhathi Maiya, ' + (name || 'Resident') + '! See you soon.', 'success');
+  setTimeout(() => { window.location.href = 'index.html'; }, 2500);
 }
 
 function getAdminEmails() {
