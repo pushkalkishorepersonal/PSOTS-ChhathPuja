@@ -319,6 +319,17 @@
     .mob-sec-tiles{display:none;flex-direction:column;gap:.65rem;padding:.65rem}
     .mob-section.open .mob-sec-tiles{display:flex}
     .mob-sec-count{font-size:.7rem;font-weight:500;color:#9b6b48;margin-left:.3rem;opacity:.75}
+    /* ── Gated section (not logged in) ── */
+    .mob-section.gated-open .mob-sec-tiles{display:flex}
+    .mob-section.gated-open .mob-sec-arrow{transform:rotate(90deg)}
+    .mob-section.gated-open .mob-sec-tiles>:not(.mob-sec-gate){display:none!important}
+    .mob-sec-gate{display:none;flex-direction:column;align-items:center;text-align:center;padding:1.6rem 1.2rem;gap:.8rem;width:100%}
+    .mob-section.gated-open .mob-sec-gate{display:flex}
+    .msg-lock{font-size:2rem;line-height:1}
+    .msg-lock-title{font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:800;color:#5a2e0c}
+    .msg-lock-sub{font-size:.78rem;color:#9b6b48;line-height:1.6;max-width:260px}
+    .msg-lock-btn{display:inline-flex;align-items:center;gap:.45rem;background:linear-gradient(135deg,#e85c00,#c94000);color:#fff;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:700;padding:.55rem 1.2rem;border-radius:50px;text-decoration:none;box-shadow:0 4px 14px rgba(232,92,0,.35);transition:all .2s}
+    .msg-lock-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(232,92,0,.45)}
   }
   @media(min-width:680px){
     .mob-section{display:contents}
@@ -563,12 +574,18 @@
       </div>
     </a>
 
-    <div class="mob-section" id="sec-updates">
+    <div class="mob-section" id="sec-updates" data-gated="true">
       <button class="mob-sec-hdr" onclick="toggleMobSec('sec-updates')">
         <span>📢 Announcements &amp; Updates<span class="mob-sec-count">3 new</span></span>
         <span class="mob-sec-arrow">▸</span>
       </button>
       <div class="mob-sec-tiles">
+        <div class="mob-sec-gate">
+          <div class="msg-lock">🔒</div>
+          <div class="msg-lock-title">Members Only</div>
+          <div class="msg-lock-sub">Sign in to see the latest announcements, WhatsApp updates, and event notices from the committee.</div>
+          <a class="msg-lock-btn" href="portal.html">Sign in with Google →</a>
+        </div>
     <a class="tile t-wa" href="pages/subscribe.html">
       <div class="wt-top"><div class="wt-ico">📲</div><div class="wt-tag">Free Updates</div></div>
       <div><div class="wt-title">WhatsApp Updates</div><div class="wt-sub">Event reminders, Arghya timings, prasad details — direct to your WhatsApp.</div></div>
@@ -613,12 +630,18 @@
       </div><!-- /mob-sec-tiles -->
     </div><!-- /sec-finance -->
 
-    <div class="mob-section" id="sec-more">
+    <div class="mob-section" id="sec-more" data-gated="true">
       <button class="mob-sec-hdr" onclick="toggleMobSec('sec-more')">
         <span>🔍 Explore More</span>
         <span class="mob-sec-arrow">▸</span>
       </button>
       <div class="mob-sec-tiles">
+        <div class="mob-sec-gate">
+          <div class="msg-lock">🔒</div>
+          <div class="msg-lock-title">Members Only</div>
+          <div class="msg-lock-sub">Sign in to access your account, volunteer sign-up, event gallery, and FAQs — everything in one place.</div>
+          <a class="msg-lock-btn" href="portal.html">Sign in with Google →</a>
+        </div>
     <a class="tile t-vol" href="pages/volunteer.html" style="padding:1.45rem;display:flex;flex-direction:column;justify-content:space-between;gap:.65rem">
       <div><div style="font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,194,0,.88);margin-bottom:.18rem;font-weight:700">Volunteer & RSVP</div><div style="font-family:'DM Sans',sans-serif;font-size:1.04rem;font-weight:800;color:var(--gilt);display:flex;align-items:center;gap:.4rem">🤝 Volunteer Sign-Up</div></div>
       <div style="font-size:.78rem;color:rgba(255,237,200,.88);line-height:1.55">Help with ghat setup, prasad, decoration & cultural events!</div>
@@ -678,6 +701,11 @@ const ds=document.querySelector('.dashboard');if(ds)ob.observe(ds);
 function toggleMobSec(id){
   const sec=document.getElementById(id);
   const arrow=sec.querySelector('.mob-sec-arrow');
+  if(sec.dataset.gated==='true'&&!_li){
+    sec.classList.toggle('gated-open');
+    if(arrow)arrow.textContent=sec.classList.contains('gated-open')?'▾':'▸';
+    return;
+  }
   sec.classList.toggle('open');
   if(arrow)arrow.textContent=sec.classList.contains('open')?'▾':'▸';
 }
