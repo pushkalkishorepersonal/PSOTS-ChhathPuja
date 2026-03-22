@@ -299,6 +299,20 @@
       </div>
     </div>
 
+    <div class="admin-card" style="border-left:3px solid var(--or)">
+      <div class="ac-title">📋 Planned Budget Allocation</div>
+      <div class="ac-sub">How you plan to split this year's budget. Fills as a <strong>"Where your money goes"</strong> chart on the public Finance page — only shows once you enter values.</div>
+      <div class="fg">
+        <div class="ff"><label>🏕️ Tent & Decoration</label><div class="rupee-wrap"><span class="rupee-pfx">₹</span><input class="rupee-inp" type="number" id="bud-tent" value="0"/></div></div>
+        <div class="ff"><label>🍽️ Kharna Prasad</label><div class="rupee-wrap"><span class="rupee-pfx">₹</span><input class="rupee-inp" type="number" id="bud-kharna" value="0"/></div></div>
+        <div class="ff"><label>🪔 Thekua Prasad</label><div class="rupee-wrap"><span class="rupee-pfx">₹</span><input class="rupee-inp" type="number" id="bud-thekua" value="0"/></div></div>
+        <div class="ff"><label>🎵 Audio & Visuals</label><div class="rupee-wrap"><span class="rupee-pfx">₹</span><input class="rupee-inp" type="number" id="bud-av" value="0"/></div></div>
+        <div class="ff"><label>🎭 Cultural Activities</label><div class="rupee-wrap"><span class="rupee-pfx">₹</span><input class="rupee-inp" type="number" id="bud-cultural" value="0"/></div></div>
+        <div class="ff"><label>📦 Miscellaneous</label><div class="rupee-wrap"><span class="rupee-pfx">₹</span><input class="rupee-inp" type="number" id="bud-misc" value="0"/></div></div>
+      </div>
+      <div id="bud-total" style="margin-top:.5rem;font-family:'DM Sans',sans-serif;font-size:.85rem;font-weight:700;color:var(--or)"></div>
+    </div>
+
     <div class="admin-card">
       <div class="ac-title">📊 2026 Expense Breakdown</div>
       <div class="ac-sub">Update actual spend per category as you make payments. Shows on public site as progress bars.</div>
@@ -893,6 +907,12 @@ async function loadAllFromSheet() {
     if (f.expAV       != null && f.expAV       !== '') document.getElementById('exp-av').value        = f.expAV;
     if (f.expCultural != null && f.expCultural !== '') document.getElementById('exp-cultural').value  = f.expCultural;
     if (f.expMisc     != null && f.expMisc     !== '') document.getElementById('exp-misc').value      = f.expMisc;
+    if (f.budTent     != null && f.budTent     !== '') document.getElementById('bud-tent').value     = f.budTent;
+    if (f.budKharna   != null && f.budKharna   !== '') document.getElementById('bud-kharna').value   = f.budKharna;
+    if (f.budThekua   != null && f.budThekua   !== '') document.getElementById('bud-thekua').value   = f.budThekua;
+    if (f.budAV       != null && f.budAV       !== '') document.getElementById('bud-av').value        = f.budAV;
+    if (f.budCultural != null && f.budCultural !== '') document.getElementById('bud-cultural').value  = f.budCultural;
+    if (f.budMisc     != null && f.budMisc     !== '') document.getElementById('bud-misc').value      = f.budMisc;
     // Timing fields
     if (f.timEveTime)  document.getElementById('t-evening').value = f.timEveTime;
     if (f.timEveDate)  document.getElementById('d-evening').value = f.timEveDate;
@@ -1319,8 +1339,29 @@ function loadFinance() {
     if (f.expAV      != null) document.getElementById('exp-av').value        = f.expAV;
     if (f.expCultural!= null) document.getElementById('exp-cultural').value  = f.expCultural;
     if (f.expMisc    != null) document.getElementById('exp-misc').value      = f.expMisc;
+    if (f.budTent    != null) document.getElementById('bud-tent').value     = f.budTent;
+    if (f.budKharna  != null) document.getElementById('bud-kharna').value   = f.budKharna;
+    if (f.budThekua  != null) document.getElementById('bud-thekua').value   = f.budThekua;
+    if (f.budAV      != null) document.getElementById('bud-av').value        = f.budAV;
+    if (f.budCultural!= null) document.getElementById('bud-cultural').value  = f.budCultural;
+    if (f.budMisc    != null) document.getElementById('bud-misc').value      = f.budMisc;
   } catch(e) {}
 }
+
+function calcBudTotal() {
+  const ids = ['bud-tent','bud-kharna','bud-thekua','bud-av','bud-cultural','bud-misc'];
+  const total = ids.reduce((s,id) => s + (parseFloat(document.getElementById(id).value)||0), 0);
+  const budget = parseFloat(document.getElementById('f-budget').value) || 0;
+  const el = document.getElementById('bud-total');
+  if (total > 0) {
+    const diff = budget - total;
+    el.textContent = 'Allocated: ₹' + total.toLocaleString('en-IN') + (diff === 0 ? ' ✅ Matches budget' : diff > 0 ? ' — ₹' + diff.toLocaleString('en-IN') + ' unallocated' : ' — ₹' + Math.abs(diff).toLocaleString('en-IN') + ' over budget ⚠️');
+    el.style.color = diff < 0 ? '#c0392b' : diff === 0 ? '#27ae60' : 'var(--or)';
+  } else { el.textContent = ''; }
+}
+['bud-tent','bud-kharna','bud-thekua','bud-av','bud-cultural','bud-misc'].forEach(id => {
+  document.getElementById(id).addEventListener('input', calcBudTotal);
+});
 
 function calcTotal() {
   const ids = ['exp-tent','exp-kharna','exp-thekua','exp-av','exp-cultural','exp-misc'];
@@ -1345,6 +1386,12 @@ async function saveFinance() {
     expAV: document.getElementById('exp-av').value,
     expCultural: document.getElementById('exp-cultural').value,
     expMisc: document.getElementById('exp-misc').value,
+    budTent: document.getElementById('bud-tent').value,
+    budKharna: document.getElementById('bud-kharna').value,
+    budThekua: document.getElementById('bud-thekua').value,
+    budAV: document.getElementById('bud-av').value,
+    budCultural: document.getElementById('bud-cultural').value,
+    budMisc: document.getElementById('bud-misc').value,
   };
   localStorage.setItem('psots_finance', JSON.stringify(data));
   const url = getScriptUrl();

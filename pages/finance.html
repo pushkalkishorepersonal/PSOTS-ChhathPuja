@@ -135,6 +135,48 @@
       </div>
     </div>
 
+    <!-- ══ Why ₹6L? — sentimental context ══ -->
+    <div class="card reveal d1" style="background:linear-gradient(145deg,#2d0800,#2d1200,#1e0c00);border-color:rgba(255,194,0,.2)">
+      <div class="card-title" style="color:var(--gold)">🌅 Why <span id="why-budget-title">₹6,00,000</span> this year?</div>
+      <p style="font-size:.8rem;color:rgba(255,210,150,.78);line-height:1.7;margin-bottom:1.15rem">Five years ago, 58 families gathered at our ghat and lit the first diya together. What started as a quiet act of faith has grown into something none of us quite expected — and this year, we want to honour that journey the way it deserves.</p>
+
+      <div style="display:flex;flex-direction:column;gap:1rem">
+
+        <div style="display:flex;gap:.9rem;align-items:flex-start">
+          <span style="font-size:1.5rem;flex-shrink:0;line-height:1">🏛️</span>
+          <div>
+            <div style="font-size:.83rem;font-weight:700;color:rgba(255,224,120,.97);margin-bottom:.2rem">A Ghat Worthy of 400+ Devotees</div>
+            <div style="font-size:.78rem;color:rgba(255,200,140,.78);line-height:1.65">Arghya attendance has grown from a few dozen to 400+ devotees. The ghat setup, lighting, and safety infrastructure must grow with the devotion that fills it.</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:.9rem;align-items:flex-start">
+          <span style="font-size:1.5rem;flex-shrink:0;line-height:1">🙏</span>
+          <div>
+            <div style="font-size:.83rem;font-weight:700;color:rgba(255,224,120,.97);margin-bottom:.2rem">Prasad for Every Family at PSOTS</div>
+            <div style="font-size:.78rem;color:rgba(255,200,140,.78);line-height:1.65">We have 2,300+ flats in our society. This year, we want Thekua and Kharna prasad to reach every single door — because no neighbour should feel left outside this celebration.</div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:.9rem;align-items:flex-start">
+          <span style="font-size:1.5rem;flex-shrink:0;line-height:1">🎭</span>
+          <div>
+            <div style="font-size:.83rem;font-weight:700;color:rgba(255,224,120,.97);margin-bottom:.2rem">A Cultural Programme</div>
+            <div style="font-size:.78rem;color:rgba(255,200,140,.78);line-height:1.65">Folk dance, children's performances, and cultural skits — Chhath is not just a puja, it is a celebration of who we are and the roots we carry with us.</div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Budget allocation chart — hidden until admin enters planned amounts -->
+      <div id="why-alloc" style="display:none;margin-top:1.1rem;padding-top:.9rem;border-top:1px solid rgba(255,194,0,.14)">
+        <div style="font-size:.62rem;letter-spacing:.13em;text-transform:uppercase;color:rgba(255,194,0,.6);margin-bottom:.75rem">Where your contribution goes</div>
+        <div id="why-alloc-bars"></div>
+      </div>
+
+      <p style="font-size:.74rem;color:rgba(255,200,140,.72);margin-top:1.1rem;padding-top:.9rem;border-top:1px solid rgba(255,194,0,.14);line-height:1.65;text-align:center;font-style:italic">"This isn't just a bigger celebration — it's our thank-you to 5 years of faith, trust, and devotion from every family at PSOTS."<br/><span style="font-size:.66rem;opacity:.7;font-style:normal">— PSOTS Chhath Committee, 2026</span></p>
+    </div><!-- /why ₹6L -->
+
     <div class="card" id="exp26Card">
       <div class="card-title">📊 2026 Expense Breakdown</div>
       <div id="exp26-content">
@@ -333,6 +375,38 @@ async function load2026() {
   document.getElementById('c26-count').textContent = count || '—';
   document.getElementById('c26-budget').textContent = fmt(budget);
   document.getElementById('c26-budget-sm').textContent = parseInt(budget).toLocaleString('en-IN');
+  const whyTitle = document.getElementById('why-budget-title'); if (whyTitle) whyTitle.textContent = fmt(budget);
+
+  /* ── Budget allocation chart ── */
+  const allocCats = [
+    { key: 'budTent',     label: 'Tent & Decoration', icon: '🏕️' },
+    { key: 'budKharna',   label: 'Kharna Prasad',     icon: '🍽️' },
+    { key: 'budThekua',   label: 'Thekua Prasad',     icon: '🪔' },
+    { key: 'budAV',       label: 'Audio & Visuals',   icon: '🎵' },
+    { key: 'budCultural', label: 'Cultural Prog.',    icon: '🎭' },
+    { key: 'budMisc',     label: 'Miscellaneous',     icon: '📦' },
+  ];
+  const allocData = allocCats.map(c => ({ ...c, val: parseInt(f[c.key]) || 0 })).filter(c => c.val > 0);
+  if (allocData.length > 0) {
+    const maxVal = Math.max(...allocData.map(c => c.val));
+    document.getElementById('why-alloc').style.display = 'block';
+    document.getElementById('why-alloc-bars').innerHTML = allocData.map(c => {
+      const sharePct = budget > 0 ? Math.round(c.val / budget * 100) : 0;
+      const barPct   = Math.round(c.val / maxVal * 100);
+      return `<div style="margin-bottom:.7rem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.28rem">
+          <span style="font-size:.76rem;color:rgba(255,224,120,.9)">${c.icon} ${c.label}</span>
+          <span style="font-family:'DM Sans',sans-serif;font-size:.76rem;font-weight:700;color:var(--gold)">₹${c.val.toLocaleString('en-IN')} <span style="font-size:.62rem;opacity:.65">(${sharePct}%)</span></span>
+        </div>
+        <div style="height:7px;background:rgba(255,255,255,.08);border-radius:50px;overflow:hidden">
+          <div style="height:100%;width:0;background:linear-gradient(90deg,var(--or),var(--gold));border-radius:50px;transition:width 1.4s cubic-bezier(.25,.46,.45,.94)" data-bpct="${barPct}"></div>
+        </div>
+      </div>`;
+    }).join('');
+    setTimeout(() => {
+      document.querySelectorAll('#why-alloc-bars [data-bpct]').forEach(el => { el.style.width = el.dataset.bpct + '%'; });
+    }, 500);
+  }
   document.getElementById('c26-pct').textContent = pct + '%';
   const bar = document.getElementById('c26-bar');
   bar.dataset.pct = pct;

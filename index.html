@@ -59,14 +59,14 @@
 
   /* Legacy scale block */
   .h-legacy{display:flex;flex-direction:column;align-items:center;gap:.5rem;margin-bottom:1.1rem;animation:fup 1s .76s both;z-index:10;position:relative;padding:0 .8rem}
-  .h-legacy-hd{font-size:clamp(.55rem,.48rem + .3vw,.62rem);letter-spacing:.2em;text-transform:uppercase;color:rgba(255,194,0,.6);font-weight:600;display:flex;align-items:center;gap:.5rem}
-  .h-legacy-hd::before,.h-legacy-hd::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(255,194,0,.3),transparent);min-width:20px}
+  .h-legacy-hd{font-size:clamp(.55rem,.48rem + .3vw,.62rem);letter-spacing:.2em;text-transform:uppercase;color:rgba(255,255,255,.75);font-weight:600;display:flex;align-items:center;gap:.5rem;text-shadow:0 1px 6px rgba(0,0,0,.5)}
+  .h-legacy-hd::before,.h-legacy-hd::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.3),transparent);min-width:20px}
   .h-stats{display:flex;align-items:center;justify-content:center;gap:.4rem;flex-wrap:wrap}
-  .hs-item{display:flex;flex-direction:column;align-items:center;background:rgba(50,10,0,.52);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,194,0,.22);border-radius:14px;padding:.4rem .72rem;min-width:52px}
+  .hs-item{display:flex;flex-direction:column;align-items:center;background:rgba(20,4,0,.72);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,194,0,.3);border-radius:14px;padding:.4rem .72rem;min-width:52px;box-shadow:0 2px 10px rgba(0,0,0,.25)}
   .hs-num{font-family:'DM Sans',sans-serif;font-weight:900;font-size:clamp(.9rem,2.8vw,1.25rem);color:var(--gold);line-height:1;text-shadow:0 0 14px rgba(255,194,0,.6)}
-  .hs-lbl{font-size:clamp(.5rem,.44rem + .3vw,.58rem);text-transform:uppercase;letter-spacing:.08em;color:rgba(255,224,117,.75);margin-top:.1rem;white-space:nowrap}
-  .hs-sep{color:rgba(255,194,0,.3);font-size:.55rem;flex-shrink:0;align-self:center}
-  .h-legacy-ft{font-family:'Yatra One',serif;font-size:clamp(.62rem,.56rem + .3vw,.7rem);color:rgba(255,194,0,.55);letter-spacing:.06em;font-style:normal}
+  .hs-lbl{font-size:clamp(.5rem,.44rem + .3vw,.58rem);text-transform:uppercase;letter-spacing:.08em;color:rgba(255,255,255,.88);margin-top:.1rem;white-space:nowrap}
+  .hs-sep{color:rgba(255,255,255,.35);font-size:.55rem;flex-shrink:0;align-self:center}
+  .h-legacy-ft{font-family:'Yatra One',serif;font-size:clamp(.62rem,.56rem + .3vw,.7rem);color:rgba(255,237,200,.92);letter-spacing:.06em;font-style:normal;text-shadow:0 1px 8px rgba(0,0,0,.45)}
   @keyframes fup{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
 
   /* Arghya cards — warm glassmorphism */
@@ -223,6 +223,9 @@
   .fs:hover{background:rgba(255,194,0,.12);border-color:rgba(255,194,0,.3);transform:translateY(-1px)}
   .fv{font-family:'DM Sans',sans-serif;font-size:1.02rem;font-weight:800;color:var(--gold);line-height:1}
   .fv.g{color:#81c784}
+  .fv.r{color:#ff8a50;animation:needPulse 2.8s ease-in-out infinite}
+  .fs-need{border-color:rgba(255,138,80,.35)!important;background:rgba(255,138,80,.08)!important}
+  @keyframes needPulse{0%,100%{text-shadow:0 0 6px rgba(255,138,80,.3)}50%{text-shadow:0 0 22px rgba(255,138,80,.9)}}
   .fl{font-size:.68rem;color:rgba(255,224,117,.8);margin-top:.2rem;line-height:1.3}
   .fb{padding:.18rem 1.4rem .7rem}
   .fbl{display:flex;justify-content:space-between;font-size:.68rem;color:rgba(255,224,117,.8);margin-bottom:.38rem}
@@ -305,6 +308,34 @@
   /* ══════ FAQ TILE ══════ */
   .t-faq-s{background:linear-gradient(140deg,#fff8f0,#fff2e4);border:1px solid rgba(200,100,0,.14);box-shadow:0 8px 28px rgba(93,30,0,.1);padding:1.45rem;display:flex;flex-direction:column;justify-content:space-between;position:relative;overflow:hidden}
   .t-faq-s::before{content:'❓';position:absolute;top:-8px;right:-8px;font-size:3.5rem;opacity:.06;pointer-events:none}
+
+  /* ══════ MOBILE COLLAPSIBLE SECTIONS ══════ */
+  @media(max-width:679px){
+    .mob-section{grid-column:1/-1;border-radius:16px;overflow:hidden;border:1.5px solid rgba(232,92,0,.18)}
+    .mob-sec-hdr{width:100%;display:flex;align-items:center;justify-content:space-between;padding:.85rem 1rem;background:linear-gradient(135deg,#fff5e8,#ffe0c4);border:none;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;color:#5a2e0c;text-align:left;transition:background .18s}
+    .mob-sec-hdr:active{background:linear-gradient(135deg,#ffe0c4,#ffd0a0)}
+    .mob-sec-arrow{font-size:.82rem;transition:transform .25s ease;display:inline-block;margin-left:.3rem}
+    .mob-section.open .mob-sec-arrow{transform:rotate(90deg)}
+    .mob-sec-tiles{display:none;flex-direction:column;gap:.65rem;padding:.65rem}
+    .mob-section.open .mob-sec-tiles{display:flex}
+    .mob-sec-count{font-size:.7rem;font-weight:500;color:#9b6b48;margin-left:.3rem;opacity:.75}
+    /* ── Gated section (not logged in) ── */
+    .mob-section.gated-open .mob-sec-tiles{display:flex}
+    .mob-section.gated-open .mob-sec-arrow{transform:rotate(90deg)}
+    .mob-section.gated-open .mob-sec-tiles>:not(.mob-sec-gate){display:none!important}
+    .mob-sec-gate{display:none;flex-direction:column;align-items:center;text-align:center;padding:1.6rem 1.2rem;gap:.8rem;width:100%}
+    .mob-section.gated-open .mob-sec-gate{display:flex}
+    .msg-lock{font-size:2.2rem;line-height:1;animation:float 3s ease-in-out infinite}
+    .msg-lock-title{font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:800;color:#5a2e0c}
+    .msg-lock-sub{font-size:.78rem;color:#9b6b48;line-height:1.6;max-width:260px}
+    .msg-lock-btn{display:inline-flex;align-items:center;gap:.45rem;background:linear-gradient(135deg,#e85c00,#c94000);color:#fff;font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:700;padding:.55rem 1.2rem;border-radius:50px;text-decoration:none;box-shadow:0 4px 14px rgba(232,92,0,.35);transition:all .2s}
+    .msg-lock-btn:hover{transform:translateY(-1px);box-shadow:0 6px 18px rgba(232,92,0,.45)}
+  }
+  @media(min-width:680px){
+    .mob-section{display:contents}
+    .mob-sec-hdr{display:none}
+    .mob-sec-tiles{display:contents}
+  }
 
   /* ══════ FOOTER ══════ (warm deep maroon, no black) */
   footer{background:linear-gradient(180deg,#2a0800,#1e0600);padding:2.8rem 1.5rem;text-align:center;position:relative}
@@ -442,15 +473,11 @@
     <div class="h-legacy">
       <div class="h-legacy-hd">A Legacy of Devotion · Chhath 2025</div>
       <div class="h-stats">
-        <div class="hs-item"><span class="hs-num">20</span><span class="hs-lbl">Devoted Vrati Families</span></div>
+        <div class="hs-item"><span class="hs-num">15+</span><span class="hs-lbl">Vrati Families</span></div>
         <span class="hs-sep">✦</span>
-        <div class="hs-item"><span class="hs-num">300+</span><span class="hs-lbl">At Evening Arghya</span></div>
+        <div class="hs-item"><span class="hs-num">400+</span><span class="hs-lbl">At Arghya</span></div>
         <span class="hs-sep">✦</span>
-        <div class="hs-item"><span class="hs-num">200+</span><span class="hs-lbl">At Morning Arghya</span></div>
-        <span class="hs-sep">✦</span>
-        <div class="hs-item"><span class="hs-num">600+</span><span class="hs-lbl">Received Kharna Prasad</span></div>
-        <span class="hs-sep">✦</span>
-        <div class="hs-item"><span class="hs-num">90 kg</span><span class="hs-lbl">Tekhua Distributed</span></div>
+        <div class="hs-item"><span class="hs-num">700+</span><span class="hs-lbl">Kharna & Thekua Prasad</span></div>
       </div>
       <div class="h-legacy-ft">Now entering our grandest year yet — Panch Varsh Mahotsav 2026 🙏</div>
     </div>
@@ -547,6 +574,18 @@
       </div>
     </a>
 
+    <div class="mob-section" id="sec-updates" data-gated="true">
+      <button class="mob-sec-hdr" onclick="toggleMobSec('sec-updates')">
+        <span>📢 Announcements &amp; Updates<span class="mob-sec-count">3 new</span></span>
+        <span class="mob-sec-arrow">▸</span>
+      </button>
+      <div class="mob-sec-tiles">
+        <div class="mob-sec-gate">
+          <div class="msg-lock">🙏</div>
+          <div class="msg-lock-title">Jai Chhathi Maiya!</div>
+          <div class="msg-lock-sub">Our committee's announcements and updates are shared within our PSOTS family. Kindly sign in — it only takes a moment — to stay connected with everything happening around you.</div>
+          <a class="msg-lock-btn" href="portal.html">Sign in to continue →</a>
+        </div>
     <a class="tile t-wa" href="pages/subscribe.html">
       <div class="wt-top"><div class="wt-ico">📲</div><div class="wt-tag">Free Updates</div></div>
       <div><div class="wt-title">WhatsApp Updates</div><div class="wt-sub">Event reminders, Arghya timings, prasad details — direct to your WhatsApp.</div></div>
@@ -556,22 +595,30 @@
     <a class="tile t-ann" href="pages/announcements.html">
       <div class="anh"><div class="an-title">📢 Announcements <span class="an-new">New</span></div></div>
       <div class="al">
-        <div class="ai"><div class="ai-m">2026 — 5th Year</div><div class="ai-tag">🎊 Grand</div><div class="ai-txt">पंच वर्ष महोत्सव! Grander ghat, bigger celebration. <b>₹1,04,670</b> surplus from 2025.</div></div>
+        <div class="ai"><div class="ai-m">2026 — 5th Year</div><div class="ai-tag">🎊 Grand</div><div class="ai-txt">पंच वर्ष महोत्सव! Grander ghat, bigger celebration — our grandest year yet!</div></div>
         <div class="ai"><div class="ai-m">2026 — Prasad</div><div class="ai-tag">🙏 Prasad</div><div class="ai-txt"><b>Nov 2</b> खरना & <b>Nov 4</b> ठेकुआ प्रसाद for all residents.</div></div>
         <div class="ai"><div class="ai-m">Deadline</div><div class="ai-tag">⏰ Important</div><div class="ai-txt">Contribute before <b>Oct 25</b> for prasad list.</div></div>
       </div>
       <span class="tad">All Announcements →</span>
     </a>
+      </div><!-- /mob-sec-tiles -->
+    </div><!-- /sec-updates -->
 
+    <div class="mob-section" id="sec-finance">
+      <button class="mob-sec-hdr" onclick="toggleMobSec('sec-finance')">
+        <span>💰 Finance &amp; Contributors</span>
+        <span class="mob-sec-arrow">▸</span>
+      </button>
+      <div class="mob-sec-tiles">
     <a class="tile t-fin" href="pages/finance.html">
       <div class="fh"><div class="fh-ey">Transparency · पारदर्शिता</div><div class="fh-title">💰 Finance 2026</div></div>
       <div class="fg">
-        <div class="fs"><div class="fv g">₹1,04,670</div><div class="fl">Opening Balance ↑2025</div></div>
         <div class="fs"><div class="fv" id="tf-collected">—</div><div class="fl">Collected 2026</div></div>
         <div class="fs"><div class="fv" id="tf-count">—</div><div class="fl">Contributors 2026</div></div>
         <div class="fs"><div class="fv" id="tf-budget">₹6,00,000</div><div class="fl">Budget 2026</div></div>
+        <div class="fs fs-need"><div class="fv r" id="tf-need">₹4,95,330</div><div class="fl">Still Needed 🎯</div></div>
       </div>
-      <div class="fb"><div class="fbl"><span>2026 Collection vs Budget</span><span id="tf-pct" style="color:var(--gold)">0%</span></div><div class="fbt"><div class="fbf" id="tfBar" data-pct="0"></div></div></div>
+      <div class="fb"><div class="fbl"><span id="tf-need-lbl">₹4,95,330 more to reach ₹6L goal</span><span id="tf-pct" style="color:var(--gold)">0%</span></div><div class="fbt"><div class="fbf" id="tfBar" data-pct="0"></div></div></div>
       <span class="tad">Full Year-wise Breakdown →</span>
     </a>
 
@@ -580,7 +627,21 @@
       <div class="cl" id="conPreview"><div class="crl">Loading…</div></div>
       <span class="ta">See Full List →</span>
     </a>
+      </div><!-- /mob-sec-tiles -->
+    </div><!-- /sec-finance -->
 
+    <div class="mob-section" id="sec-more" data-gated="true">
+      <button class="mob-sec-hdr" onclick="toggleMobSec('sec-more')">
+        <span>🔍 Explore More</span>
+        <span class="mob-sec-arrow">▸</span>
+      </button>
+      <div class="mob-sec-tiles">
+        <div class="mob-sec-gate">
+          <div class="msg-lock">🙏</div>
+          <div class="msg-lock-title">Welcome, Neighbour!</div>
+          <div class="msg-lock-sub">Your account, volunteer sign-up, event gallery, and FAQs are all here, just for you. Kindly sign in so we can personalise your experience as a valued member of our PSOTS community.</div>
+          <a class="msg-lock-btn" href="portal.html">Sign in to continue →</a>
+        </div>
     <a class="tile t-vol" href="pages/volunteer.html" style="padding:1.45rem;display:flex;flex-direction:column;justify-content:space-between;gap:.65rem">
       <div><div style="font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,194,0,.88);margin-bottom:.18rem;font-weight:700">Volunteer & RSVP</div><div style="font-family:'DM Sans',sans-serif;font-size:1.04rem;font-weight:800;color:var(--gilt);display:flex;align-items:center;gap:.4rem">🤝 Volunteer Sign-Up</div></div>
       <div style="font-size:.78rem;color:rgba(255,237,200,.88);line-height:1.55">Help with ghat setup, prasad, decoration & cultural events!</div>
@@ -612,6 +673,8 @@
       <div style="font-size:.78rem;color:var(--lbr);line-height:1.55;margin-bottom:.85rem">Answers to common questions from residents.</div>
       <span style="font-size:.68rem;font-weight:700;color:var(--or);letter-spacing:.07em;text-transform:uppercase">Read FAQ →</span>
     </a>
+      </div><!-- /mob-sec-tiles -->
+    </div><!-- /sec-more -->
 
   </div>
 </section>
@@ -634,6 +697,18 @@ function tick(){const d=evt-new Date();if(d<=0){document.getElementById('countdo
 tick();setInterval(tick,1000);
 const ob=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){const b=document.getElementById('tfBar');if(b)b.style.width=b.dataset.pct+'%'}})},{threshold:.3});
 const ds=document.querySelector('.dashboard');if(ds)ob.observe(ds);
+
+function toggleMobSec(id){
+  const sec=document.getElementById(id);
+  const arrow=sec.querySelector('.mob-sec-arrow');
+  if(sec.dataset.gated==='true'&&!_li){
+    sec.classList.toggle('gated-open');
+    if(arrow)arrow.textContent=sec.classList.contains('gated-open')?'▾':'▸';
+    return;
+  }
+  sec.classList.toggle('open');
+  if(arrow)arrow.textContent=sec.classList.contains('open')?'▾':'▸';
+}
 
 /* ── Scroll-reveal tiles with stagger ── */
 (function(){
@@ -721,6 +796,13 @@ if(su){
     const cnt=rows.length;
     document.getElementById('tf-collected').textContent='₹'+col.toLocaleString('en-IN');
     document.getElementById('tf-count').textContent=cnt||'0';
+    const openBal=104670,bgt=600000;
+    const need=Math.max(0,bgt-openBal-col);
+    const pct=Math.min(100,Math.round((openBal+col)/bgt*100));
+    const needEl=document.getElementById('tf-need');if(needEl)needEl.textContent='₹'+need.toLocaleString('en-IN');
+    const needLbl=document.getElementById('tf-need-lbl');if(needLbl)needLbl.textContent=(need>0?'₹'+need.toLocaleString('en-IN')+' more to reach ₹6L goal':'🎉 Goal reached!');
+    const pctEl=document.getElementById('tf-pct');if(pctEl)pctEl.textContent=pct+'%';
+    const tfBar=document.getElementById('tfBar');if(tfBar){tfBar.dataset.pct=pct;setTimeout(()=>{tfBar.style.width=pct+'%';},400);}
   }).catch(()=>{});
   fetch(su+'?action=getFinance').then(r=>r.json()).then(d=>{const f=d.finance||{};
     if(_li){
