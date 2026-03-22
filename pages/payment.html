@@ -73,23 +73,8 @@
   .app-big-btn{display:flex;align-items:center;justify-content:center;gap:.52rem;padding:.82rem .5rem;border-radius:12px;font-size:.9rem;font-weight:700;text-decoration:none;font-family:'DM Sans',sans-serif;transition:transform .15s,box-shadow .15s;border:none;cursor:pointer}
   .app-big-btn:active{transform:scale(.96)}
   .app-btn-full{grid-column:1/-1;padding:.72rem}
-  .app-btn-gpay{background:#fff;color:#1a73e8;border:1.5px solid #dadce0;box-shadow:0 2px 8px rgba(0,0,0,.1)}
-  .app-btn-phonepe{background:#5f259f;color:#fff;box-shadow:0 3px 14px rgba(95,37,159,.3)}
-  .app-btn-paytm{background:#002970;color:#fff;box-shadow:0 3px 14px rgba(0,41,112,.25)}
-  .app-btn-bhim{background:#00527e;color:#fff;box-shadow:0 3px 14px rgba(0,82,126,.25)}
   .app-btn-any{background:linear-gradient(135deg,var(--or),#c93800);color:#fff;box-shadow:0 3px 14px rgba(232,92,0,.3)}
   .app-sec-note{font-size:.7rem;color:#9b6b48;text-align:center;margin:.35rem 0 0;line-height:1.5}
-  .app-more-wrap{margin-bottom:.55rem}
-  .app-more-btn{width:100%;padding:.72rem;border-radius:12px;font-size:.88rem;font-weight:700;font-family:'DM Sans',sans-serif;background:linear-gradient(135deg,#fff5e8,#ffe0c4);border:1.5px solid rgba(232,92,0,.2);color:#5a2e0c;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.4rem;transition:background .18s}
-  .app-more-btn:hover{background:linear-gradient(135deg,#ffe8d0,#ffd0a8)}
-  .app-more-arrow{font-size:.82rem;transition:transform .25s;display:inline-block}
-  .app-more-wrap.open .app-more-arrow{transform:rotate(180deg)}
-  .app-more-list{display:none;margin-top:.4rem;background:#fff;border-radius:12px;border:1.5px solid rgba(232,92,0,.15);overflow:hidden}
-  .app-more-wrap.open .app-more-list{display:block}
-  .app-more-item{display:flex;align-items:center;gap:.7rem;padding:.72rem 1rem;font-size:.88rem;font-weight:700;font-family:'DM Sans',sans-serif;text-decoration:none;color:var(--ink);border-bottom:1px solid rgba(232,92,0,.08);transition:background .15s}
-  .app-more-item:last-child{border-bottom:none}
-  .app-more-item:hover,.app-more-item:active{background:#fff5e8}
-  .app-pref-badge{font-size:.6rem;background:var(--or);color:#fff;border-radius:50px;padding:.1rem .38rem;margin-left:auto;font-weight:700;flex-shrink:0}
 
   /* ── Mobile: compact tile layout ── */
   @media(max-width:659px){
@@ -189,43 +174,10 @@
           <span class="sec-arrow" id="appArrow">▾</span>
         </button>
         <div class="pay-sec-body">
-          <!-- Primary: GPay + PhonePe always visible -->
-          <div class="app-grid">
-            <a class="app-big-btn app-btn-gpay" id="link-gpay" href="#" onclick="return handleAppLink(this,'gpay')">
-              <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><path d="M24 9.5c3.5 0 6.6 1.3 9 3.4l6.7-6.7C35.7 2.6 30.2 0 24 0 14.7 0 6.7 5.5 2.8 13.5l7.8 6C12.3 13.2 17.7 9.5 24 9.5z" fill="#EA4335"/><path d="M46.1 24.5c0-1.5-.1-3-.4-4.5H24v8.5h12.4c-.5 2.8-2.1 5.1-4.5 6.7l7 5.4C42.9 36.9 46.1 31.1 46.1 24.5z" fill="#4285F4"/><path d="M10.6 28.5A14.8 14.8 0 0 1 9.5 24c0-1.6.3-3.1.8-4.5l-7.8-6A24 24 0 0 0 0 24c0 3.9.9 7.5 2.5 10.8l8.1-6.3z" fill="#FBBC04"/><path d="M24 48c6.2 0 11.4-2 15.2-5.5l-7-5.4c-2 1.4-4.6 2.2-8.2 2.2-6.3 0-11.7-3.8-13.5-9.8l-8.1 6.3C6.7 42.5 14.7 48 24 48z" fill="#34A853"/></svg>
-              GPay
-            </a>
-            <a class="app-big-btn app-btn-phonepe" id="link-phonepe" href="#" onclick="return handleAppLink(this,'phonepe')">
-              <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><circle cx="24" cy="24" r="24" fill="#5f259f"/><path d="M16 12h10c5.5 0 9 3 9 7.5 0 4-2.5 7-7 7.8L34 36h-5.5l-5.2-8.4H21V36h-5V12zm5 4v7.5h4.5c2.5 0 4-1.2 4-3.7 0-2.4-1.5-3.8-4-3.8H21z" fill="#fff"/></svg>
-              PhonePe
-            </a>
-          </div>
-          <!-- More apps dropdown -->
-          <div class="app-more-wrap" id="moreWrap">
-            <button class="app-more-btn" onclick="toggleMoreApps()">
-              <span>More UPI Apps</span>
-              <span class="app-more-arrow" id="moreArrow">▾</span>
-            </button>
-            <div class="app-more-list" id="moreAppsList">
-              <a class="app-more-item" id="link-paytm" href="#" onclick="return handleAppLink(this,'paytm')">
-                <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="8" fill="#002970"/><path d="M8 24c0-8.8 7.2-16 16-16s16 7.2 16 16-7.2 16-16 16S8 32.8 8 24z" fill="#00BAF2"/><path d="M18 20h4v8h-4zm8 0h4v4h-4v4h-4v-4h4v-4z" fill="#fff"/></svg>
-                Paytm
-              </a>
-              <a class="app-more-item" id="link-bhim" href="#" onclick="return handleAppLink(this,'bhim')">
-                <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="8" fill="#00527e"/><text x="24" y="32" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="20" fill="#fff">B</text></svg>
-                BHIM
-              </a>
-              <a class="app-more-item" id="link-amazon" href="#" onclick="return handleAppLink(this,'amazon')">
-                <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="#FF9900"/><path d="M10 28c7 4 18 5 26 1" stroke="#fff" stroke-width="2.5" stroke-linecap="round"/><path d="M32 26l4 3-4 3" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><text x="24" y="23" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="11" fill="#fff">amazon</text></svg>
-                Amazon Pay
-              </a>
-              <a class="app-more-item" id="link-any" href="#" onclick="return handleAppLink(this,'any')">
-                <svg width="18" height="18" viewBox="0 0 48 48" fill="none"><rect width="48" height="48" rx="10" fill="url(#g)"/><defs><linearGradient id="g" x1="0" y1="0" x2="48" y2="48"><stop offset="0%" stop-color="#e85c00"/><stop offset="100%" stop-color="#c93800"/></linearGradient></defs><text x="24" y="31" text-anchor="middle" font-family="sans-serif" font-weight="900" font-size="20" fill="#fff">↗</text></svg>
-                Any UPI App
-              </a>
-            </div>
-          </div>
-          <p class="app-sec-note" id="appSecNote">Enter amount above — links open with amount pre-filled</p>
+          <a class="app-big-btn app-btn-any app-btn-full" id="link-any" href="#" onclick="return handleAppLink(this,'any')">
+            📱 &nbsp;Pay with UPI
+          </a>
+          <p class="app-sec-note" id="appSecNote">Enter amount above — opens your UPI app with amount pre-filled</p>
         </div>
       </div>
 
@@ -417,11 +369,8 @@ window.addEventListener('DOMContentLoaded',()=>{
     currentUser=JSON.parse(u);
     const p=localStorage.getItem('psots_profile_'+currentUser.id);if(p)userProfile=JSON.parse(p);
     loadUserMode();
-    // Prefer account-level pref, fall back to device-local
-    const pref=userProfile.prefApp||localStorage.getItem('psots_pref_app');if(pref)markPrefApp(pref);
   } else {
     setMode('guest');
-    const pref=localStorage.getItem('psots_pref_app');if(pref)markPrefApp(pref);
   }
 });
 
@@ -435,7 +384,7 @@ function initLayout(){
   } else {
     document.getElementById('appSection').classList.add('collapsed');
     document.getElementById('appArrow').textContent='▸';
-    document.getElementById('cardSub').textContent='Scan the QR code with any UPI app — GPay, PhonePe, Paytm, BHIM.';
+    document.getElementById('cardSub').textContent='Scan the QR code with any UPI app.';
   }
 }
 
@@ -505,51 +454,19 @@ function updateAppLinks(amount){
   const pn=encodeURIComponent(C.payeeName);
   const tn=encodeURIComponent('ChhathPuja2026');
   const base=`pa=${pa}&pn=${pn}&am=${amt}&cu=INR&tn=${tn}`;
+  const link=document.getElementById('link-any');
   if(amt>=1){
-    document.getElementById('link-gpay').href    =`tez://upi/pay?${base}`;
-    document.getElementById('link-phonepe').href =`phonepe://pay?${base}`;
-    document.getElementById('link-paytm').href   =`paytmmp://pay?${base}`;
-    document.getElementById('link-bhim').href    =`bhim://pay?${base}`;
-    document.getElementById('link-amazon').href  =`upi://pay?${base}`;
-    document.getElementById('link-any').href     =`upi://pay?${base}`;
+    link.href=`upi://pay?${base}`;
     document.getElementById('appSecNote').textContent='📱 Tap to open — ₹'+parseInt(amount).toLocaleString('en-IN')+' pre-filled';
   } else {
-    ['link-gpay','link-phonepe','link-paytm','link-bhim','link-amazon','link-any'].forEach(id=>{document.getElementById(id).href='#';});
-    document.getElementById('appSecNote').textContent='Enter amount above — links open with amount pre-filled';
+    link.href='#';
+    document.getElementById('appSecNote').textContent='Enter amount above — opens your UPI app with amount pre-filled';
   }
-}
-
-function toggleMoreApps(){
-  const wrap=document.getElementById('moreWrap');
-  wrap.classList.toggle('open');
-}
-
-function markPrefApp(appKey){
-  document.querySelectorAll('.app-pref-badge').forEach(b=>b.remove());
-  const el=document.getElementById('link-'+appKey);
-  if(el){const b=document.createElement('span');b.className='app-pref-badge';b.textContent='★ Used';el.appendChild(b);}
-  // Auto-open dropdown if preferred app is in More section
-  const moreApps=['paytm','bhim','amazon','any'];
-  if(moreApps.includes(appKey))document.getElementById('moreWrap').classList.add('open');
 }
 
 function handleAppLink(el,appKey){
   const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if(!isMobile){toast('📱 Open this page on your phone to use app links');return false;}
-  if(appKey){
-    if(currentUser){
-      // Save to account profile — syncs cross-device via portal
-      userProfile.prefApp=appKey;
-      localStorage.setItem('psots_profile_'+currentUser.id,JSON.stringify(userProfile));
-      if(C.scriptUrl&&!C.scriptUrl.includes('YOUR_APPS')){
-        fetch(C.scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({action:'saveProfile',...userProfile,userId:currentUser.id})}).catch(()=>{});
-      }
-    } else {
-      // Guest: device-local only
-      localStorage.setItem('psots_pref_app',appKey);
-    }
-    markPrefApp(appKey);
-  }
   return true;
 }
 
