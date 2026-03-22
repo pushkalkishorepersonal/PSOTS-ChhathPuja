@@ -5,7 +5,7 @@
   <title>Contribute — PSOTS Chhath 2026</title>
   <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:ital,wght@0,700;0,900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css"/>
-  <script src="../config.js"></script>
+  <script src="../js/config.js"></script>
   <script src="../js/auth-gate.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSi2BTRuu7PkXE8AHa012XqgVYjTIyrUsoA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <style>
@@ -362,7 +362,7 @@ function initQR(){
   try{
     _qr=new QRCode(container,{
       text:buildUpiUri(''),width:180,height:180,
-      colorDark:'#1a0800',colorLight:'#ffffff',
+      colorDark:'#2d0800',colorLight:'#ffffff',
       correctLevel:QRCode.CorrectLevel.M
     });
   }catch(e){
