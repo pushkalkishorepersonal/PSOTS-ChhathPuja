@@ -55,7 +55,7 @@
     width:min(420px,94vw);box-shadow:0 20px 60px rgba(0,0,0,.4);
     text-align:center;
   }
-  .login-icon{font-size:3rem;margin-bottom:.8rem;display:block}
+  .login-icon{width:72px;height:72px;margin:0 auto .8rem;display:block;object-fit:contain;filter:drop-shadow(0 2px 8px rgba(255,160,40,.35))}
   .login-title{font-family:'DM Sans',sans-serif;font-size:1.6rem;font-weight:900;color:var(--ink);margin-bottom:.25rem}
   .login-sub{font-size:.85rem;color:var(--lbr);margin-bottom:.5rem;line-height:1.5}
   .login-society{font-size:.7rem;color:rgba(160,88,40,.55);letter-spacing:.12em;text-transform:uppercase;margin-bottom:2rem}
@@ -191,6 +191,19 @@
   #toast.success{background:var(--green)}
   #toast.error{background:var(--red)}
 
+  /* Sign-out farewell overlay */
+  #signoutOverlay{position:fixed;inset:0;background:rgba(18,12,6,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s ease}
+  #signoutOverlay.visible{opacity:1;pointer-events:all}
+  #signoutOverlay .so-card{background:linear-gradient(160deg,rgba(60,35,8,.97) 0%,rgba(30,18,4,.97) 100%);border:1px solid rgba(255,180,40,.25);border-radius:24px;padding:2.8rem 2.4rem 2.4rem;max-width:380px;width:88%;text-align:center;box-shadow:0 8px 48px rgba(0,0,0,.6),0 0 0 1px rgba(255,180,40,.08);transform:scale(.88) translateY(20px);transition:transform .45s cubic-bezier(.34,1.3,.64,1),opacity .4s ease;opacity:0}
+  #signoutOverlay.visible .so-card{transform:scale(1) translateY(0);opacity:1}
+  #signoutOverlay .so-sun{width:72px;height:72px;margin:0 auto .6rem;display:block;animation:soSpin 6s ease-in-out infinite;filter:drop-shadow(0 0 12px rgba(255,180,40,.5))}
+  @keyframes soSpin{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+  #signoutOverlay .so-title{font-size:1.15rem;font-weight:700;color:rgba(255,220,100,1);margin-bottom:.55rem;letter-spacing:.01em}
+  #signoutOverlay .so-msg{font-size:.88rem;color:rgba(255,200,120,.82);line-height:1.65;margin-bottom:1.35rem}
+  #signoutOverlay .so-jay{font-size:.8rem;font-weight:600;color:rgba(255,160,60,.9);letter-spacing:.06em;text-transform:uppercase;margin-bottom:1.4rem}
+  #signoutOverlay .so-bar-wrap{background:rgba(255,255,255,.08);border-radius:99px;height:4px;overflow:hidden}
+  #signoutOverlay .so-bar{height:100%;width:0%;background:linear-gradient(90deg,#f6a800,#ff6b00);border-radius:99px;transition:width 2.3s linear}
+
   /* Spinner */
   .sp{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
   @keyframes spin{to{transform:rotate(360deg)}}
@@ -232,7 +245,7 @@
 <!-- NAV -->
 <nav>
   <div class="nb">
-    <span class="nd">🌅</span>
+    <span class="nd"><img src="images/psots-logo.svg" alt="PSOTS" style="width:32px;height:32px;display:block;object-fit:contain;filter:drop-shadow(0 1px 4px rgba(255,160,40,.4))"/></span>
     <div><div class="nn">PSOTS — My Portal</div><div class="ns">Chhath 2026</div></div>
   </div>
   <div class="nav-r">
@@ -245,7 +258,7 @@
 <!-- ════ LOGIN SCREEN ════ -->
 <div id="loginScreen">
   <div class="login-box">
-    <span class="login-icon">🌅</span>
+    <img class="login-icon" src="images/psots-logo.svg" alt="PSOTS"/>
     <div class="login-title">My PSOTS Portal</div>
     <div id="loginSub" class="login-sub">Sign in to view your contributions, manage notifications and connect with the committee.</div>
     <div class="login-society">Prestige Song of the South · Chhath 2026</div>
@@ -575,6 +588,17 @@
 
 <div id="toast"></div>
 
+<!-- Sign-out farewell overlay -->
+<div id="signoutOverlay">
+  <div class="so-card">
+    <img class="so-sun" src="images/psots-logo.svg" alt="PSOTS Logo"/>
+    <div class="so-title" id="soTitle">Thank you!</div>
+    <div class="so-msg" id="soMsg">We hope to see you again soon.<br>Your devotion lights our community.</div>
+    <div class="so-jay">🙏 Jay Chhathi Maiya 🙏</div>
+    <div class="so-bar-wrap"><div class="so-bar" id="soBar"></div></div>
+  </div>
+</div>
+
 <script>
 /* ═══════════════════════════════════════════════════
    CONFIG
@@ -783,15 +807,19 @@ function signOut() {
   const name = (currentUser && currentUser.name) ? currentUser.name.split(' ')[0] : '';
   currentUser = null;
 
-  // Transform the Sign Out button into a warm goodbye message in-place
-  const btn = document.getElementById('btnSignout');
-  if (btn) {
-    btn.disabled = true;
-    btn.onclick = null;
-    btn.style.cssText += ';background:rgba(255,194,0,.18);border-color:rgba(255,194,0,.45);color:rgba(255,220,120,1);cursor:default;opacity:1;transition:all .3s';
-    btn.textContent = '🙏 Thank you' + (name ? ', ' + name : '') + ' — see you soon!';
+  // Show full-screen farewell overlay
+  const overlay = document.getElementById('signoutOverlay');
+  const titleEl = document.getElementById('soTitle');
+  const msgEl   = document.getElementById('soMsg');
+  const bar     = document.getElementById('soBar');
+  if (titleEl) titleEl.textContent = name ? 'Thank you, ' + name + '!' : 'Thank you!';
+  if (msgEl)   msgEl.innerHTML = 'We hope to see you again very soon.<br>Your devotion lights our community.';
+  if (overlay) {
+    overlay.classList.add('visible');
+    // Kick off progress bar after paint
+    requestAnimationFrame(() => requestAnimationFrame(() => { if (bar) bar.style.width = '100%'; }));
   }
-  setTimeout(() => { window.location.href = 'index.html'; }, 2500);
+  setTimeout(() => { window.location.href = 'index.html'; }, 2700);
 }
 
 function getAdminEmails() {
