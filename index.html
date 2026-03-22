@@ -892,6 +892,14 @@ window.addEventListener('pageshow', function(e) {
   if (e.persisted) { location.reload(); }
 });
 
+// Re-gate immediately if user signs out in another tab / after navigation
+window.addEventListener('storage', function(e) {
+  if (e.key === 'psots_user' && !e.newValue) {
+    // User signed out — reload to enforce gating cleanly
+    location.reload();
+  }
+});
+
 // ── SCHEDULE CAROUSEL ──
 (function(){
   var track = document.getElementById('schedTrack');
