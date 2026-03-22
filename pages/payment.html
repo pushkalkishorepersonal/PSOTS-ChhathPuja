@@ -76,6 +76,17 @@
   .app-btn-any{background:linear-gradient(135deg,var(--or),#c93800);color:#fff;box-shadow:0 3px 14px rgba(232,92,0,.3)}
   .app-sec-note{font-size:.7rem;color:#9b6b48;text-align:center;margin:.35rem 0 0;line-height:1.5}
 
+  /* ── Collapsible confirm card ── */
+  .conf-card{padding:0;overflow:hidden}
+  .conf-hdr{width:100%;display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#f0fff4,#e4fce9);border:none;cursor:pointer;padding:.95rem 1.25rem;font-family:'DM Sans',sans-serif;text-align:left;transition:background .18s}
+  .conf-hdr:hover{background:linear-gradient(135deg,#e4fce9,#c8f5d0)}
+  .conf-hdr-left{display:flex;flex-direction:column;gap:.15rem}
+  .conf-hdr-title{font-size:.95rem;font-weight:700;color:#1b5e20}
+  .conf-hdr-sub{font-size:.72rem;color:#4a7c59;font-weight:400}
+  .conf-arrow{font-size:.9rem;color:#2e7d32;transition:transform .25s ease;display:inline-block;flex-shrink:0}
+  .conf-body{overflow:hidden;max-height:0;transition:max-height .4s ease,padding .3s ease;padding:0 1.25rem}
+  .conf-body.open{max-height:1400px;padding:1rem 1.25rem 1.25rem}
+
   /* ── Mobile: compact tile layout ── */
   @media(max-width:659px){
     .card{padding:1rem 1.1rem;border-radius:14px}
@@ -101,7 +112,7 @@
 
 <div id="returnBanner">
   <div class="rb-msg"><b>UPI ID copied! 🙏</b>Open your UPI app → Send Money → Paste</div>
-  <button class="rb-fill" onclick="document.getElementById('confirmCard').scrollIntoView({behavior:'smooth',block:'start'});document.getElementById('returnBanner').style.display='none'">Confirm ↓</button>
+  <button class="rb-fill" onclick="openConfirm();document.getElementById('confirmCard').scrollIntoView({behavior:'smooth',block:'start'});document.getElementById('returnBanner').style.display='none'">Confirm ↓</button>
   <span class="rb-x" onclick="document.getElementById('returnBanner').style.display='none'">✕</span>
 </div>
 
@@ -222,9 +233,15 @@
   </div>
 
   <!-- Confirm form -->
-  <div class="card" id="confirmCard">
-    <div class="card-title">✅ Confirm Your Payment</div>
-    <div class="card-sub" id="confirmSub">After UPI payment, fill these details. Signed-in users only need to confirm the amount — name and flat are pre-filled automatically.</div>
+  <div class="card conf-card" id="confirmCard">
+    <button class="conf-hdr" onclick="toggleConfirm()">
+      <div class="conf-hdr-left">
+        <span class="conf-hdr-title">✅ Confirm Payment</span>
+        <span class="conf-hdr-sub" id="confHdrSub">Done paying via UPI? Submit your details here</span>
+      </div>
+      <span class="conf-arrow" id="confArrow">▸</span>
+    </button>
+    <div class="conf-body" id="confBody">
 
     <!-- Guest fields (shown only in guest mode) -->
     <div id="guest-fields">
@@ -267,6 +284,7 @@
       <p id="successTxt">Your contribution has been recorded. The committee will verify and confirm within 24 hours.</p>
       <button class="btn-wa btn-block" onclick="sendReceipt()">📲 Send Receipt to My WhatsApp</button>
     </div>
+  </div><!-- /conf-body -->
   </div>
 
 </div>
@@ -464,6 +482,19 @@ function updateAppLinks(amount){
   }
 }
 
+function openConfirm(){
+  const body=document.getElementById('confBody');
+  const arrow=document.getElementById('confArrow');
+  body.classList.add('open');
+  arrow.textContent='▾';
+}
+function toggleConfirm(){
+  const body=document.getElementById('confBody');
+  const arrow=document.getElementById('confArrow');
+  body.classList.toggle('open');
+  arrow.textContent=body.classList.contains('open')?'▾':'▸';
+}
+
 function handleAppLink(el,appKey){
   const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
   if(!isMobile){toast('📱 Open this page on your phone to use app links');return false;}
@@ -505,6 +536,7 @@ async function submitForm(){
   // Save cookies for guest
   if(!currentUser){['name','flat','mobile'].forEach(k=>{const d=new Date();d.setTime(d.getTime()+365*864e5);document.cookie=`cp_${k}=${encodeURIComponent(document.getElementById('f-'+k).value)};expires=${d.toUTCString()};path=/;SameSite=Lax`;});}
   btn.disabled=false;btn.textContent='✅ Submitted!';
+  openConfirm();
   document.getElementById('successBox').style.display='block';
   document.getElementById('successTxt').textContent=`Your contribution of ₹${parseInt(amount).toLocaleString('en-IN')} has been recorded. The committee will verify and send you a WhatsApp confirmation within 24 hours. 🙏`;
   document.getElementById('successBox').scrollIntoView({behavior:'smooth',block:'center'});
