@@ -892,6 +892,39 @@ window.addEventListener('pageshow', function(e) {
   if (e.persisted) { location.reload(); }
 });
 
+// Re-gate immediately if user signs out in another tab / after navigation
+window.addEventListener('storage', function(e) {
+  if (e.key === 'psots_user' && !e.newValue) {
+    location.reload();
+  }
+});
+
+// Show a goodbye snackbar when arriving here after sign-out
+(function() {
+  if (localStorage.getItem('psots_signed_out') !== '1') return;
+  // Flag already used — clear it so it only shows once
+  localStorage.removeItem('psots_signed_out');
+  var sb = document.createElement('div');
+  sb.textContent = '🙏 You have been signed out. We truly hope to welcome you back soon. Jay Chhathi Maiya!';
+  sb.style.cssText = [
+    'position:fixed','bottom:1.4rem','left:50%','transform:translateX(-50%) translateY(80px)',
+    'background:#1a0800','color:#fff','font-family:"DM Sans",sans-serif',
+    'font-size:.82rem','padding:.65rem 1.2rem','border-radius:50px',
+    'box-shadow:0 6px 24px rgba(0,0,0,.28)','z-index:9999',
+    'transition:transform .4s cubic-bezier(.34,1.56,.64,1)',
+    'white-space:nowrap','pointer-events:none'
+  ].join(';');
+  document.body.appendChild(sb);
+  requestAnimationFrame(function() {
+    sb.style.transform = 'translateX(-50%) translateY(0)';
+    setTimeout(function() {
+      sb.style.transition = 'opacity .5s';
+      sb.style.opacity = '0';
+      setTimeout(function() { sb.remove(); }, 500);
+    }, 3500);
+  });
+})();
+
 // ── SCHEDULE CAROUSEL ──
 (function(){
   var track = document.getElementById('schedTrack');

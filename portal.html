@@ -774,14 +774,24 @@ function signOut() {
   if (typeof google !== 'undefined') {
     google.accounts.id.disableAutoSelect();
   }
+  // Clear all auth keys so index.html gate re-engages immediately
   localStorage.removeItem('psots_user');
+  localStorage.removeItem('psots_admin_user');
   localStorage.removeItem('psots_returning');
   localStorage.setItem('psots_signed_out', '1');
+
+  const name = (currentUser && currentUser.name) ? currentUser.name.split(' ')[0] : '';
   currentUser = null;
-  document.getElementById('loginScreen').style.display = 'flex';
-  document.getElementById('portalApp').style.display = 'none';
-  document.getElementById('btnSignout').style.display = 'none';
-  document.getElementById('navAvatar').style.display = 'none';
+
+  // Transform the Sign Out button into a warm goodbye message in-place
+  const btn = document.getElementById('btnSignout');
+  if (btn) {
+    btn.disabled = true;
+    btn.onclick = null;
+    btn.style.cssText += ';background:rgba(255,194,0,.18);border-color:rgba(255,194,0,.45);color:rgba(255,220,120,1);cursor:default;opacity:1;transition:all .3s';
+    btn.textContent = '🙏 Thank you' + (name ? ', ' + name : '') + ' — see you soon!';
+  }
+  setTimeout(() => { window.location.href = 'index.html'; }, 2500);
 }
 
 function getAdminEmails() {
@@ -931,6 +941,8 @@ async function fetchProfileFromSheet() {
     const res = await fetch(`${C.scriptUrl}?action=getProfile&uid=${encodeURIComponent(currentUser.id)}`);
     const data = await res.json();
     if (data.profile) {
+      const hadFlat = !!userProfile.flat;
+      const hadMobile = !!userProfile.mobile;
       userProfile = { ...userProfile, ...data.profile };
       fillProfileUI();
       // Sync WA banner and localStorage from server-sourced waOptIn
@@ -938,6 +950,11 @@ async function fetchProfileFromSheet() {
         const waKey = 'psots_wa_' + currentUser.id;
         localStorage.setItem(waKey, String(data.profile.waOptIn));
         updateWABanner(data.profile.waOptIn);
+      }
+      // If flat/mobile just became available, reload contributions
+      // (they ran earlier with an empty profile and show dashes/prompt)
+      if ((!hadFlat || !hadMobile) && (userProfile.flat || userProfile.mobile)) {
+        loadContributions();
       }
     }
   } catch(e) {}
@@ -984,47 +1001,96 @@ function deleteMyData() {
 /* ═══════════════════════════════════════════════════
    CONTRIBUTIONS HISTORY
 ═══════════════════════════════════════════════════ */
+// ── Contribution history cache (localStorage, 10-min TTL) ──────────────
+const HIST_CACHE_KEY = 'psots_history_v1';
+const HIST_CACHE_TTL = 10 * 60 * 1000; // 10 minutes
+
+function _getCachedHistory() {
+  try {
+    const raw = localStorage.getItem(HIST_CACHE_KEY);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (Date.now() - obj.ts > HIST_CACHE_TTL) return null; // expired
+    return obj.history;
+  } catch(e) { return null; }
+}
+
+function _setCachedHistory(historyArr) {
+  try { localStorage.setItem(HIST_CACHE_KEY, JSON.stringify({ ts: Date.now(), history: historyArr })); } catch(e) {}
+}
+
+function _filterMyContribs(allH, flat, mobile) {
+  let mine = flat ? allH.filter(r => String(r.flat).trim() === String(flat).trim()) : [];
+  if (!mine.length && mobile) mine = allH.filter(r => String(r.mobile).trim() === String(mobile).trim());
+  return mine;
+}
+
+const NO_FLAT_HTML = '<div class="no-contrib"><div class="nc-icon">🏠</div>' +
+  '<p style="margin-bottom:.8rem">Enter your flat number to find your contribution history</p>' +
+  '<div style="display:flex;gap:.5rem;max-width:300px;margin:0 auto .5rem">' +
+  '<input id="flatLookupInput" type="text" placeholder="e.g. 15167" style="flex:1;padding:.6rem .9rem;border:1.5px solid #f0d5b8;border-radius:10px;font-size:.88rem;outline:none;font-family:\'DM Sans\',sans-serif" />' +
+  '<button onclick="lookupByFlat()" style="padding:.6rem 1rem;background:linear-gradient(135deg,#e85c00,#c93800);color:#fff;border:none;border-radius:10px;font-size:.85rem;font-weight:600;cursor:pointer">Find →</button></div>' +
+  '<p style="font-size:.72rem;color:#c8a880">Not a returning resident? <button onclick="switchTab(\'profile\')" style="background:none;border:none;color:#e85c00;cursor:pointer;font-size:.72rem;text-decoration:underline">Complete your profile</button></p></div>';
+
 async function loadContributions() {
   const el = document.getElementById('contribHistory');
-  el.innerHTML = '<div class="loading">🌅 Loading your contribution history…</div>';
-
-  // Try loading from global data/history.json first
-  const flat = userProfile.flat || '';
+  const flat   = userProfile.flat   || '';
   const mobile = userProfile.mobile || '';
 
-  // Try global JSON data (works for all users)
+  // 1. Render from cache immediately (no spinner, no dashes)
+  const cached = _getCachedHistory();
+  if (cached) {
+    const mine = _filterMyContribs(cached, flat, mobile);
+    if (mine.length) {
+      renderContributions(mine.map(r => ({
+        year: r.year, amount: r.amount, method: r.method || '', date: r.date || '', status: r.status || '✅ Received'
+      })));
+      // Revalidate silently in background
+      _refreshHistoryCache(flat, mobile);
+      return;
+    }
+  }
+
+  // 2. No usable cache — show spinner and fetch
+  el.innerHTML = '<div class="loading">🌅 Loading your contribution history…</div>';
+  await _refreshHistoryCache(flat, mobile);
+}
+
+async function _refreshHistoryCache(flat, mobile) {
+  const el = document.getElementById('contribHistory');
+
+  // Fetch data/history.json with cache-bust every 10-min bucket
   try {
-    const gRes = await fetch('data/history.json');
+    const bucket = Math.floor(Date.now() / HIST_CACHE_TTL);
+    const gRes = await fetch('data/history.json?v=' + bucket);
     if (gRes.ok) {
       const g = await gRes.json();
       const allH = g.history || [];
-      let myContribs = [];
-      if (flat) myContribs = allH.filter(r => String(r.flat) === String(flat));
-      if (myContribs.length === 0 && mobile) myContribs = allH.filter(r => String(r.mobile) === String(mobile));
-      if (myContribs.length > 0) {
-        renderContributions(myContribs.map(r => ({
-          year: r.year, amount: r.amount, method: r.method || '', date: r.date || '', status: r.status || '✅ Received'
-        })));
+      _setCachedHistory(allH); // update cache
+      if (flat || mobile) {
+        const mine = _filterMyContribs(allH, flat, mobile);
+        if (mine.length) {
+          renderContributions(mine.map(r => ({
+            year: r.year, amount: r.amount, method: r.method || '', date: r.date || '', status: r.status || '✅ Received'
+          })));
+          return;
+        }
+      } else {
+        el.innerHTML = NO_FLAT_HTML;
         return;
       }
     }
-  } catch(e) { /* fall through to Apps Script or demo */ }
+  } catch(e) { /* fall through */ }
 
+  // 3. history.json didn't have their data — try Apps Script
   if (C.scriptUrl.includes('YOUR_APPS_SCRIPT')) {
-    if (!flat && !mobile) {
-      el.innerHTML = '<div class="no-contrib"><div class="nc-icon">🏠</div><p style="margin-bottom:.8rem">Enter your flat number to find your contribution history</p><div style="display:flex;gap:.5rem;max-width:300px;margin:0 auto .5rem"><input id="flatLookupInput" type="text" placeholder="e.g. 15167" style="flex:1;padding:.6rem .9rem;border:1.5px solid #f0d5b8;border-radius:10px;font-size:.88rem;outline:none;font-family:\'DM Sans\',sans-serif" /><button onclick="lookupByFlat()" style="padding:.6rem 1rem;background:linear-gradient(135deg,#e85c00,#c93800);color:#fff;border:none;border-radius:10px;font-size:.85rem;font-weight:600;cursor:pointer">Find →</button></div><p style="font-size:.72rem;color:#c8a880">Not a returning resident? <button onclick="switchTab(\'profile\')" style="background:none;border:none;color:#e85c00;cursor:pointer;font-size:.72rem;text-decoration:underline">Complete your profile</button></p></div>';
-      return;
-    }
-    // No data found in global JSON, show empty state
+    if (!flat && !mobile) { el.innerHTML = NO_FLAT_HTML; return; }
     renderContributions([]);
     return;
   }
 
   try {
-    if (!flat && !mobile) {
-      el.innerHTML = '<div class="no-contrib"><div class="nc-icon">🏠</div><p style="margin-bottom:.8rem">Enter your flat number to find your contribution history</p><div style="display:flex;gap:.5rem;max-width:300px;margin:0 auto .5rem"><input id="flatLookupInput" type="text" placeholder="e.g. 15167" style="flex:1;padding:.6rem .9rem;border:1.5px solid #f0d5b8;border-radius:10px;font-size:.88rem;outline:none;font-family:\'DM Sans\',sans-serif" /><button onclick="lookupByFlat()" style="padding:.6rem 1rem;background:linear-gradient(135deg,#e85c00,#c93800);color:#fff;border:none;border-radius:10px;font-size:.85rem;font-weight:600;cursor:pointer">Find →</button></div><p style="font-size:.72rem;color:#c8a880">Not a returning resident? <button onclick="switchTab(\'profile\')" style="background:none;border:none;color:#e85c00;cursor:pointer;font-size:.72rem;text-decoration:underline">Complete your profile</button></p></div>';
-      return;
-    }
+    if (!flat && !mobile) { el.innerHTML = NO_FLAT_HTML; return; }
     const res = await fetch(`${C.scriptUrl}?action=myContribs&flat=${flat}&mobile=${mobile}`);
     const data = await res.json();
     renderContributions(data.contributions || []);
