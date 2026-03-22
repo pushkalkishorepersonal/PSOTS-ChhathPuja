@@ -125,7 +125,7 @@
 <div class="page-hero">
   <span class="ph-icon">💰</span>
   <div class="ph-title">Make Your Contribution</div>
-  <div class="ph-sub">PSOTS Chhath Puja 2026 · पंच वर्ष महोत्सव · Deadline: Oct 25</div>
+  <div class="ph-sub">PSOTS Chhath Puja 2026 · पंच वर्ष महोत्सव · Deadline: Oct 25, 2026</div>
 </div>
 
 <div class="page-content">
@@ -385,8 +385,30 @@ window.addEventListener('DOMContentLoaded',()=>{
   const u=localStorage.getItem('psots_user');
   if(u){
     currentUser=JSON.parse(u);
-    const p=localStorage.getItem('psots_profile_'+currentUser.id);if(p)userProfile=JSON.parse(p);
+    const p=localStorage.getItem('psots_profile_'+currentUser.id);
+    if(p) userProfile=JSON.parse(p);
+    // Show name immediately from psots_user even if profile not loaded yet
+    if(!userProfile.name && currentUser.name){
+      document.getElementById('upAv').textContent=currentUser.name.charAt(0).toUpperCase();
+      document.getElementById('upName').textContent=currentUser.name;
+      document.getElementById('upFlat').textContent='Loading profile…';
+    }
     loadUserMode();
+    // If profile incomplete (e.g. signed in via Google with no flat), fetch from server
+    if(!userProfile.flat && C.scriptUrl){
+      fetch(C.scriptUrl+'?action=getProfile&userId='+encodeURIComponent(currentUser.id)+'&email='+encodeURIComponent(currentUser.email||''))
+        .then(r=>r.json()).then(d=>{
+          if(d&&d.name){
+            userProfile=d;
+            localStorage.setItem('psots_profile_'+currentUser.id,JSON.stringify(d));
+            loadUserMode();
+          } else if(!userProfile.flat){
+            document.getElementById('upFlat').textContent='Set flat in your profile';
+          }
+        }).catch(()=>{
+          if(!userProfile.flat) document.getElementById('upFlat').textContent='Set flat in your profile';
+        });
+    }
   } else {
     setMode('guest');
   }

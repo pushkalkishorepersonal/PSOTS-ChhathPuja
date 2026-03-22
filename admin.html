@@ -1023,17 +1023,19 @@ function renderDirCards() {
   const histMap = {};
   history.forEach(r => {
     const f = String(r.flat).trim();
-    if (!histMap[f]) histMap[f] = { total: 0, years: [] };
+    if (!histMap[f]) histMap[f] = { total: 0, years: [], names: [] };
     histMap[f].total += r.amount || 0;
     if (r.year && !histMap[f].years.includes(r.year)) histMap[f].years.push(r.year);
+    if (r.name && !histMap[f].names.some(n => n.toLowerCase() === r.name.toLowerCase())) histMap[f].names.push(r.name);
   });
   // Also include 2026 from live contributor data (verified only)
   allConData.forEach(r => {
     if (!r.flat || !(r.status||'').includes('Received')) return;
     const f = String(r.flat).trim();
-    if (!histMap[f]) histMap[f] = { total: 0, years: [] };
+    if (!histMap[f]) histMap[f] = { total: 0, years: [], names: [] };
     histMap[f].total += parseFloat(r.amount) || 0;
     if (!histMap[f].years.includes(2026)) histMap[f].years.push(2026);
+    if (r.name && !histMap[f].names.some(n => n.toLowerCase() === r.name.toLowerCase())) histMap[f].names.push(r.name);
   });
 
   let filtered = residents.filter(r => {
@@ -1067,7 +1069,7 @@ function renderDirCards() {
       <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.65rem">
         <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--or),#c93800);display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-weight:900;font-size:.9rem;color:#fff;flex-shrink:0">${initials}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:.9rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.names && r.names.length > 1 ? r.names.join(', ') : (r.name||'—')}</div>
+          <div style="font-weight:700;font-size:.9rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${h.names && h.names.length > 1 ? h.names.join(', ') : (r.name||'—')}</div>
           <div style="font-size:.68rem;color:var(--lbr)">Flat <strong style="color:var(--or)">${r.flat}</strong>${fp.tower ? ` · Tower ${fp.tower}` : ''}</div>
         </div>
       </div>
@@ -1185,10 +1187,18 @@ async function loadAdminCon() {
 
 function renderConTable(data) {
   const tbody = document.getElementById('conTableBody');
-  const q = document.getElementById('conSearchAdmin')?.value.toLowerCase() || '';
+  const q = (document.getElementById('conSearchAdmin')?.value || '').trim().toLowerCase();
   let filtered = data.filter(r => {
-    const match = !q || Object.values(r).join(' ').toLowerCase().includes(q);
-    if (!match) return false;
+    if (q) {
+      const flatStr = String(r.flat||'').toLowerCase();
+      const nameStr = (r.name||'').toLowerCase();
+      const utrStr  = (r.utr||r.ref||'').toLowerCase();
+      // Flat: must be exact or prefix match (prevents mobile substring false positives)
+      const flatMatch = flatStr === q || flatStr.startsWith(q);
+      const nameMatch = nameStr.includes(q);
+      const utrMatch  = utrStr.includes(q);
+      if (!flatMatch && !nameMatch && !utrMatch) return false;
+    }
     if (filterMode === 'pending')  return !r.status?.includes('Received') && !r.status?.includes('Rejected');
     if (filterMode === 'verified') return r.status?.includes('Received');
     if (filterMode === 'rejected') return r.status?.includes('Rejected');
