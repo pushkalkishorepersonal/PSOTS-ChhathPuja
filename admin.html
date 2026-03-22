@@ -1067,7 +1067,7 @@ function renderDirCards() {
       <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.65rem">
         <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--or),#c93800);display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-weight:900;font-size:.9rem;color:#fff;flex-shrink:0">${initials}</div>
         <div style="flex:1;min-width:0">
-          <div style="font-weight:700;font-size:.9rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.name||'—'}</div>
+          <div style="font-weight:700;font-size:.9rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.names && r.names.length > 1 ? r.names.join(', ') : (r.name||'—')}</div>
           <div style="font-size:.68rem;color:var(--lbr)">Flat <strong style="color:var(--or)">${r.flat}</strong>${fp.tower ? ` · Tower ${fp.tower}` : ''}</div>
         </div>
       </div>
@@ -1152,6 +1152,33 @@ async function loadAdminCon() {
     renderConTable(allConData);
     updateDashStats();
   } catch(e) {
+    // Fall back to local history data
+    try {
+      const localHistory = JSON.parse(localStorage.getItem('psots_history') || '[]');
+      if (localHistory.length > 0) {
+        allConData = localHistory.map(r => ({
+          ts: r.date || '', name: r.name || '', flat: r.flat || '',
+          mobile: r.mobile || '', amount: r.amount || 0, method: r.method || '',
+          date: r.date || '', status: r.status || '✅ Received', year: r.year || 2025
+        }));
+        renderConTable(allConData);
+        updateDashStats();
+        tbody.insertAdjacentHTML('afterend', '<div style="text-align:center;font-size:.78rem;color:#c03000;padding:.4rem">⚠️ Showing cached data — Google Sheets unavailable. Check Apps Script URL in Settings.</div>');
+        return;
+      }
+      const gRes = await fetch('data/history.json');
+      if (gRes.ok) {
+        const g = await gRes.json();
+        allConData = (g.history || []).map(r => ({
+          ts: r.date || '', name: r.name || '', flat: r.flat || '',
+          mobile: r.mobile || '', amount: r.amount || 0, method: r.method || '',
+          date: r.date || '', status: r.status || '✅ Received', year: r.year || 2025
+        }));
+        renderConTable(allConData);
+        updateDashStats();
+        return;
+      }
+    } catch(e2) {}
     tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:#c03000">⚠️ Could not connect to Google Sheets. Check your Apps Script URL in Settings.</td></tr>';
   }
 }

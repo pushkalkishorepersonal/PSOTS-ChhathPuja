@@ -477,11 +477,26 @@ function doLogin() {
 }
 function logout() { localStorage.removeItem('psots_auth'); location.reload(); }
 window.addEventListener('DOMContentLoaded', () => {
+  // Check password-based auth (24h session)
   const a = localStorage.getItem('psots_auth');
   if (a && Date.now() - parseInt(a.split('_')[1]) < 86400000) {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('app').style.display = 'block';
     initApp();
+    return;
+  }
+  // Also recognize Google-based admin session from admin.html
+  const adminSaved = localStorage.getItem('psots_admin_user');
+  if (adminSaved) {
+    try {
+      const u = JSON.parse(adminSaved);
+      if (u && u.email) {
+        document.getElementById('loginScreen').style.display = 'none';
+        document.getElementById('app').style.display = 'block';
+        initApp();
+        return;
+      }
+    } catch(e) {}
   }
   document.getElementById('pwIn').addEventListener('keydown', e => { if(e.key==='Enter') doLogin(); });
 });
@@ -963,7 +978,27 @@ function buildDirectoryFromHistory(silent = false) {
     if (!r.flat || !r.name) return;
     const key = String(r.flat).trim();
     const fp = parseFlatNumber(key);
-    if (!map[key]) map[key] = { flat: key, name: r.name, mobile: r.mobile || '', tower: fp.tower ? 'Tower ' + fp.tower : '', contributions: [], total: 0 };
+    if (!map[key]) map[key] = { flat: key, name: r.name, names: [r.name.trim()], mobile: r.mobile || '', tower: fp.tower ? 'Tower ' + fp.tower : '', contributions: [], total: 0 };
+    // Smart deduplication: "Sumit" vs "Sumit Sahay" — keep the longer/more complete name
+    if (!map[key].names) map[key].names = [map[key].name.trim()];
+    const trimmedName = r.name.trim();
+    if (trimmedName) {
+      const lc = trimmedName.toLowerCase();
+      // Check if this name is a substring of an existing name or vice versa
+      const existingIdx = map[key].names.findIndex(n => {
+        const en = n.toLowerCase();
+        return en === lc || en.startsWith(lc + ' ') || lc.startsWith(en + ' ');
+      });
+      if (existingIdx >= 0) {
+        // Keep the longer (more complete) version
+        if (trimmedName.length > map[key].names[existingIdx].length) {
+          map[key].names[existingIdx] = trimmedName;
+          if (existingIdx === 0) map[key].name = trimmedName;
+        }
+      } else {
+        map[key].names.push(trimmedName);
+      }
+    }
     map[key].contributions.push(r);
     map[key].total += r.amount || 0;
     if (r.mobile && !map[key].mobile) map[key].mobile = r.mobile;
@@ -983,15 +1018,20 @@ function buildDirectoryFromHistory(silent = false) {
 function renderResidents(filter = '') {
   const res = getResidents();
   const q = (filter || document.getElementById('resSearch')?.value || '').toLowerCase();
-  const filtered = res.filter(r => !q || r.name?.toLowerCase().includes(q) || String(r.flat).includes(q) || r.mobile?.includes(q));
+  const filtered = res.filter(r => {
+    if (!q) return true;
+    const allNames = (r.names || [r.name]).join(' ').toLowerCase();
+    return allNames.includes(q) || String(r.flat).includes(q) || r.mobile?.includes(q);
+  });
   document.getElementById('resCount').textContent = filtered.length + ' residents shown of ' + res.length + ' total';
   document.getElementById('resTableBody').innerHTML = filtered.map((r, i) => {
     const fp = parseFlatNumber(r.flat);
     const twLabel = fp.tower ? `<div style="font-size:.62rem;color:var(--lbr);margin-top:.1rem">Tower ${fp.tower}</div>` : '';
+    const allNames = r.names && r.names.length > 1 ? r.names.join(', ') : (r.name || '—');
     return `
     <tr onclick="document.getElementById('flatSearch').value='${r.flat}';sw('lookup');lookupFlat('${r.flat}')" style="cursor:pointer">
       <td style="color:var(--lbr)">${i+1}</td>
-      <td style="font-weight:600">${r.name||'—'}</td>
+      <td style="font-weight:600">${allNames}</td>
       <td style="color:var(--or);font-weight:600">${r.flat}${twLabel}</td>
       <td style="font-size:.8rem;color:var(--lbr)">${r.mobile||'—'}</td>
       <td>${r.contributions?.length||'—'}</td>
@@ -1046,7 +1086,8 @@ function lookupFlat(q) {
   currentLookup = match;
   document.getElementById('lookupResult').style.display = 'block';
   document.getElementById('lookupEmpty').style.display = 'none';
-  document.getElementById('lr-name').textContent   = match.name || '—';
+  const allFlatNames = match.names && match.names.length > 1 ? match.names.join(' · ') : (match.name || '—');
+  document.getElementById('lr-name').textContent   = allFlatNames;
   document.getElementById('lr-flat').textContent   = match.flat;
   const fp = parseFlatNumber(match.flat);
   document.getElementById('lr-tower').textContent  = fp.tower ? fp.label : (match.tower || 'PSOTS');
@@ -1056,7 +1097,8 @@ function lookupFlat(q) {
   // History
   const h = (match.contributions||[]).sort((a,b)=>b.year-a.year);
   document.getElementById('lr-history').innerHTML = h.length ? h.map(c => `
-    <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem .8rem;background:var(--warm);border-radius:8px;border:1px solid #f0dfc8;margin-bottom:.38rem;font-size:.82rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.55rem .8rem;background:var(--warm);border-radius:8px;border:1px solid #f0dfc8;margin-bottom:.38rem;font-size:.82rem;gap:.5rem;flex-wrap:wrap">
+      <span style="color:var(--ink);font-weight:600;flex:1">${c.name||'—'}</span>
       <span style="color:var(--lbr)">🌅 ${c.year}</span>
       <span style="font-family:'DM Sans',sans-serif;font-weight:700;color:var(--or)">₹${(c.amount||0).toLocaleString('en-IN')}</span>
       <span style="font-size:.7rem;color:var(--lbr)">${c.date||'—'}</span>
@@ -1067,12 +1109,18 @@ function lookupFlat(q) {
 function renderAllFlats(q = '') {
   const res = getResidents();
   const filter = (document.getElementById('allFlatSearch')?.value || q || '').toLowerCase();
-  const filtered = res.filter(r => !filter || String(r.flat).includes(filter) || (r.name||'').toLowerCase().includes(filter));
-  document.getElementById('allFlatsList').innerHTML = filtered.slice(0, 80).map(r =>
-    `<div onclick="document.getElementById('flatSearch').value='${r.flat}';lookupFlat('${r.flat}')" style="background:var(--white);border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .75rem;cursor:pointer;transition:all .2s;font-size:.78rem" onmouseover="this.style.borderColor='var(--or)';this.style.background='#fff5e8'" onmouseout="this.style.borderColor='#f0d5b8';this.style.background='var(--white)'">
+  const filtered = res.filter(r => {
+    if (!filter) return true;
+    const allNames = (r.names || [r.name]).join(' ').toLowerCase();
+    return String(r.flat).includes(filter) || allNames.includes(filter);
+  });
+  document.getElementById('allFlatsList').innerHTML = filtered.slice(0, 80).map(r => {
+    const firstNames = (r.names || [r.name]).map(n => (n||'').split(' ')[0]).filter(Boolean).join(' & ');
+    return `<div onclick="document.getElementById('flatSearch').value='${r.flat}';lookupFlat('${r.flat}')" style="background:var(--white);border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .75rem;cursor:pointer;transition:all .2s;font-size:.78rem" onmouseover="this.style.borderColor='var(--or)';this.style.background='#fff5e8'" onmouseout="this.style.borderColor='#f0d5b8';this.style.background='var(--white)'">
       <strong style="color:var(--or)">${r.flat}</strong>
-      <div style="font-size:.68rem;color:var(--lbr)">${(r.name||'').split(' ')[0]}</div>
-    </div>`).join('');
+      <div style="font-size:.68rem;color:var(--lbr)">${firstNames}</div>
+    </div>`;
+  }).join('');
 }
 
 function useForManualEntry() {

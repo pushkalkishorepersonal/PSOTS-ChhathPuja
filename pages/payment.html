@@ -541,14 +541,25 @@ async function submitForm(){
   document.getElementById('successTxt').textContent=`Your contribution of ₹${parseInt(amount).toLocaleString('en-IN')} has been recorded. The committee will verify and send you a WhatsApp confirmation within 24 hours. 🙏`;
   document.getElementById('successBox').scrollIntoView({behavior:'smooth',block:'center'});
   // Notify organiser
-  const waOrg=encodeURIComponent(`🌅 *Chhath 2026 — New Contribution*\n\n👤 ${name}  🏠 ${flat}\n📱 ${mobile}\n💰 ₹${parseInt(amount).toLocaleString('en-IN')}  📲 ${method||'UPI'}  📅 ${dateStr}\n🏷 ${isPortalUser?'Portal User 🔐':'Guest 👤'}`);
-  setTimeout(()=>window.open(`https://wa.me/${C.waOrg}?text=${waOrg}`,'_blank'),1500);
+  const waOrgMsg=`🌅 *Chhath 2026 — New Contribution*\n\n👤 ${name}  🏠 ${flat}\n📱 ${mobile}\n💰 ₹${parseInt(amount).toLocaleString('en-IN')}  📲 ${method||'UPI'}  📅 ${dateStr}\n🏷 ${isPortalUser?'Portal User 🔐':'Guest 👤'}`;
+  setTimeout(()=>openWA(C.waOrg,waOrgMsg),1500);
 }
 
+function openWA(phone,text){
+  const encoded=encodeURIComponent(text);
+  const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if(isMobile){
+    const url=phone?`whatsapp://send?phone=${phone}&text=${encoded}`:`whatsapp://send?text=${encoded}`;
+    window.location.href=url;
+  }else{
+    const url=phone?`https://wa.me/${phone}?text=${encoded}`:`https://wa.me/?text=${encoded}`;
+    window.open(url,'_blank');
+  }
+}
 function sendReceipt(){
   const{name,flat,mobile,amount,dateStr,method}=lastSubmit;
-  const msg=encodeURIComponent(`🌅 *जय छठी मैया!*\n\nनमस्ते ${name} जी 🙏\n\nYour contribution for *PSOTS Chhath Puja 2026* has been received!\n\n🏠 Flat: ${flat}\n💰 ₹${parseInt(amount).toLocaleString('en-IN')}\n📲 ${method}\n📅 ${dateStr}\n\nजय छठी मैया! 🌅\n— PSOTS Chhath Committee`);
-  window.open(`https://wa.me/91${mobile}?text=${msg}`,'_blank');
+  const msg=`🌅 *जय छठी मैया!*\n\nनमस्ते ${name} जी 🙏\n\nYour contribution for *PSOTS Chhath Puja 2026* has been received!\n\n🏠 Flat: ${flat}\n💰 ₹${parseInt(amount).toLocaleString('en-IN')}\n📲 ${method}\n📅 ${dateStr}\n\nजय छठी मैया! 🌅\n— PSOTS Chhath Committee`;
+  openWA('91'+mobile,msg);
 }
 
 function showErr(m){const e=document.getElementById('errBox');e.textContent='⚠️ '+m;e.style.display='block';e.scrollIntoView({behavior:'smooth',block:'center'});}

@@ -461,7 +461,7 @@
       <div style="display:flex;gap:.7rem;flex-wrap:wrap">
         <a href="tel:+919482088904" style="text-decoration:none"><button class="btn-ghost">📞 Call Pushkal</button></a>
         <a href="tel:+919902837002" style="text-decoration:none"><button class="btn-ghost">📞 Call Treasurer</button></a>
-        <button class="btn-wa" onclick="window.open('https://wa.me/919482088904','_blank')">📲 WhatsApp</button>
+        <button class="btn-wa" onclick="openWA('919482088904','')">📲 WhatsApp</button>
       </div>
     </div>
   </div>
@@ -492,12 +492,6 @@
         </div>
       </div>
 
-      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;margin-bottom:1.3rem">
-        <a style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.9rem .4rem;border-radius:12px;border:1.5px solid #f0d5b8;background:var(--warm);text-decoration:none;color:var(--ink);font-size:.72rem;font-weight:600;cursor:pointer;transition:all .22s" href="#" onclick="return qpLaunch('gpay')"><span style="font-size:1.7rem">🟢</span>GPay</a>
-        <a style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.9rem .4rem;border-radius:12px;border:1.5px solid #f0d5b8;background:var(--warm);text-decoration:none;color:var(--ink);font-size:.72rem;font-weight:600;cursor:pointer;transition:all .22s" href="#" onclick="return qpLaunch('phonepe')"><span style="font-size:1.7rem">🟣</span>PhonePe</a>
-        <a style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.9rem .4rem;border-radius:12px;border:1.5px solid #f0d5b8;background:var(--warm);text-decoration:none;color:var(--ink);font-size:.72rem;font-weight:600;cursor:pointer;transition:all .22s" href="#" onclick="return qpLaunch('paytm')"><span style="font-size:1.7rem">🔵</span>Paytm</a>
-        <a style="display:flex;flex-direction:column;align-items:center;gap:.3rem;padding:.9rem .4rem;border-radius:12px;border:1.5px solid #f0d5b8;background:var(--warm);text-decoration:none;color:var(--ink);font-size:.72rem;font-weight:600;cursor:pointer;transition:all .22s" href="#" onclick="return qpLaunch('bhim')"><span style="font-size:1.7rem">🇮🇳</span>BHIM</a>
-      </div>
       <button style="display:block;width:100%;background:linear-gradient(135deg,#c94d00,#ff8c00);color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-style:italic;font-size:1.1rem;padding:1rem;border-radius:13px;border:none;cursor:pointer;box-shadow:0 6px 26px rgba(201,77,0,.38);margin-bottom:.8rem" onclick="qpLaunch('any');return false">
         📲 Open My UPI App — Pay ₹<span id="qp-btn-lbl">—</span>
       </button>
@@ -610,6 +604,21 @@ const C = {
   scriptUrl: localStorage.getItem('psots_script_url') || (window.PSOTS && window.PSOTS.scriptUrl) || 'YOUR_APPS_SCRIPT_URL_HERE',
   googleClientId: (window.PSOTS && window.PSOTS.googleClientId) || 'YOUR_GOOGLE_CLIENT_ID_HERE',
 };
+
+/* ═══════════════════════════════════════════════════
+   WHATSAPP HELPER — opens native app on mobile
+═══════════════════════════════════════════════════ */
+function openWA(phone, text) {
+  const encoded = encodeURIComponent(text);
+  const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+  if (isMobile) {
+    const url = phone ? `whatsapp://send?phone=${phone}&text=${encoded}` : `whatsapp://send?text=${encoded}`;
+    window.location.href = url;
+  } else {
+    const url = phone ? `https://wa.me/${phone}?text=${encoded}` : `https://wa.me/?text=${encoded}`;
+    window.open(url, '_blank');
+  }
+}
 
 /* ═══════════════════════════════════════════════════
    GOOGLE SIGN-IN
@@ -1348,8 +1357,8 @@ async function sendMessage() {
   // Forward to committee WhatsApp
   const name = userProfile.name || currentUser.name;
   const flat = userProfile.flat || '—';
-  const wa = encodeURIComponent(`💬 *Message from PSOTS Portal*\n\n👤 ${name}  🏠 Flat ${flat}\n\n"${txt}"\n\nReply: ${userProfile.mobile||'—'}`);
-  window.open(`https://wa.me/${C.waOrg}?text=${wa}`, '_blank');
+  const wa = `💬 *Message from PSOTS Portal*\n\n👤 ${name}  🏠 Flat ${flat}\n\n"${txt}"\n\nReply: ${userProfile.mobile||'—'}`;
+  openWA(C.waOrg, wa);
   toast('✅ Message sent to committee', 'success');
 
   // Add "admin reply" placeholder after 1s
@@ -1365,7 +1374,7 @@ function waDirectMsg() {
   const name = userProfile.name || currentUser.name;
   const flat = userProfile.flat || '—';
   const text = msg ? `💬 *Message from ${name} (Flat ${flat}):*\n\n${msg}` : `👋 Hi, I'm ${name} from Flat ${flat}`;
-  window.open(`https://wa.me/${C.waOrg}?text=${encodeURIComponent(text)}`, '_blank');
+  openWA(C.waOrg, text);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1385,8 +1394,8 @@ function qpLaunch(app) {
     const name   = userProfile.name || currentUser.name;
     const flat   = userProfile.flat || '—';
     const mobile = userProfile.mobile || '—';
-    const wa = encodeURIComponent(`🌅 *Chhath 2026 — Payment Done*\n\n👤 ${name}  🏠 ${flat}\n📱 ${mobile}\n💰 ₹${parseInt(amt).toLocaleString('en-IN')}\n📲 ${['GPay','PhonePe','Paytm','BHIM'][['gpay','phonepe','paytm','bhim'].indexOf(app)]||'UPI'}\n\nPlease verify 🙏`);
-    window.open(`https://wa.me/${C.waOrg}?text=${wa}`, '_blank');
+    const waMsg = `🌅 *Chhath 2026 — Payment Done*\n\n👤 ${name}  🏠 ${flat}\n📱 ${mobile}\n💰 ₹${parseInt(amt).toLocaleString('en-IN')}\n📲 UPI\n\nPlease verify 🙏`;
+    openWA(C.waOrg, waMsg);
   }, 2500);
   return false;
 }
@@ -1581,7 +1590,7 @@ function shareReceipt() {
   if (navigator.share) {
     navigator.share({ title: `Chhath Puja ${yr} — My Contribution`, text }).catch(() => {});
   } else {
-    window.open('https://wa.me/?text=' + encodeURIComponent(text), '_blank');
+    openWA('', text);
   }
 }
 
