@@ -834,8 +834,10 @@ function handleAdminLogin(response) {
     document.getElementById('loginErr').style.display = 'block';
     return;
   }
-  const u = { name: payload.name, email: payload.email, picture: payload.picture };
+  const u = { id: payload.sub, name: payload.name, email: payload.email, picture: payload.picture, loginTime: Date.now() };
   localStorage.setItem('psots_admin_user', JSON.stringify(u));
+  // Also keep psots_user in sync so payment/portal pages recognise the session
+  localStorage.setItem('psots_user', JSON.stringify(u));
   enterAdmin(u);
 }
 
