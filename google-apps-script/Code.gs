@@ -1701,7 +1701,7 @@ function actionGetRolePerms() {
   return { perms: Object.keys(perms).length ? perms : null };
 }
 
-function actionSaveRolePerms(perms) {
+function actionSaveRolePerms(perms = {}) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = _getRolePermsSheet(ss);
   const lastRow = sh.getLastRow();
