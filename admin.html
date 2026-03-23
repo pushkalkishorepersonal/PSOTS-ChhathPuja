@@ -657,7 +657,9 @@
             style="flex:1;padding:.65rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;background:#fff8f0">
             <option value="admin">🔑 Admin</option>
             <option value="treasurer">💰 Treasurer</option>
-            <option value="core_committee" selected>⭐ Core Committee</option>
+            <option value="announcements_manager">📢 Announcements Manager</option>
+            <option value="event_coordinator" selected>🎨 Event Coordinator</option>
+            <option value="resident_coordinator">👥 Resident Coordinator</option>
             <option value="volunteer">🤝 Volunteer</option>
           </select>
           <button class="btn-primary" onclick="adminAddMember()" style="white-space:nowrap;padding:.65rem 1.1rem">＋ Add</button>
@@ -826,18 +828,22 @@ function parseFlatNumber(flat) {
    ROLE-BASED ACCESS CONTROL
 ═══════════════════════════════════════════════════ */
 const ROLE_META = {
-  admin:          { label:'🔑 Admin',          color:'#e85c00' },
-  treasurer:      { label:'💰 Treasurer',       color:'#2e7d32' },
-  core_committee: { label:'⭐ Core Committee',  color:'#1565c0' },
-  volunteer:      { label:'🤝 Volunteer',       color:'#6a1a9a' },
+  admin:                  { label:'🔑 Admin',                   color:'#e85c00' },
+  treasurer:              { label:'💰 Treasurer',                color:'#2e7d32' },
+  announcements_manager:  { label:'📢 Announcements Manager',   color:'#b06000' },
+  event_coordinator:      { label:'🎨 Event Coordinator',       color:'#1565c0' },
+  resident_coordinator:   { label:'👥 Resident Coordinator',    color:'#6a1a9a' },
+  volunteer:              { label:'🤝 Volunteer',               color:'#37474f' },
 };
 
 // Default tab access per role. Admins always see Settings.
 const DEFAULT_ROLE_PERMS = {
-  admin:          ['dashboard','contributors','finance','announcements','timings','broadcast','manual','volunteers','settings','directory','gallery'],
-  treasurer:      ['dashboard','contributors','finance','manual'],
-  core_committee: ['dashboard','contributors','announcements','timings','volunteers','gallery'],
-  volunteer:      ['dashboard','volunteers'],
+  admin:                 ['dashboard','contributors','finance','announcements','timings','broadcast','manual','volunteers','settings','directory','gallery'],
+  treasurer:             ['dashboard','contributors','finance','manual'],
+  announcements_manager: ['dashboard','announcements','broadcast'],
+  event_coordinator:     ['dashboard','volunteers','timings','gallery'],
+  resident_coordinator:  ['dashboard','contributors','directory'],
+  volunteer:             ['dashboard','volunteers'],
 };
 
 let currentAdminUser = null; // set in enterAdmin()
@@ -2059,7 +2065,7 @@ function renderPermMatrix() {
   const el = document.getElementById('permMatrix');
   if (!el) return;
   const perms = getRolePerms();
-  const roles = ['treasurer','core_committee','volunteer']; // admin always full
+  const roles = ['treasurer','announcements_manager','event_coordinator','resident_coordinator','volunteer']; // admin always full
   const tabs  = Object.keys(TAB_LABELS);
 
   el.innerHTML = `<table style="border-collapse:collapse;font-size:.78rem;min-width:100%">
@@ -2085,7 +2091,7 @@ function renderPermMatrix() {
 function saveRolePerms() {
   const perms = getRolePerms();
   // Admin always gets everything — only update non-admin roles
-  ['treasurer','core_committee','volunteer'].forEach(role => {
+  ['treasurer','announcements_manager','event_coordinator','resident_coordinator','volunteer'].forEach(role => {
     perms[role] = Array.from(document.querySelectorAll(`input[data-role="${role}"]:checked`)).map(cb => cb.getAttribute('data-tab'));
     // Settings always included so they can get back to this screen
     if (!perms[role].includes('settings')) perms[role].push('settings');

@@ -575,7 +575,9 @@
             style="flex:1;border:1.5px solid #f0d5b8;border-radius:10px;padding:.7rem 1rem;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;background:#fff8f0">
             <option value="admin">🔑 Admin — full access</option>
             <option value="treasurer">💰 Treasurer — finance &amp; payments</option>
-            <option value="core_committee" selected>⭐ Core Committee — events &amp; volunteers</option>
+            <option value="announcements_manager">📢 Announcements Manager — updates &amp; broadcast</option>
+            <option value="event_coordinator" selected>🎨 Event Coordinator — ghat, timings, volunteers</option>
+            <option value="resident_coordinator">👥 Resident Coordinator — contributors &amp; directory</option>
             <option value="volunteer">🤝 Volunteer — view only</option>
           </select>
           <button onclick="addMember()"
@@ -846,7 +848,14 @@ function signOut() {
 }
 
 /* ── ROLE LABELS ──────────────────── */
-const ROLE_LABELS = { admin:'🔑 Admin', treasurer:'💰 Treasurer', core_committee:'⭐ Core Committee', volunteer:'🤝 Volunteer' };
+const ROLE_LABELS = {
+  admin:                 '🔑 Admin',
+  treasurer:             '💰 Treasurer',
+  announcements_manager: '📢 Announcements Manager',
+  event_coordinator:     '🎨 Event Coordinator',
+  resident_coordinator:  '👥 Resident Coordinator',
+  volunteer:             '🤝 Volunteer',
+};
 
 function getScriptUrlPortal() {
   return (window.PSOTS && window.PSOTS.scriptUrl) || localStorage.getItem('psots_script_url') || '';
