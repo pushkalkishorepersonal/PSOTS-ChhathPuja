@@ -1,4 +1,5 @@
 # 🪔 PSOTS Chhath Puja 2026 — Complete Setup Guide
+<!-- Last updated: 2026-03-23 -->
 
 **Prestige Song of the South · पंच वर्ष महोत्सव**
 **Contact:** Pushkal Kishore · 9482088904 · psots.in
