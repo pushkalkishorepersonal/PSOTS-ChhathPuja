@@ -1209,7 +1209,7 @@ async function loadMembers() {
   } catch(e) {}
 }
 
-/* Save members to server */
+/* Save members to server, then verify by re-fetching */
 async function saveMembers(members) {
   _membersCache = members;
   renderMemberList();
@@ -1220,8 +1220,12 @@ async function saveMembers(members) {
   try {
     await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ action:'saveMembers', members, key: (window.PSOTS||{}).adminKey||'' }) });
-    if (sync) sync.textContent = '✅ Synced to server';
-    setTimeout(()=>{ if(sync) sync.textContent=''; }, 3000);
+    if (sync) sync.textContent = 'Verifying…';
+    // Wait for Apps Script to commit, then re-fetch to confirm
+    await new Promise(r => setTimeout(r, 1500));
+    await loadMembers();
+    if (sync) sync.textContent = '✅ Saved';
+    setTimeout(()=>{ if(sync) sync.textContent=''; }, 2500);
   } catch(e) {
     if (sync) sync.textContent = '⚠️ Could not reach server';
   }
