@@ -948,8 +948,7 @@ function getMemberRole(email) {
   if (base.includes(email.toLowerCase())) return 'admin';
   const legacy = JSON.parse(localStorage.getItem('psots_admins') || '[]');
   if (legacy.includes(email.toLowerCase())) return 'admin';
-  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
-  const m = members.find(x => x.email.toLowerCase() === email.toLowerCase());
+  const m = _membersCache.find(x => x.email.toLowerCase() === email.toLowerCase());
   return m ? m.role : 'admin'; // default admin for unrecognised (legacy)
 }
 
@@ -974,7 +973,7 @@ async function loadMembersToCache() {
   try {
     const r = await fetch(url + '?action=getMembers');
     const d = await r.json();
-    if (Array.isArray(d.members) && d.members.length > 0) localStorage.setItem('psots_members', JSON.stringify(d.members));
+    if (Array.isArray(d.members)) _membersCache = d.members;
   } catch(e) {}
 }
 
@@ -2029,52 +2028,56 @@ function loadCmteRoles() {
 
 /* ═══════════════════════════════════════════════════
    TEAM MEMBERS (admin.html Settings tab)
+   Source of truth: Members sheet in Google Sheets.
+   localStorage is NOT used — edit the sheet directly and click Refresh.
 ═══════════════════════════════════════════════════ */
+let _membersCache = []; // in-memory only, never written to localStorage
+
 async function loadMembersAdmin() {
   const url = getScriptUrl();
   if (!url) { renderAmList(); return; }
-  document.getElementById('amSync').textContent = 'Loading…';
+  const sync = document.getElementById('amSync');
+  if (sync) sync.textContent = 'Loading from sheet…';
   try {
     const r = await fetch(url + '?action=getMembers');
     const d = await r.json();
     if (Array.isArray(d.members)) {
-      // Only overwrite local cache if server actually has members, or local is also empty.
-      // This prevents a failed/delayed server-save from wiping locally-added members.
-      const local = JSON.parse(localStorage.getItem('psots_members') || '[]');
-      if (d.members.length > 0 || local.length === 0) {
-        localStorage.setItem('psots_members', JSON.stringify(d.members));
-      }
-      document.getElementById('amSync').textContent = d.members.length > 0 ? '✅ Loaded from server' : '✅ Synced (0 members)';
-      setTimeout(()=>{ const el=document.getElementById('amSync'); if(el) el.textContent=''; }, 2500);
+      _membersCache = d.members;
+      if (sync) sync.textContent = '✅ Loaded from sheet (' + d.members.length + ' member' + (d.members.length===1?'':'s') + ')';
+      setTimeout(()=>{ const el=document.getElementById('amSync'); if(el) el.textContent=''; }, 3000);
     }
   } catch(e) {
-    document.getElementById('amSync').textContent = '⚠️ Using cached data';
+    if (sync) sync.textContent = '⚠️ Could not reach server';
+    setTimeout(()=>{ const el=document.getElementById('amSync'); if(el) el.textContent=''; }, 4000);
   }
   renderAmList();
 }
 
 async function adminSaveMembers(members) {
-  localStorage.setItem('psots_members', JSON.stringify(members));
+  _membersCache = members;
   renderAmList();
   const url = getScriptUrl();
-  if (!url) return;
+  if (!url) { toast('⚠️ Script URL not set', 'error'); return; }
   const sync = document.getElementById('amSync');
-  if (sync) sync.textContent = 'Saving…';
+  if (sync) sync.textContent = 'Saving to sheet…';
   try {
     await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ action:'saveMembers', members, key: (window.PSOTS||{}).adminKey||'' }) });
-    if (sync) sync.textContent = '✅ Saved to server';
-    setTimeout(()=>{ if(sync) sync.textContent=''; }, 2500);
+    // no-cors response is opaque — re-fetch to confirm what the sheet actually has
+    if (sync) sync.textContent = 'Verifying…';
+    await new Promise(r => setTimeout(r, 1200));
+    await loadMembersAdmin();
   } catch(e) {
-    if (sync) sync.textContent = '⚠️ Saved locally only';
+    if (sync) sync.textContent = '⚠️ Save failed — edit the Members sheet directly';
+    setTimeout(()=>{ const el=document.getElementById('amSync'); if(el) el.textContent=''; }, 5000);
   }
 }
 
 function renderAmList() {
   const el = document.getElementById('amList');
   if (!el) return;
-  const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
-  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+  const base    = (window.PSOTS && window.PSOTS.adminEmails) || [];
+  const members = _membersCache;
 
   const baseRows = base.map(email => `
     <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .2rem;border-bottom:1px solid #f5e8d8">
@@ -2098,7 +2101,9 @@ function renderAmList() {
       <button onclick="adminRemoveMember(${i})" style="background:none;border:none;color:#c0392b;cursor:pointer;font-weight:700;font-size:.85rem;flex-shrink:0" title="Remove">✕</button>
     </div>`).join('');
 
-  el.innerHTML = (baseRows + (members.length ? memberRows : '<div style="font-size:.82rem;color:#c8a880;padding:.5rem 0">No members yet. Add one above.</div>'));
+  el.innerHTML = baseRows + (members.length
+    ? memberRows
+    : '<div style="font-size:.82rem;color:#c8a880;padding:.5rem 0">No members yet — add one above or edit the Members sheet directly.</div>');
 }
 
 function adminAddMember() {
@@ -2106,30 +2111,27 @@ function adminAddMember() {
   const name  = (document.getElementById('am-name').value||'').trim();
   const role  = document.getElementById('am-role').value;
   if (!email || !email.includes('@')) return toast('Enter a valid email', 'error');
-  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
   const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
-  if (base.includes(email) || members.some(m => m.email === email)) return toast('Already in team', 'error');
-  members.push({ email, name, role, addedBy: currentAdminUser?.email||'', addedAt: Date.now() });
+  if (base.includes(email) || _membersCache.some(m => m.email === email)) return toast('Already in team', 'error');
+  const updated = [..._membersCache, { email, name, role, addedBy: currentAdminUser?.email||'', addedAt: Date.now() }];
   document.getElementById('am-email').value = '';
   document.getElementById('am-name').value = '';
-  adminSaveMembers(members);
+  adminSaveMembers(updated);
   toast('✅ ' + (name||email) + ' added as ' + ROLE_META[role].label, 'success');
 }
 
 function adminRemoveMember(i) {
-  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
-  const m = members[i];
+  const m = _membersCache[i];
   if (m && !confirm('Remove ' + (m.name||m.email) + ' from the team?')) return;
-  members.splice(i, 1);
-  adminSaveMembers(members);
+  const updated = _membersCache.filter((_, idx) => idx !== i);
+  adminSaveMembers(updated);
   toast('Removed', '');
 }
 
 function adminChangeMemberRole(i, newRole) {
-  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
-  if (!members[i]) return;
-  members[i].role = newRole;
-  adminSaveMembers(members);
+  if (!_membersCache[i]) return;
+  const updated = _membersCache.map((m, idx) => idx === i ? {...m, role: newRole} : m);
+  adminSaveMembers(updated);
   toast('✅ Role updated to ' + ROLE_META[newRole].label, 'success');
 }
 
@@ -2972,7 +2974,7 @@ function loadPrasadList() {
 
   // Build from allContributions (loaded in contributors tab) and history data
   const contribs = allContributions || [];
-  const members  = JSON.parse(localStorage.getItem('psots_members') || '[]');
+  const members  = _membersCache;
 
   // Build a flat-keyed map from verified contributions
   const flatMap = {};

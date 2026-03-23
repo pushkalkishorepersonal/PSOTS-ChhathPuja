@@ -19,6 +19,7 @@ const SHEET_FINANCE       = 'Finance';
 const SHEET_ANNOUNCEMENTS = 'Announcements';
 const SHEET_VOLUNTEERS    = 'Volunteers';
 const SHEET_GALLERY       = 'GallerySubmissions';
+const SHEET_MEMBERS       = 'Members';
 
 // ─── Column headers ───
 const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','Date','Status','AccountType','UserID','Year'];
@@ -27,6 +28,7 @@ const FIN_HEADERS  = ['Key','Value'];
 const ANN_HEADERS  = ['Tag','Meta','Text'];
 const VOL_HEADERS  = ['Timestamp','Name','Flat','Mobile','Days','Tasks','AssignedTask','Status','Note','CheckedIn','CheckinTime'];
 const GAL_HEADERS  = ['Timestamp','Name','Flat','Year','Moment','Caption','DriveUrl','Status'];
+const MEM_HEADERS  = ['Email','DisplayName','Role','AddedBy','AddedAt'];
 
 /* ══════════════════════════════════════════════════════════
    INITIAL SETUP — Run this ONCE
@@ -135,6 +137,23 @@ function setupSheets() {
     gal.setColumnWidth(6, 220); // Caption
     gal.setColumnWidth(7, 280); // DriveUrl
     gal.setColumnWidth(8, 120); // Status
+  }
+
+  // Create Members sheet
+  let mem = ss.getSheetByName(SHEET_MEMBERS);
+  if (!mem) {
+    mem = ss.insertSheet(SHEET_MEMBERS);
+    mem.appendRow(MEM_HEADERS);
+    mem.getRange(1, 1, 1, MEM_HEADERS.length)
+       .setFontWeight('bold')
+       .setBackground('#7A3800')
+       .setFontColor('#FFFFFF');
+    mem.setFrozenRows(1);
+    mem.setColumnWidth(1, 220); // Email
+    mem.setColumnWidth(2, 160); // DisplayName
+    mem.setColumnWidth(3, 140); // Role
+    mem.setColumnWidth(4, 200); // AddedBy
+    mem.setColumnWidth(5, 180); // AddedAt
   }
 
   // Remove default Sheet1 if it exists and is empty
@@ -1257,20 +1276,62 @@ function actionSendInvoiceEmail(params) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   ACTION: Team Members / Roles  (stored in Script Properties)
-   Members JSON: [{email, name, role, addedBy, addedAt}]
-   Roles: admin | treasurer | core_committee | volunteer
+   ACTION: Team Members / Roles  (stored in Members sheet)
+   Sheet columns: Email | DisplayName | Role | AddedBy | AddedAt
+   Roles: admin | treasurer | core_committee | volunteer_coordinator
+   Edit directly in the sheet — changes are picked up instantly.
 ══════════════════════════════════════════════════════════ */
 function actionGetMembers(key) {
-  // Public-readable so the login page can check if a given email has access
-  const raw = PropertiesService.getScriptProperties().getProperty('PSOTS_MEMBERS');
-  return { members: raw ? JSON.parse(raw) : [] };
+  const ss  = SpreadsheetApp.getActiveSpreadsheet();
+  let   mem = ss.getSheetByName(SHEET_MEMBERS);
+  // Auto-create the sheet if it doesn't exist yet
+  if (!mem) {
+    mem = ss.insertSheet(SHEET_MEMBERS);
+    mem.appendRow(MEM_HEADERS);
+    mem.getRange(1, 1, 1, MEM_HEADERS.length)
+       .setFontWeight('bold').setBackground('#7A3800').setFontColor('#FFFFFF');
+    mem.setFrozenRows(1);
+  }
+  const lastRow = mem.getLastRow();
+  if (lastRow < 2) return { members: [] };
+  const rows = mem.getRange(2, 1, lastRow - 1, MEM_HEADERS.length).getValues();
+  const members = rows
+    .filter(r => r[0] && String(r[0]).includes('@'))  // skip blank rows
+    .map(r => ({
+      email:   String(r[0]).trim().toLowerCase(),
+      name:    String(r[1]).trim(),
+      role:    String(r[2]).trim() || 'admin',
+      addedBy: String(r[3]).trim(),
+      addedAt: r[4] ? new Date(r[4]).getTime() : 0,
+    }));
+  return { members };
 }
 
 function actionSaveMembers(members, key) {
   const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
   if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
-  PropertiesService.getScriptProperties().setProperty('PSOTS_MEMBERS', JSON.stringify(members));
+  const ss  = SpreadsheetApp.getActiveSpreadsheet();
+  let   mem = ss.getSheetByName(SHEET_MEMBERS);
+  if (!mem) {
+    mem = ss.insertSheet(SHEET_MEMBERS);
+    mem.appendRow(MEM_HEADERS);
+    mem.getRange(1, 1, 1, MEM_HEADERS.length)
+       .setFontWeight('bold').setBackground('#7A3800').setFontColor('#FFFFFF');
+    mem.setFrozenRows(1);
+  }
+  // Clear existing data rows, then write fresh
+  const lastRow = mem.getLastRow();
+  if (lastRow > 1) mem.deleteRows(2, lastRow - 1);
+  if (members.length > 0) {
+    const rows = members.map(m => [
+      (m.email   || '').toLowerCase().trim(),
+      m.name     || '',
+      m.role     || 'admin',
+      m.addedBy  || '',
+      m.addedAt  ? new Date(m.addedAt).toISOString() : new Date().toISOString(),
+    ]);
+    mem.getRange(2, 1, rows.length, MEM_HEADERS.length).setValues(rows);
+  }
   return { ok: true };
 }
 
