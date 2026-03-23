@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /portal.html
+Disallow: /data-manager.html
+Disallow: /tools/
+Disallow: /google-apps-script/
+Disallow: /demos/
+
+Sitemap: https://chhath.psots.in/sitemap.xml
