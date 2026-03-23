@@ -473,31 +473,11 @@
       <div class="prof-sec">
         <div class="prof-sec-label">Your Home at PSOTS</div>
         <div class="fg">
-          <div class="ff">
+          <div class="ff full">
             <label>Flat Number</label>
             <input type="text" id="p-flat" name="p-flat" autocomplete="off"
-              placeholder="Your flat / unit number"/>
-            <div class="note">Used for payment records and resident coordination</div>
-          </div>
-          <div class="ff">
-            <label>Tower</label>
-            <select id="p-tower" name="p-tower">
-              <option value="">— Select your tower —</option>
-              <option value="1">Tower 1</option>
-              <option value="2">Tower 2</option>
-              <option value="3">Tower 3</option>
-              <option value="4">Tower 4</option>
-              <option value="5">Tower 5</option>
-              <option value="8">Tower 8</option>
-              <option value="9">Tower 9</option>
-              <option value="10">Tower 10</option>
-              <option value="11">Tower 11</option>
-              <option value="12">Tower 12</option>
-              <option value="14">Tower 14</option>
-              <option value="15">Tower 15</option>
-              <option value="16">Tower 16</option>
-              <option value="17">Tower 17</option>
-            </select>
+              placeholder="Tower · Floor · Unit — e.g. 1-304"/>
+            <div class="note">Includes your tower, floor and unit — used for payment records and resident coordination</div>
           </div>
         </div>
       </div>
@@ -877,7 +857,7 @@
       </p>
       <ul class="sn-list">
         <li><strong>Login session</strong> — your name, email &amp; Google ID, so you stay signed in</li>
-        <li><strong>Your profile</strong> — flat number, tower, mobile, family details — pre-fills your payment form &amp; helps match UPI transactions</li>
+        <li><strong>Your profile</strong> — flat number, mobile, family details — pre-fills your payment form &amp; helps match UPI transactions</li>
         <li><strong>Contribution history</strong> — cached for 10 minutes so pages load faster; refreshed from our Google Sheet automatically</li>
         <li><strong>Notification preferences</strong> — your WhatsApp update choices, remembered between visits</li>
         <li><strong>Message history</strong> — your past messages to the committee, stored locally as a reference</li>
@@ -1394,7 +1374,7 @@ function fillProfileUI() {
   const p = userProfile;
   // Welcome bar
   document.getElementById('wbName').textContent = p.name || currentUser?.name || 'Welcome!';
-  document.getElementById('wbFlat').textContent = p.flat ? 'Flat ' + p.flat + (p.tower ? ' · ' + p.tower : '') : 'Complete your profile';
+  document.getElementById('wbFlat').textContent = p.flat ? 'Flat ' + p.flat : 'Complete your profile';
 
   // Avatar
   const initials = (p.name || currentUser?.name || '?').charAt(0).toUpperCase();
@@ -1411,7 +1391,6 @@ function fillProfileUI() {
   if (p.flat)        document.getElementById('p-flat').value        = p.flat;
   if (p.mobile)      document.getElementById('p-mobile').value      = p.mobile;
   if (p.altMobile)   document.getElementById('p-altmobile').value   = p.altMobile;
-  if (p.tower)       document.getElementById('p-tower').value       = p.tower;
   if (p.family)      document.getElementById('p-family').value      = p.family;
   if (p.vrati)     { document.getElementById('p-vrati').value       = p.vrati; toggleVratiCount(); }
   if (p.vratiCount)  document.getElementById('p-vraticount').value  = p.vratiCount;
@@ -1612,7 +1591,6 @@ async function saveProfile() {
     flat:   document.getElementById('p-flat').value.trim(),
     mobile:     document.getElementById('p-mobile').value.trim(),
     altMobile:  document.getElementById('p-altmobile').value.trim(),
-    tower:      document.getElementById('p-tower').value.trim(),
     family:     document.getElementById('p-family').value,
     vrati:      document.getElementById('p-vrati').value,
     vratiCount: document.getElementById('p-vrati').value === 'yes'
