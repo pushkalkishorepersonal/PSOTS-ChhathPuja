@@ -191,6 +191,25 @@
   #toast.success{background:var(--green)}
   #toast.error{background:var(--red)}
 
+  /* Profile Nudge Bar */
+  #profileNudge{
+    position:fixed;bottom:0;left:0;right:0;z-index:9000;
+    background:linear-gradient(135deg,#1a0800 0%,#3d1200 100%);
+    border-top:1.5px solid rgba(255,194,0,.3);
+    padding:.75rem 1.2rem;
+    display:flex;align-items:center;gap:.8rem;
+    transform:translateY(100%);transition:transform .4s cubic-bezier(.4,0,.2,1);
+    box-shadow:0 -4px 24px rgba(0,0,0,.35);
+  }
+  #profileNudge.visible{transform:translateY(0)}
+  .pn-icon{font-size:1.6rem;flex-shrink:0;line-height:1}
+  .pn-body{flex:1;min-width:0}
+  .pn-title{font-weight:700;font-size:.82rem;color:var(--gold);line-height:1.2}
+  .pn-sub{font-size:.72rem;color:rgba(255,220,120,.6);margin-top:.15rem;line-height:1.3}
+  .pn-cta{background:linear-gradient(135deg,var(--or),#c93800);color:#fff;border:none;border-radius:50px;padding:.45rem 1rem;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
+  .pn-dismiss{background:none;border:none;color:rgba(255,220,120,.4);font-size:1.1rem;cursor:pointer;padding:.2rem .4rem;flex-shrink:0;line-height:1}
+  .pn-dismiss:hover{color:rgba(255,220,120,.7)}
+
   /* Sign-out farewell overlay */
   #signoutOverlay{position:fixed;inset:0;background:rgba(18,12,6,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s ease}
   #signoutOverlay.visible{opacity:1;pointer-events:all}
@@ -362,9 +381,6 @@
 
   <!-- ═══ PROFILE TAB ═══ -->
   <div class="portal-panel" id="tab-profile">
-    <div id="profileIncompleteBanner" style="display:none;background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:.85rem 1.1rem;margin-bottom:1rem;font-size:.82rem;color:#7a5000;line-height:1.6">
-      📱 <strong>One-time setup on this device</strong> — Your name syncs via Google automatically. Please add your <strong>Flat number</strong> and <strong>WhatsApp number</strong> below and tap Save — takes 10 seconds.
-    </div>
     <div class="pcard">
       <div class="pcard-title">👤 My Profile</div>
       <div class="pcard-sub">Your personal details are private — only you and committee admins can see them. They're used to pre-fill your payment form and send you confirmations.</div>
@@ -534,14 +550,22 @@
 
   <!-- ═══ VOLUNTEER TAB ═══ -->
   <div class="portal-panel" id="tab-volunteer">
+    <!-- Status Banner -->
     <div class="pcard">
       <div class="pcard-title">🤝 My Volunteer Status</div>
-
-      <div class="vol-status not-registered" id="volStatusBanner">
+      <div id="volStatusBanner" style="display:flex;align-items:center;gap:.9rem;background:var(--warm);border:1.5px solid #f0d5b8;border-radius:12px;padding:.85rem 1rem;margin-bottom:1rem">
+        <div style="font-size:2rem" id="volStatusIcon">🙋</div>
         <div>
           <div style="font-weight:600;font-size:.88rem;color:var(--ink)" id="volStatusText">You haven't signed up as a volunteer yet</div>
           <div style="font-size:.75rem;color:var(--lbr);margin-top:.15rem" id="volStatusSub">Help make the 5th year grand!</div>
         </div>
+      </div>
+
+      <!-- Assigned task card — shown when task is assigned -->
+      <div id="volAssignedTask" style="display:none;background:linear-gradient(135deg,#fff8f0,#fff0e0);border:1.5px solid #f0d5b8;border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem">
+        <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--lbr);margin-bottom:.3rem">Your Assigned Task</div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--or)" id="volTaskName">—</div>
+        <div style="font-size:.78rem;color:var(--lbr);margin-top:.3rem" id="volTaskDays">—</div>
       </div>
 
       <div id="volTaskList">
@@ -552,35 +576,99 @@
       </div>
     </div>
 
+    <!-- Event Day Check-In — always shown for registered volunteers -->
     <div class="pcard" id="volCheckinCard" style="display:none">
       <div class="pcard-title">📍 Event Day Check-In</div>
-      <div class="pcard-sub">Mark yourself as arrived on event day. The committee can see real-time volunteer attendance.</div>
-      <button class="vol-checkin-btn" onclick="volunteerCheckin()" id="volCheckinBtn">📍 I'm Here — Check In</button>
-      <div id="volCheckinStatus" style="display:none;margin-top:.8rem;padding:.7rem 1rem;background:#f0fff4;border:1px solid #a5d6a7;border-radius:10px;font-size:.85rem;color:var(--green)">✅ Checked in! The committee knows you're here. Thank you!</div>
+      <div class="pcard-sub">Tap the button when you arrive at the venue on event day. The committee tracks volunteer attendance in real time.</div>
+
+      <!-- Event schedule quick-ref -->
+      <div style="background:linear-gradient(135deg,#fff8f0,#fff0e0);border:1.5px solid #f0d5b8;border-radius:12px;padding:.85rem 1rem;margin-bottom:1rem">
+        <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--lbr);margin-bottom:.5rem">Event Day Schedule</div>
+        <div style="display:grid;gap:.4rem">
+          <div style="display:flex;justify-content:space-between;font-size:.8rem"><span>🍚 Kharna Prasad</span><span style="color:var(--or);font-weight:600">Nov 2 · 7:00 PM</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:.8rem"><span>🌇 Sandhya Arghya</span><span style="color:var(--or);font-weight:600">Nov 3 · 5:45 PM</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:.8rem"><span>🌅 Usha Arghya</span><span style="color:var(--or);font-weight:600">Nov 4 · 6:15 AM</span></div>
+        </div>
+        <div style="font-size:.7rem;color:var(--lbr);margin-top:.5rem">📍 Society Ghat — Prestige Song of the South</div>
+      </div>
+
+      <button id="volCheckinBtn" onclick="volunteerCheckin()"
+        style="width:100%;padding:1rem;background:linear-gradient(135deg,#2e7d32,#1b5e20);color:#fff;border:none;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.03em;box-shadow:0 4px 16px rgba(46,125,50,.35);transition:transform .15s"
+        onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        📍 I'm Here — Check In Now
+      </button>
+      <div id="volCheckinStatus" style="display:none;margin-top:.8rem;padding:.75rem 1rem;background:#f0fff4;border:1.5px solid #a5d6a7;border-radius:12px;text-align:center">
+        <div style="font-size:1.3rem;margin-bottom:.2rem">✅</div>
+        <div style="font-weight:700;color:#2e7d32;font-size:.88rem">Checked In!</div>
+        <div style="font-size:.75rem;color:#388e3c;margin-top:.2rem" id="volCheckinTime">The committee knows you're here. Thank you!</div>
+      </div>
+    </div>
+
+    <!-- Volunteer tips -->
+    <div class="pcard" style="background:linear-gradient(135deg,#fff8f0,#fdf5e0)">
+      <div class="pcard-title" style="font-size:.95rem">💡 Volunteer Tips</div>
+      <div style="display:flex;flex-direction:column;gap:.55rem;font-size:.82rem;color:var(--lbr)">
+        <div>🕐 Report 30 minutes before your session start time</div>
+        <div>👕 Wear traditional attire if possible — salwar/kurta preferred</div>
+        <div>🍱 Meals provided for all volunteers on event day</div>
+        <div>📱 Keep your phone charged — WhatsApp updates sent throughout</div>
+        <div>🙏 Questions? WhatsApp the committee directly</div>
+      </div>
+      <a href="whatsapp://send?phone=919482088904&text=Hi%2C%20I%20have%20a%20question%20about%20volunteering%20for%20PSOTS%20Chhath%202026"
+        style="display:inline-block;margin-top:.9rem;text-decoration:none">
+        <button class="btn-secondary" style="font-size:.8rem;padding:.5rem 1rem">📲 WhatsApp Committee</button>
+      </a>
     </div>
   </div>
 
-  <!-- ═══ ADMIN MANAGEMENT TAB ═══ -->
+  <!-- ═══ TEAM MEMBERS TAB ═══ -->
   <div class="portal-panel" id="tab-adminmgmt">
     <div class="pcard">
-      <div class="pcard-title">⚙️ Admin Management</div>
-      <div class="pcard-sub">Add or remove committee members who have admin access to the portal.</div>
-      <div style="display:flex;gap:.6rem;margin-top:1rem">
-        <input id="newAdminEmail" type="email" placeholder="Enter Gmail address…"
-          style="flex:1;border:1.5px solid #f0d5b8;border-radius:10px;padding:.7rem 1rem;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none"/>
-        <button onclick="addAdmin()"
-          style="background:var(--or);color:#fff;border:none;border-radius:10px;padding:.7rem 1.2rem;font-weight:600;font-size:.85rem;cursor:pointer">Add</button>
+      <div class="pcard-title">👥 Team Members &amp; Roles</div>
+      <div class="pcard-sub">Add committee members by their Google email. They sign in and only see what their role allows. Changes sync to the server instantly — no reset on new login.</div>
+      <div style="display:grid;gap:.55rem;margin-top:1.1rem">
+        <input id="newMemberEmail" type="email" placeholder="Gmail address (e.g. name@gmail.com)"
+          style="border:1.5px solid #f0d5b8;border-radius:10px;padding:.7rem 1rem;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;width:100%;box-sizing:border-box"/>
+        <input id="newMemberName" type="text" placeholder="Display name (optional)"
+          style="border:1.5px solid #f0d5b8;border-radius:10px;padding:.7rem 1rem;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;width:100%;box-sizing:border-box"/>
+        <div style="display:flex;gap:.55rem">
+          <select id="newMemberRole"
+            style="flex:1;border:1.5px solid #f0d5b8;border-radius:10px;padding:.7rem 1rem;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;background:#fff8f0">
+            <option value="admin">🔑 Admin — full access</option>
+            <option value="treasurer">💰 Treasurer — finance &amp; payments</option>
+            <option value="announcements_manager">📢 Announcements Manager — updates &amp; broadcast</option>
+            <option value="event_coordinator" selected>🎨 Event Coordinator — ghat, timings, volunteers</option>
+            <option value="resident_coordinator">👥 Resident Coordinator — contributors &amp; directory</option>
+            <option value="volunteer">🤝 Volunteer — view only</option>
+          </select>
+          <button onclick="addMember()"
+            style="background:var(--or);color:#fff;border:none;border-radius:10px;padding:.7rem 1.3rem;font-weight:700;font-size:.88rem;cursor:pointer;white-space:nowrap">＋ Add</button>
+        </div>
       </div>
     </div>
     <div class="pcard">
-      <div class="pcard-title">Current Admins</div>
-      <div id="adminList" style="margin-top:.5rem"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem">
+        <div class="pcard-title" style="margin:0">Current Team</div>
+        <span id="membersSync" style="font-size:.7rem;color:#c8a880"></span>
+      </div>
+      <div id="memberList"></div>
     </div>
   </div>
 
 </div><!-- end portalApp -->
 
 <div id="toast"></div>
+
+<!-- ── Profile Completion Nudge Bar ── -->
+<div id="profileNudge" role="alert" aria-live="polite">
+  <div class="pn-icon" id="pnIcon">🙏</div>
+  <div class="pn-body">
+    <div class="pn-title" id="pnTitle">Complete your profile for prasad</div>
+    <div class="pn-sub" id="pnSub">Share your flat number so we know where to deliver prasad</div>
+  </div>
+  <button class="pn-cta" onclick="nudgeGoFix()" id="pnCta">Complete →</button>
+  <button class="pn-dismiss" onclick="dismissNudge()" title="Remind me later">×</button>
+</div>
 
 <!-- Sign-out farewell overlay -->
 <div id="signoutOverlay">
@@ -710,10 +798,6 @@ function demoLogin() {
   toast('👋 Demo mode — set up Google Client ID for real login', '');
 }
 
-function guestMode() {
-  window.location.href = 'admin.html';
-}
-
 /* ── Email OTP login ── */
 async function sendOtp() {
   const email = document.getElementById('otpEmail').value.trim();
@@ -831,52 +915,138 @@ function signOut() {
   setTimeout(() => { window.location.href = 'index.html'; }, 2700);
 }
 
+/* ── ROLE LABELS ──────────────────── */
+const ROLE_LABELS = {
+  admin:                 '🔑 Admin',
+  treasurer:             '💰 Treasurer',
+  announcements_manager: '📢 Announcements Manager',
+  event_coordinator:     '🎨 Event Coordinator',
+  resident_coordinator:  '👥 Resident Coordinator',
+  volunteer:             '🤝 Volunteer',
+};
+
+function getScriptUrlPortal() {
+  return (window.PSOTS && window.PSOTS.scriptUrl) || localStorage.getItem('psots_script_url') || '';
+}
+
+/* Load members from server → merge into localStorage */
+async function loadMembers() {
+  const url = getScriptUrlPortal();
+  if (!url) return;
+  try {
+    const r = await fetch(url + '?action=getMembers');
+    const d = await r.json();
+    if (d.members) {
+      localStorage.setItem('psots_members', JSON.stringify(d.members));
+      renderMemberList();
+      // Rebuild admin email list from server data
+      getAdminEmails(); // refreshes cache
+    }
+  } catch(e) {}
+}
+
+/* Save members to server + localStorage */
+async function saveMembers(members) {
+  localStorage.setItem('psots_members', JSON.stringify(members));
+  renderMemberList();
+  const url = getScriptUrlPortal();
+  if (!url) return;
+  const sync = document.getElementById('membersSync');
+  if (sync) sync.textContent = 'Saving…';
+  try {
+    await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'saveMembers', members, key: (window.PSOTS||{}).adminKey||'' }) });
+    if (sync) sync.textContent = '✅ Synced to server';
+    setTimeout(()=>{ if(sync) sync.textContent=''; }, 3000);
+  } catch(e) {
+    if (sync) sync.textContent = '⚠️ Saved locally only';
+  }
+}
+
 function getAdminEmails() {
   const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
+  // Legacy psots_admins key
   const extra = JSON.parse(localStorage.getItem('psots_admins') || '[]');
-  return [...new Set([...base, ...extra])];
+  // New members system — admins are members with role 'admin'
+  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+  const memberAdmins = members.filter(m => m.role === 'admin').map(m => m.email.toLowerCase());
+  return [...new Set([...base, ...extra, ...memberAdmins])];
 }
 
 function isAdmin(email) {
-  return getAdminEmails().includes(email);
+  return getAdminEmails().includes((email||'').toLowerCase());
 }
 
-function showAdminList() {
-  const list = document.getElementById('adminList');
+function renderMemberList() {
+  const list = document.getElementById('memberList');
+  if (!list) return;
   const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
-  const all = getAdminEmails();
-  list.innerHTML = all.map(email => {
-    const isSuperAdmin = base.includes(email);
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.7rem .2rem;border-bottom:1px solid #f5e8d8">
+  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+
+  // Always show super-admins from config (not editable)
+  const superAdminRows = base.map(email => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .2rem;border-bottom:1px solid #f5e8d8">
       <div>
-        <span style="font-size:.88rem;font-weight:600;color:var(--ink)">${email}</span>
-        ${isSuperAdmin ? '<span style="margin-left:.5rem;font-size:.68rem;background:#fff5e8;color:var(--or);border:1px solid #f0d5b8;border-radius:50px;padding:.1rem .5rem">superadmin</span>' : ''}
+        <div style="font-size:.88rem;font-weight:600;color:var(--ink)">${email}</div>
+        <span style="font-size:.65rem;background:#fff5e8;color:var(--or);border:1px solid #f0d5b8;border-radius:50px;padding:.1rem .5rem">superadmin</span>
       </div>
-      ${!isSuperAdmin ? `<button onclick="removeAdmin('${email}')" style="background:none;border:none;color:#c0392b;font-size:.8rem;cursor:pointer;font-weight:600">Remove</button>` : ''}
-    </div>`;
-  }).join('');
+      <span style="font-size:.7rem;color:var(--lbr)">🔑 Admin</span>
+    </div>`).join('');
+
+  const memberRows = members.length === 0
+    ? '<div style="font-size:.82rem;color:#c8a880;padding:.5rem 0">No members added yet.</div>'
+    : members.map((m, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .2rem;border-bottom:1px solid #f5e8d8">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.88rem;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.name||m.email}</div>
+        <div style="font-size:.72rem;color:var(--lbr)">${m.email}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0;margin-left:.5rem">
+        <select onchange="changeMemberRole(${i}, this.value)"
+          style="font-size:.72rem;border:1px solid #f0d5b8;border-radius:6px;padding:.2rem .4rem;background:var(--warm);outline:none;font-family:'DM Sans',sans-serif">
+          ${Object.entries(ROLE_LABELS).map(([v,l])=>`<option value="${v}"${m.role===v?' selected':''}>${l}</option>`).join('')}
+        </select>
+        <button onclick="removeMember(${i})" style="background:none;border:none;color:#c0392b;font-size:.82rem;cursor:pointer;padding:.2rem .4rem;font-weight:700" title="Remove">✕</button>
+      </div>
+    </div>`).join('');
+
+  list.innerHTML = superAdminRows + memberRows;
 }
 
-function addAdmin() {
-  const input = document.getElementById('newAdminEmail');
-  const email = input.value.trim().toLowerCase();
+function addMember() {
+  const email = (document.getElementById('newMemberEmail').value||'').trim().toLowerCase();
+  const name  = (document.getElementById('newMemberName').value||'').trim();
+  const role  = document.getElementById('newMemberRole').value;
   if (!email || !email.includes('@')) return toast('Enter a valid email', 'error');
-  const extra = JSON.parse(localStorage.getItem('psots_admins') || '[]');
-  if (getAdminEmails().includes(email)) return toast('Already an admin', 'error');
-  extra.push(email);
-  localStorage.setItem('psots_admins', JSON.stringify(extra));
-  input.value = '';
-  showAdminList();
-  toast('✅ Admin added: ' + email, 'success');
+  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+  if (members.some(m => m.email === email) || getAdminEmails().includes(email)) return toast('Already in team', 'error');
+  members.push({ email, name, role, addedBy: currentUser?.email||'', addedAt: Date.now() });
+  document.getElementById('newMemberEmail').value = '';
+  document.getElementById('newMemberName').value = '';
+  saveMembers(members);
+  toast('✅ ' + (name||email) + ' added as ' + ROLE_LABELS[role], 'success');
 }
 
-function removeAdmin(email) {
-  const extra = JSON.parse(localStorage.getItem('psots_admins') || '[]');
-  const updated = extra.filter(e => e !== email);
-  localStorage.setItem('psots_admins', JSON.stringify(updated));
-  showAdminList();
-  toast('Removed: ' + email, '');
+function removeMember(i) {
+  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+  const m = members[i];
+  if (!m) return;
+  members.splice(i, 1);
+  saveMembers(members);
+  toast('Removed ' + (m.name||m.email), '');
 }
+
+function changeMemberRole(i, newRole) {
+  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+  if (!members[i]) return;
+  members[i].role = newRole;
+  saveMembers(members);
+  toast('✅ Role updated to ' + ROLE_LABELS[newRole], 'success');
+}
+
+// Keep legacy addAdmin stub so old code doesn't break
+function addAdmin() { addMember(); }
+function showAdminList() { renderMemberList(); }
 
 function showPortal() {
   document.getElementById('loginScreen').style.display = 'none';
@@ -888,7 +1058,8 @@ function showPortal() {
     document.getElementById('wbBadge').textContent = '⚙️ Admin';
     document.getElementById('adminLink').style.display = 'inline-block';
     document.getElementById('adminTab').style.display = 'inline-block';
-    showAdminList();
+    renderMemberList();
+    loadMembers(); // async — syncs from server then re-renders
   }
 
   // Set avatar in nav
@@ -950,10 +1121,6 @@ function fillProfileUI() {
   if (p.family)  document.getElementById('p-family').value  = p.family;
   if (p.vrati)   document.getElementById('p-vrati').value   = p.vrati;
 
-  // Show banner if flat/mobile not yet set on this device
-  const banner = document.getElementById('profileIncompleteBanner');
-  if (banner) banner.style.display = (!p.flat || !p.mobile) ? 'block' : 'none';
-
   // Profile email + avatar
   document.getElementById('profileEmail').textContent = currentUser?.email || '';
   const bigAv = document.getElementById('profileAvatar');
@@ -970,6 +1137,145 @@ function fillProfileUI() {
 
   // Badge
   if (p.vrati === 'yes') document.getElementById('wbBadge').textContent = '🙏 Vrati';
+
+  // Check whether to show the profile nudge bar
+  checkProfileNudge();
+}
+
+/* ═══════════════════════════════════════════════════
+   SMART PROFILE NUDGE BAR
+   Priority: flat → vrati → mobile
+   Normal: 7-day snooze on dismiss
+   Final 5 days before deadline: snooze ignored — shows every session
+   Post-deadline: hidden (no point asking after Oct 25)
+═══════════════════════════════════════════════════ */
+function checkProfileNudge() {
+  const p     = userProfile;
+  const nudge = document.getElementById('profileNudge');
+  if (!nudge) return;
+
+  // What's missing (priority order)
+  const missingFlat   = !p.flat;
+  const missingVrati  = !p.vrati;  // 'yes'|'no' both valid; undefined = never answered
+  const missingMobile = !p.mobile;
+
+  // All done — hide and clean up snooze key
+  if (!missingFlat && !missingVrati && !missingMobile) {
+    nudge.classList.remove('visible');
+    localStorage.removeItem('psots_nudge_snooze_v1');
+    return;
+  }
+
+  // Deadline maths
+  const deadline   = new Date((window.PSOTS && window.PSOTS.deadline) || '2026-10-25T23:59:00');
+  const now        = new Date();
+  const msLeft     = deadline - now;
+  const daysLeft   = msLeft / 86400000;
+
+  // Past deadline — stop nudging
+  if (daysLeft < 0) {
+    nudge.classList.remove('visible');
+    return;
+  }
+
+  // Within the final 5 days: ignore snooze (show every session)
+  const urgentMode = daysLeft <= 5;
+
+  if (!urgentMode) {
+    // Normal mode: respect 7-day snooze
+    const snoozeKey = 'psots_nudge_snooze_v1';
+    const snooze    = localStorage.getItem(snoozeKey);
+    if (snooze && Date.now() < parseInt(snooze, 10)) {
+      nudge.classList.remove('visible');
+      return;
+    }
+    localStorage.removeItem(snoozeKey); // expired — clear it
+  }
+
+  // Build message based on what's missing
+  let icon, title, sub, ctaLabel, focusId;
+  if (missingFlat) {
+    icon     = urgentMode ? '🚨' : '📍';
+    title    = urgentMode
+      ? `Only ${Math.ceil(daysLeft)} day${Math.ceil(daysLeft)===1?'':'s'} left — add your flat for prasad!`
+      : 'Share your flat number for prasad';
+    sub      = urgentMode
+      ? 'Deadline is Oct 25. Without your flat number you won\'t be on the prasad list — takes 10 seconds'
+      : 'We need your flat to include you in the distribution list for Chhath 2026';
+    ctaLabel = 'Add Flat →';
+    focusId  = 'p-flat';
+  } else if (missingVrati) {
+    icon     = urgentMode ? '⏰' : '🕉️';
+    title    = urgentMode
+      ? `${Math.ceil(daysLeft)} day${Math.ceil(daysLeft)===1?'':'s'} to go — are you a Vrati?`
+      : 'Are you observing the Chhath fast?';
+    sub      = urgentMode
+      ? 'Deadline Oct 25 — tell us if anyone fasts so we can plan prasad quantities in time'
+      : 'Tell us if anyone in your family is a Vrati — helps us plan prasad quantities';
+    ctaLabel = 'Update →';
+    focusId  = 'p-vrati';
+  } else {
+    icon     = urgentMode ? '⏰' : '📱';
+    title    = urgentMode
+      ? `Almost there — add WhatsApp before Oct 25`
+      : 'Add WhatsApp for event reminders';
+    sub      = urgentMode
+      ? 'You\'re on the prasad list! Add your number so we can send event-day timing alerts'
+      : 'Your flat is set! Add a number to receive timing updates and check-in alerts';
+    ctaLabel = 'Add Number →';
+    focusId  = 'p-mobile';
+  }
+
+  // Style the bar differently in urgent mode
+  const bar = document.getElementById('profileNudge');
+  bar.style.background = urgentMode
+    ? 'linear-gradient(135deg,#7a0000 0%,#c0392b 100%)'
+    : '';  // resets to CSS default (dark brown)
+  bar.style.borderTopColor = urgentMode ? 'rgba(255,100,100,.5)' : '';
+
+  // Also update dismiss button label in urgent mode
+  const dismissBtn = bar.querySelector('.pn-dismiss');
+  if (dismissBtn) dismissBtn.title = urgentMode ? 'Remind me tomorrow' : 'Remind me in 7 days';
+
+  document.getElementById('pnIcon').textContent  = icon;
+  document.getElementById('pnTitle').textContent  = title;
+  document.getElementById('pnSub').textContent    = sub;
+  document.getElementById('pnCta').textContent    = ctaLabel;
+  nudge._focusId    = focusId;
+  nudge._urgentMode = urgentMode;
+
+  setTimeout(() => nudge.classList.add('visible'), 900);
+}
+
+function nudgeGoFix() {
+  const nudge   = document.getElementById('profileNudge');
+  const focusId = nudge && nudge._focusId;
+
+  switchTab('profile');
+
+  setTimeout(() => {
+    const el = focusId && document.getElementById(focusId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.focus();
+      el.style.borderColor = 'var(--or)';
+      el.style.boxShadow   = '0 0 0 3px rgba(232,92,0,.2)';
+      setTimeout(() => { el.style.borderColor = ''; el.style.boxShadow = ''; }, 2000);
+    }
+  }, 200);
+
+  if (nudge) nudge.classList.remove('visible');
+}
+
+function dismissNudge() {
+  const nudge = document.getElementById('profileNudge');
+  if (nudge) nudge.classList.remove('visible');
+
+  // In urgent mode (≤5 days): snooze only 1 day so it comes back tomorrow
+  // Normal mode: 7 days for all field types
+  const days  = (nudge && nudge._urgentMode) ? 1 : 7;
+  const until = Date.now() + days * 24 * 60 * 60 * 1000;
+  localStorage.setItem('psots_nudge_snooze_v1', String(until));
 }
 
 async function fetchProfileFromSheet() {
@@ -1717,44 +2023,58 @@ function loadVolunteerStatus() {
   const checkinCard = document.getElementById('volCheckinCard');
 
   if (myVol) {
-    banner.className = 'vol-status registered';
-    document.getElementById('volStatusText').textContent = '✅ You\'re registered as a volunteer!';
     const assignedTask = myVol.assignedTask || '';
+    const statusIcon = document.getElementById('volStatusIcon');
+    if (statusIcon) statusIcon.textContent = myVol.status === 'Confirmed' ? '✅' : '🤝';
+
+    document.getElementById('volStatusText').textContent = myVol.status === 'Confirmed'
+      ? '✅ Confirmed Volunteer!' : '🤝 Registered as Volunteer';
     document.getElementById('volStatusSub').textContent = assignedTask
-      ? `Assigned: ${assignedTask} · Days: ${myVol.days || 'TBD'}`
+      ? `Task: ${assignedTask} · Days: ${myVol.days || 'TBD'}`
       : `Days: ${myVol.days || 'TBD'} · Preferred: ${myVol.tasks || 'TBD'}`;
+
+    // Show assigned task prominently
+    const taskCard = document.getElementById('volAssignedTask');
+    if (taskCard && assignedTask) {
+      taskCard.style.display = 'block';
+      const el = document.getElementById('volTaskName');
+      if (el) el.textContent = assignedTask;
+      const daysEl = document.getElementById('volTaskDays');
+      if (daysEl) daysEl.textContent = '📅 ' + (myVol.days || 'Days TBD') + ' · Please report 30 min before';
+    }
 
     const tasks = (myVol.tasks || '').split(', ').filter(Boolean);
     const days = (myVol.days || '').split(', ').filter(Boolean);
     taskList.innerHTML = `
-      ${assignedTask ? `<div style="background:linear-gradient(135deg,rgba(46,125,50,.08),rgba(46,125,50,.04));border:1px solid rgba(46,125,50,.2);border-radius:12px;padding:1rem;margin-bottom:1rem">
-        <div style="font-size:.72rem;color:var(--green);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem">📋 Assigned Task</div>
-        <div style="font-weight:900;font-size:1.1rem;color:var(--ink)">${assignedTask}</div>
-        <div style="font-size:.78rem;color:var(--br);margin-top:.25rem">Status: ${myVol.status || 'Registered'}</div>
-      </div>` : ''}
-      <div style="font-size:.72rem;color:var(--lbr);font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">${assignedTask ? 'Schedule' : 'Your Volunteer Days'}</div>
-      ${days.map(d => `
+      <div style="font-size:.72rem;color:var(--lbr);font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">Your Volunteer Days</div>
+      ${days.length ? days.map(d => `
         <div class="vol-task-card assigned">
           <div style="font-weight:700;font-size:.88rem;color:var(--or);margin-bottom:.3rem">📅 ${d}</div>
-          <div style="font-size:.8rem;color:var(--br)">${assignedTask || tasks.join(' · ')}</div>
-          <div style="font-size:.7rem;color:var(--lbr);margin-top:.3rem">Contact committee for reporting time</div>
+          <div style="font-size:.8rem;color:var(--br)">${assignedTask || tasks.join(' · ') || 'Task TBD'}</div>
         </div>
-      `).join('')}
-      <p style="font-size:.75rem;color:var(--lbr);margin-top:.8rem">The committee will WhatsApp you reporting time and specific instructions before the event.</p>`;
+      `).join('') : '<div style="font-size:.82rem;color:var(--lbr);padding:.5rem 0">Days TBD — check back closer to the event.</div>'}
+      <p style="font-size:.75rem;color:var(--lbr);margin-top:.8rem">The committee will WhatsApp you specific reporting time and instructions before the event.</p>`;
 
-    // Show check-in on event days
+    // Always show check-in card for registered volunteers (with event day restriction)
+    checkinCard.style.display = 'block';
     const now = new Date();
-    if (now.getFullYear() === 2026 && now.getMonth() === 10 && now.getDate() >= 1 && now.getDate() <= 4) {
-      checkinCard.style.display = 'block';
-      const checked = localStorage.getItem('psots_vol_checkin_' + now.getDate());
-      if (checked) {
-        document.getElementById('volCheckinBtn').disabled = true;
-        document.getElementById('volCheckinBtn').textContent = '✅ Checked In';
-        document.getElementById('volCheckinStatus').style.display = 'block';
+    const isEventDay = now.getFullYear() === 2026 && now.getMonth() === 10 && now.getDate() >= 1 && now.getDate() <= 4;
+    const checkinBtn = document.getElementById('volCheckinBtn');
+    const checkinStatus = document.getElementById('volCheckinStatus');
+    const checked = localStorage.getItem('psots_vol_checkin_' + now.getDate());
+    if (checked) {
+      if (checkinBtn) { checkinBtn.disabled = true; checkinBtn.textContent = '✅ Already Checked In Today'; }
+      if (checkinStatus) {
+        checkinStatus.style.display = 'block';
+        const timeEl = document.getElementById('volCheckinTime');
+        if (timeEl) timeEl.textContent = 'Checked in at ' + new Date(checked).toLocaleTimeString() + '. Thank you!';
       }
+    } else if (!isEventDay) {
+      if (checkinBtn) { checkinBtn.disabled = true; checkinBtn.style.opacity = '.5'; checkinBtn.title = 'Available Nov 1–4, 2026'; checkinBtn.textContent = '📍 Check-In (Available Nov 1–4)'; }
     }
   } else {
-    banner.className = 'vol-status not-registered';
+    const statusIcon = document.getElementById('volStatusIcon');
+    if (statusIcon) statusIcon.textContent = '🙋';
     document.getElementById('volStatusText').textContent = 'You haven\'t signed up as a volunteer yet';
     document.getElementById('volStatusSub').textContent = 'Help make the 5th year grand!';
     taskList.innerHTML = `
@@ -1769,13 +2089,15 @@ async function volunteerCheckin() {
   const btn = document.getElementById('volCheckinBtn');
   btn.disabled = true; btn.textContent = 'Checking in…';
 
-  const day = new Date().getDate();
+  const now = new Date();
+  const day = now.getDate();
+  const ts  = now.toISOString();
   const data = {
     action: 'volunteerCheckin',
     name: userProfile.name || currentUser?.name,
     flat: userProfile.flat,
     day: 'Nov ' + day,
-    timestamp: new Date().toISOString()
+    timestamp: ts
   };
 
   const su = C.scriptUrl;
@@ -1783,9 +2105,12 @@ async function volunteerCheckin() {
     try { await fetch(su, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) }); } catch(e) {}
   }
 
-  localStorage.setItem('psots_vol_checkin_' + day, 'true');
-  btn.textContent = '✅ Checked In';
-  document.getElementById('volCheckinStatus').style.display = 'block';
+  localStorage.setItem('psots_vol_checkin_' + day, ts);
+  btn.textContent = '✅ Already Checked In Today';
+  const statusEl = document.getElementById('volCheckinStatus');
+  if (statusEl) statusEl.style.display = 'block';
+  const timeEl = document.getElementById('volCheckinTime');
+  if (timeEl) timeEl.textContent = 'Checked in at ' + now.toLocaleTimeString() + '. Thank you!';
   toast('📍 Checked in! Thank you, volunteer!', 'success');
 }
 

@@ -183,6 +183,16 @@ function doGet(e) {
     case 'getGalleryPhotos':
       result = actionGetGalleryPhotos(e.parameter.year, e.parameter.status);
       break;
+    case 'getMembers':
+      result = actionGetMembers(e.parameter.key);
+      break;
+    case 'getReceipts':
+      result = actionGetReceipts(e.parameter.key);
+      break;
+    case 'getRsvps':
+    case 'getRSVPs':
+      result = actionGetRsvps();
+      break;
     case 'ping':
       result = { ok: true, message: 'PSOTS Backend is running!' };
       break;
@@ -234,8 +244,16 @@ function doPost(e) {
       result = actionUploadPhoto(body);
     } else if (body.action === 'updateGalleryStatus') {
       result = actionUpdateGalleryStatus(body);
+    } else if (body.action === 'saveMembers') {
+      result = actionSaveMembers(body.members || [], body.key);
+    } else if (body.action === 'saveReceipts') {
+      result = actionSaveReceipts(body.receipts || [], body.key);
     } else if (body.action === 'sendInvoiceEmail') {
       result = actionSendInvoiceEmail(body);
+    } else if (body.action === 'submitRSVP') {
+      result = actionSubmitRsvp(body);
+    } else if (body.action === 'submitVolunteer') {
+      result = actionSubmitVolunteer(body);
     } else {
       // Default: new contribution
       result = actionAddContribution(body);
@@ -1233,6 +1251,89 @@ function actionSendInvoiceEmail(params) {
     verified: true   // PayU gateway — instant confirmation
   }); } catch(e) {}
 
+  return { ok: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Team Members / Roles  (stored in Script Properties)
+   Members JSON: [{email, name, role, addedBy, addedAt}]
+   Roles: admin | treasurer | core_committee | volunteer
+══════════════════════════════════════════════════════════ */
+function actionGetMembers(key) {
+  // Public-readable so the login page can check if a given email has access
+  const raw = PropertiesService.getScriptProperties().getProperty('PSOTS_MEMBERS');
+  return { members: raw ? JSON.parse(raw) : [] };
+}
+
+function actionSaveMembers(members, key) {
+  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+  PropertiesService.getScriptProperties().setProperty('PSOTS_MEMBERS', JSON.stringify(members));
+  return { ok: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   Expense Receipts — stored in Script Properties
+══════════════════════════════════════════════════════════ */
+function actionGetReceipts(key) {
+  const raw = PropertiesService.getScriptProperties().getProperty('PSOTS_RECEIPTS');
+  return { receipts: raw ? JSON.parse(raw) : [] };
+}
+
+function actionSaveReceipts(receipts, key) {
+  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+  PropertiesService.getScriptProperties().setProperty('PSOTS_RECEIPTS', JSON.stringify(receipts));
+  return { ok: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   Prasad RSVPs — stored in Script Properties (JSON array)
+   Fields: name, flat, mobile, family, kharnaPlates, thekuaPackets, timestamp
+══════════════════════════════════════════════════════════ */
+function actionGetRsvps() {
+  const raw = PropertiesService.getScriptProperties().getProperty('PSOTS_RSVPS');
+  return { rsvps: raw ? JSON.parse(raw) : [] };
+}
+
+function actionSubmitRsvp(body) {
+  const props = PropertiesService.getScriptProperties();
+  const raw   = props.getProperty('PSOTS_RSVPS');
+  const rsvps = raw ? JSON.parse(raw) : [];
+  rsvps.push({
+    timestamp:    body.timestamp || new Date().toISOString(),
+    name:         body.name         || '',
+    flat:         body.flat         || '',
+    mobile:       body.mobile       || '',
+    family:       Number(body.family)       || 0,
+    kharnaPlates: Number(body.kharnaPlates) || 0,
+    thekuaPackets:Number(body.thekuaPackets)|| 0
+  });
+  props.setProperty('PSOTS_RSVPS', JSON.stringify(rsvps));
+  return { ok: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Individual volunteer sign-up (POST from volunteer page)
+   Appends one row to the Volunteers sheet
+══════════════════════════════════════════════════════════ */
+function actionSubmitVolunteer(body) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_VOLUNTEERS);
+  if (!sheet) return { error: 'Volunteers sheet not found' };
+  const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+  sheet.appendRow([
+    body.timestamp ? new Date(body.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : now,
+    body.name   || '',
+    body.flat   || '',
+    body.mobile || '',
+    body.days   || '',
+    body.tasks  || '',
+    '',               // AssignedTask (blank until admin assigns)
+    body.status || 'Registered',
+    body.note   || '',
+    'false',          // CheckedIn
+    ''                // CheckinTime
+  ]);
   return { ok: true };
 }
 
