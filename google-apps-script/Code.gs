@@ -257,6 +257,12 @@ function doGet(e) {
     case 'getFonnteStatus':
       result = actionGetFonnteStatus();
       break;
+    case 'sendFonnteMessage':
+      result = actionSendFonnteMessage({
+        targets: (e.parameter.targets || '').split(',').filter(Boolean),
+        message: e.parameter.message || ''
+      });
+      break;
     default:
       result = { error: 'Unknown action: ' + action };
   }
