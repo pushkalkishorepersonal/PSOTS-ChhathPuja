@@ -424,7 +424,7 @@ async function fetchLastSheetEntry(){
     const r=await fetch(C.scriptUrl+'?'+params.toString());
     const d=await r.json();
     const currentYear=new Date().getFullYear();
-    const list=(d.contributions||[]).filter(c=>c.year===currentYear);
+    const list=(d.contributions||[]).filter(c=>Number(c.year)===currentYear);
     const txt=document.getElementById('lastEntryTxt');
     const meta=document.getElementById('lastEntryMeta');
     if(!list.length){

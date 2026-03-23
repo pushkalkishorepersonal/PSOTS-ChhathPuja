@@ -19,6 +19,8 @@ const SHEET_FINANCE       = 'Finance';
 const SHEET_ANNOUNCEMENTS = 'Announcements';
 const SHEET_VOLUNTEERS    = 'Volunteers';
 const SHEET_GALLERY       = 'GallerySubmissions';
+const SHEET_MEMBERS       = 'Members';
+const SHEET_RECEIPTS      = 'Receipts';
 
 // ─── Column headers ───
 const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','Date','Status','AccountType','UserID','Year'];
@@ -27,6 +29,8 @@ const FIN_HEADERS  = ['Key','Value'];
 const ANN_HEADERS  = ['Tag','Meta','Text'];
 const VOL_HEADERS  = ['Timestamp','Name','Flat','Mobile','Days','Tasks','AssignedTask','Status','Note','CheckedIn','CheckinTime'];
 const GAL_HEADERS  = ['Timestamp','Name','Flat','Year','Moment','Caption','DriveUrl','Status'];
+const MEM_HEADERS  = ['Email','DisplayName','Role','AddedBy','AddedAt'];
+const RCPT_HEADERS = ['ID','Category','Vendor','Amount','Date','Link','Notes'];
 
 /* ══════════════════════════════════════════════════════════
    INITIAL SETUP — Run this ONCE
@@ -137,6 +141,40 @@ function setupSheets() {
     gal.setColumnWidth(8, 120); // Status
   }
 
+  // Create Members sheet
+  let mem = ss.getSheetByName(SHEET_MEMBERS);
+  if (!mem) {
+    mem = ss.insertSheet(SHEET_MEMBERS);
+    mem.appendRow(MEM_HEADERS);
+    mem.getRange(1, 1, 1, MEM_HEADERS.length)
+       .setFontWeight('bold')
+       .setBackground('#7A3800')
+       .setFontColor('#FFFFFF');
+    mem.setFrozenRows(1);
+    mem.setColumnWidth(1, 220); // Email
+    mem.setColumnWidth(2, 160); // DisplayName
+    mem.setColumnWidth(3, 140); // Role
+    mem.setColumnWidth(4, 200); // AddedBy
+    mem.setColumnWidth(5, 180); // AddedAt
+  }
+
+  // Create Receipts sheet
+  let rcpt = ss.getSheetByName(SHEET_RECEIPTS);
+  if (!rcpt) {
+    rcpt = ss.insertSheet(SHEET_RECEIPTS);
+    rcpt.appendRow(RCPT_HEADERS);
+    rcpt.getRange(1, 1, 1, RCPT_HEADERS.length)
+        .setFontWeight('bold').setBackground('#7A3800').setFontColor('#FFFFFF');
+    rcpt.setFrozenRows(1);
+    rcpt.setColumnWidth(1, 130); // ID
+    rcpt.setColumnWidth(2, 140); // Category
+    rcpt.setColumnWidth(3, 180); // Vendor
+    rcpt.setColumnWidth(4, 90);  // Amount
+    rcpt.setColumnWidth(5, 100); // Date
+    rcpt.setColumnWidth(6, 220); // Link
+    rcpt.setColumnWidth(7, 220); // Notes
+  }
+
   // Remove default Sheet1 if it exists and is empty
   const sheet1 = ss.getSheetByName('Sheet1');
   if (sheet1 && sheet1.getLastRow() <= 1) {
@@ -188,6 +226,12 @@ function doGet(e) {
       break;
     case 'getReceipts':
       result = actionGetReceipts(e.parameter.key);
+      break;
+    case 'getReminders':
+      result = actionGetReminders(e.parameter.key);
+      break;
+    case 'getRolePerms':
+      result = actionGetRolePerms(e.parameter.key);
       break;
     case 'getRsvps':
     case 'getRSVPs':
@@ -248,6 +292,10 @@ function doPost(e) {
       result = actionSaveMembers(body.members || [], body.key);
     } else if (body.action === 'saveReceipts') {
       result = actionSaveReceipts(body.receipts || [], body.key);
+    } else if (body.action === 'saveReminders') {
+      result = actionSaveReminders(body.reminders || [], body.key);
+    } else if (body.action === 'saveRolePerms') {
+      result = actionSaveRolePerms(body.perms || {}, body.key);
     } else if (body.action === 'sendInvoiceEmail') {
       result = actionSendInvoiceEmail(body);
     } else if (body.action === 'submitRSVP') {
@@ -1257,35 +1305,145 @@ function actionSendInvoiceEmail(params) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   ACTION: Team Members / Roles  (stored in Script Properties)
-   Members JSON: [{email, name, role, addedBy, addedAt}]
-   Roles: admin | treasurer | core_committee | volunteer
+   ACTION: Team Members / Roles  (stored in Members sheet)
+   Sheet columns: Email | DisplayName | Role | AddedBy | AddedAt
+   Roles: admin | treasurer | core_committee | volunteer_coordinator
+   Edit directly in the sheet — changes are picked up instantly.
 ══════════════════════════════════════════════════════════ */
 function actionGetMembers(key) {
-  // Public-readable so the login page can check if a given email has access
-  const raw = PropertiesService.getScriptProperties().getProperty('PSOTS_MEMBERS');
-  return { members: raw ? JSON.parse(raw) : [] };
+  const ss  = SpreadsheetApp.getActiveSpreadsheet();
+  let   mem = ss.getSheetByName(SHEET_MEMBERS);
+  // Auto-create the sheet if it doesn't exist yet
+  if (!mem) {
+    mem = ss.insertSheet(SHEET_MEMBERS);
+    mem.appendRow(MEM_HEADERS);
+    mem.getRange(1, 1, 1, MEM_HEADERS.length)
+       .setFontWeight('bold').setBackground('#7A3800').setFontColor('#FFFFFF');
+    mem.setFrozenRows(1);
+  }
+  const lastRow = mem.getLastRow();
+  if (lastRow < 2) return { members: [] };
+  const rows = mem.getRange(2, 1, lastRow - 1, MEM_HEADERS.length).getValues();
+  const members = rows
+    .filter(r => r[0] && String(r[0]).includes('@'))  // skip blank rows
+    .map(r => ({
+      email:   String(r[0]).trim().toLowerCase(),
+      name:    String(r[1]).trim(),
+      role:    String(r[2]).trim() || 'admin',
+      addedBy: String(r[3]).trim(),
+      addedAt: r[4] ? new Date(r[4]).getTime() : 0,
+    }));
+  return { members };
 }
 
 function actionSaveMembers(members, key) {
   const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
   if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
-  PropertiesService.getScriptProperties().setProperty('PSOTS_MEMBERS', JSON.stringify(members));
+  const ss  = SpreadsheetApp.getActiveSpreadsheet();
+  let   mem = ss.getSheetByName(SHEET_MEMBERS);
+  if (!mem) {
+    mem = ss.insertSheet(SHEET_MEMBERS);
+    mem.appendRow(MEM_HEADERS);
+    mem.getRange(1, 1, 1, MEM_HEADERS.length)
+       .setFontWeight('bold').setBackground('#7A3800').setFontColor('#FFFFFF');
+    mem.setFrozenRows(1);
+  }
+  // Clear existing data rows, then write fresh
+  const lastRow = mem.getLastRow();
+  if (lastRow > 1) mem.deleteRows(2, lastRow - 1);
+  if (members.length > 0) {
+    const rows = members.map(m => [
+      (m.email   || '').toLowerCase().trim(),
+      m.name     || '',
+      m.role     || 'admin',
+      m.addedBy  || '',
+      m.addedAt  ? new Date(m.addedAt).toISOString() : new Date().toISOString(),
+    ]);
+    mem.getRange(2, 1, rows.length, MEM_HEADERS.length).setValues(rows);
+  }
   return { ok: true };
 }
 
 /* ══════════════════════════════════════════════════════════
-   Expense Receipts — stored in Script Properties
+   Expense Receipts — stored in Receipts sheet (editable)
+   Sheet columns: ID | Category | Vendor | Amount | Date | Link | Notes
+   Edit rows directly in the sheet; changes are picked up on next load.
 ══════════════════════════════════════════════════════════ */
 function actionGetReceipts(key) {
-  const raw = PropertiesService.getScriptProperties().getProperty('PSOTS_RECEIPTS');
-  return { receipts: raw ? JSON.parse(raw) : [] };
+  const ss   = SpreadsheetApp.getActiveSpreadsheet();
+  let   rcpt = ss.getSheetByName(SHEET_RECEIPTS);
+  if (!rcpt) return { receipts: [] };
+  const lastRow = rcpt.getLastRow();
+  if (lastRow < 2) return { receipts: [] };
+  const rows = rcpt.getRange(2, 1, lastRow - 1, RCPT_HEADERS.length).getValues();
+  const receipts = rows
+    .filter(r => r[2] && String(r[2]).trim())   // must have Vendor
+    .map(r => ({
+      id:     Number(r[0]) || Date.now(),
+      cat:    String(r[1]).trim(),
+      vendor: String(r[2]).trim(),
+      amount: Number(r[3]) || 0,
+      date:   String(r[4]).trim(),
+      link:   String(r[5]).trim(),
+      notes:  String(r[6]).trim(),
+    }));
+  return { receipts };
 }
 
 function actionSaveReceipts(receipts, key) {
   const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
   if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
-  PropertiesService.getScriptProperties().setProperty('PSOTS_RECEIPTS', JSON.stringify(receipts));
+  const ss   = SpreadsheetApp.getActiveSpreadsheet();
+  let   rcpt = ss.getSheetByName(SHEET_RECEIPTS);
+  if (!rcpt) {
+    rcpt = ss.insertSheet(SHEET_RECEIPTS);
+    rcpt.appendRow(RCPT_HEADERS);
+    rcpt.getRange(1, 1, 1, RCPT_HEADERS.length)
+        .setFontWeight('bold').setBackground('#7A3800').setFontColor('#FFFFFF');
+    rcpt.setFrozenRows(1);
+  }
+  const lastRow = rcpt.getLastRow();
+  if (lastRow > 1) rcpt.deleteRows(2, lastRow - 1);
+  if (receipts.length > 0) {
+    const rows = receipts.map(r => [r.id||'', r.cat||'', r.vendor||'', r.amount||0, r.date||'', r.link||'', r.notes||'']);
+    rcpt.getRange(2, 1, rows.length, RCPT_HEADERS.length).setValues(rows);
+  }
+  return { ok: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   Reminders — stored in Script Properties (admin-only config)
+   JSON array: [{date, template, note}]
+══════════════════════════════════════════════════════════ */
+function actionGetReminders(key) {
+  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+  const raw = PropertiesService.getScriptProperties().getProperty('PSOTS_REMINDERS');
+  return { reminders: raw ? JSON.parse(raw) : [] };
+}
+
+function actionSaveReminders(reminders, key) {
+  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+  PropertiesService.getScriptProperties().setProperty('PSOTS_REMINDERS', JSON.stringify(reminders));
+  return { ok: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   Role Permissions — stored in Script Properties (admin-only config)
+   JSON object: {role: [tab, ...], ...}
+══════════════════════════════════════════════════════════ */
+function actionGetRolePerms(key) {
+  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+  const raw = PropertiesService.getScriptProperties().getProperty('PSOTS_ROLE_PERMS');
+  return { perms: raw ? JSON.parse(raw) : null };  // null = use client defaults
+}
+
+function actionSaveRolePerms(perms, key) {
+  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+  PropertiesService.getScriptProperties().setProperty('PSOTS_ROLE_PERMS', JSON.stringify(perms));
   return { ok: true };
 }
 

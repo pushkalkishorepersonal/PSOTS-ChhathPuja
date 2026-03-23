@@ -909,10 +909,10 @@ window.addEventListener('storage', function(e) {
   sb.style.cssText = [
     'position:fixed','bottom:1.4rem','left:50%','transform:translateX(-50%) translateY(80px)',
     'background:#1a0800','color:#fff','font-family:"DM Sans",sans-serif',
-    'font-size:.82rem','padding:.65rem 1.2rem','border-radius:50px',
+    'font-size:.82rem','padding:.65rem 1.2rem','border-radius:16px',
     'box-shadow:0 6px 24px rgba(0,0,0,.28)','z-index:9999',
     'transition:transform .4s cubic-bezier(.34,1.56,.64,1)',
-    'white-space:nowrap','pointer-events:none'
+    'max-width:calc(100vw - 2rem)','text-align:center','pointer-events:none'
   ].join(';');
   document.body.appendChild(sb);
   requestAnimationFrame(function() {
