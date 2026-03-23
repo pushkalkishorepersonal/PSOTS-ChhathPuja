@@ -1149,102 +1149,135 @@ function fillProfileUI() {
 /* ═══════════════════════════════════════════════════
    SMART PROFILE NUDGE BAR
    Priority: flat → vrati → mobile
-   Logic: show unless snoozed, hide forever once complete
+   Normal: 7-day snooze on dismiss
+   Final 5 days before deadline: snooze ignored — shows every session
+   Post-deadline: hidden (no point asking after Oct 25)
 ═══════════════════════════════════════════════════ */
 function checkProfileNudge() {
-  const p      = userProfile;
-  const nudge  = document.getElementById('profileNudge');
+  const p     = userProfile;
+  const nudge = document.getElementById('profileNudge');
   if (!nudge) return;
 
-  // Determine what's missing — in priority order
+  // What's missing (priority order)
   const missingFlat   = !p.flat;
-  const missingVrati  = !p.vrati;           // 'yes'|'no' both valid, undefined = never set
+  const missingVrati  = !p.vrati;  // 'yes'|'no' both valid; undefined = never answered
   const missingMobile = !p.mobile;
 
-  // If nothing critical is missing, hide permanently
+  // All done — hide and clean up snooze key
   if (!missingFlat && !missingVrati && !missingMobile) {
     nudge.classList.remove('visible');
-    localStorage.removeItem('psots_nudge_snooze_v1'); // clean up
+    localStorage.removeItem('psots_nudge_snooze_v1');
     return;
   }
 
-  // Check snooze — key stores ISO timestamp of last dismiss
-  const snoozeKey = 'psots_nudge_snooze_v1';
-  const snooze    = localStorage.getItem(snoozeKey);
-  if (snooze) {
-    const snoozeUntil = parseInt(snooze, 10);
-    if (Date.now() < snoozeUntil) {
+  // Deadline maths
+  const deadline   = new Date((window.PSOTS && window.PSOTS.deadline) || '2026-10-25T23:59:00');
+  const now        = new Date();
+  const msLeft     = deadline - now;
+  const daysLeft   = msLeft / 86400000;
+
+  // Past deadline — stop nudging
+  if (daysLeft < 0) {
+    nudge.classList.remove('visible');
+    return;
+  }
+
+  // Within the final 5 days: ignore snooze (show every session)
+  const urgentMode = daysLeft <= 5;
+
+  if (!urgentMode) {
+    // Normal mode: respect 7-day snooze
+    const snoozeKey = 'psots_nudge_snooze_v1';
+    const snooze    = localStorage.getItem(snoozeKey);
+    if (snooze && Date.now() < parseInt(snooze, 10)) {
       nudge.classList.remove('visible');
       return;
     }
-    localStorage.removeItem(snoozeKey); // snooze expired
+    localStorage.removeItem(snoozeKey); // expired — clear it
   }
 
-  // Decide which field to highlight and what to say
+  // Build message based on what's missing
   let icon, title, sub, ctaLabel, focusId;
   if (missingFlat) {
-    icon     = '📍';
-    title    = 'Share your flat number for prasad';
-    sub      = 'We need your flat to include you in the distribution list for Chhath 2026';
+    icon     = urgentMode ? '🚨' : '📍';
+    title    = urgentMode
+      ? `Only ${Math.ceil(daysLeft)} day${Math.ceil(daysLeft)===1?'':'s'} left — add your flat for prasad!`
+      : 'Share your flat number for prasad';
+    sub      = urgentMode
+      ? 'Deadline is Oct 25. Without your flat number you won\'t be on the prasad list — takes 10 seconds'
+      : 'We need your flat to include you in the distribution list for Chhath 2026';
     ctaLabel = 'Add Flat →';
     focusId  = 'p-flat';
   } else if (missingVrati) {
-    icon     = '🕉️';
-    title    = 'Are you observing the Chhath fast?';
-    sub      = 'Tell us if anyone in your family is a Vrati — helps us plan prasad quantities';
+    icon     = urgentMode ? '⏰' : '🕉️';
+    title    = urgentMode
+      ? `${Math.ceil(daysLeft)} day${Math.ceil(daysLeft)===1?'':'s'} to go — are you a Vrati?`
+      : 'Are you observing the Chhath fast?';
+    sub      = urgentMode
+      ? 'Deadline Oct 25 — tell us if anyone fasts so we can plan prasad quantities in time'
+      : 'Tell us if anyone in your family is a Vrati — helps us plan prasad quantities';
     ctaLabel = 'Update →';
     focusId  = 'p-vrati';
   } else {
-    icon     = '📱';
-    title    = 'Add WhatsApp for event reminders';
-    sub      = 'Your flat is set! Add a number to receive timing updates and check-in alerts';
+    icon     = urgentMode ? '⏰' : '📱';
+    title    = urgentMode
+      ? `Almost there — add WhatsApp before Oct 25`
+      : 'Add WhatsApp for event reminders';
+    sub      = urgentMode
+      ? 'You\'re on the prasad list! Add your number so we can send event-day timing alerts'
+      : 'Your flat is set! Add a number to receive timing updates and check-in alerts';
     ctaLabel = 'Add Number →';
     focusId  = 'p-mobile';
   }
+
+  // Style the bar differently in urgent mode
+  const bar = document.getElementById('profileNudge');
+  bar.style.background = urgentMode
+    ? 'linear-gradient(135deg,#7a0000 0%,#c0392b 100%)'
+    : '';  // resets to CSS default (dark brown)
+  bar.style.borderTopColor = urgentMode ? 'rgba(255,100,100,.5)' : '';
+
+  // Also update dismiss button label in urgent mode
+  const dismissBtn = bar.querySelector('.pn-dismiss');
+  if (dismissBtn) dismissBtn.title = urgentMode ? 'Remind me tomorrow' : 'Remind me in 7 days';
 
   document.getElementById('pnIcon').textContent  = icon;
   document.getElementById('pnTitle').textContent  = title;
   document.getElementById('pnSub').textContent    = sub;
   document.getElementById('pnCta').textContent    = ctaLabel;
-  nudge._focusId = focusId;   // store target for the CTA
+  nudge._focusId    = focusId;
+  nudge._urgentMode = urgentMode;
 
-  // Show with a short delay so the page settles first
   setTimeout(() => nudge.classList.add('visible'), 900);
 }
 
 function nudgeGoFix() {
-  const nudge = document.getElementById('profileNudge');
+  const nudge   = document.getElementById('profileNudge');
   const focusId = nudge && nudge._focusId;
 
-  // Navigate to Profile tab
   switchTab('profile');
 
-  // Scroll to & focus the specific field
   setTimeout(() => {
     const el = focusId && document.getElementById(focusId);
     if (el) {
       el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       el.focus();
-      // Subtle highlight flash
       el.style.borderColor = 'var(--or)';
       el.style.boxShadow   = '0 0 0 3px rgba(232,92,0,.2)';
       setTimeout(() => { el.style.borderColor = ''; el.style.boxShadow = ''; }, 2000);
     }
   }, 200);
 
-  // Dismiss bar so it doesn't distract while editing
   if (nudge) nudge.classList.remove('visible');
 }
 
 function dismissNudge() {
-  const nudge  = document.getElementById('profileNudge');
+  const nudge = document.getElementById('profileNudge');
   if (nudge) nudge.classList.remove('visible');
 
-  // Snooze duration depends on what's missing
-  const p = userProfile;
-  const missingFlat = !p.flat;
-  // Flat missing = 7-day snooze (important); other fields = 30 days
-  const days = missingFlat ? 7 : 30;
+  // In urgent mode (≤5 days): snooze only 1 day so it comes back tomorrow
+  // Normal mode: 7 days for all field types
+  const days  = (nudge && nudge._urgentMode) ? 1 : 7;
   const until = Date.now() + days * 24 * 60 * 60 * 1000;
   localStorage.setItem('psots_nudge_snooze_v1', String(until));
 }
