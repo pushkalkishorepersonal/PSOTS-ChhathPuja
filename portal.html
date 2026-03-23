@@ -1193,25 +1193,25 @@ function getScriptUrlPortal() {
   return (window.PSOTS && window.PSOTS.scriptUrl) || localStorage.getItem('psots_script_url') || '';
 }
 
-/* Load members from server → merge into localStorage */
+/* Load members from server → in-memory cache (never localStorage) */
+let _membersCache = [];
+
 async function loadMembers() {
   const url = getScriptUrlPortal();
   if (!url) return;
   try {
     const r = await fetch(url + '?action=getMembers');
     const d = await r.json();
-    if (d.members) {
-      localStorage.setItem('psots_members', JSON.stringify(d.members));
+    if (Array.isArray(d.members)) {
+      _membersCache = d.members;
       renderMemberList();
-      // Rebuild admin email list from server data
-      getAdminEmails(); // refreshes cache
     }
   } catch(e) {}
 }
 
-/* Save members to server + localStorage */
+/* Save members to server */
 async function saveMembers(members) {
-  localStorage.setItem('psots_members', JSON.stringify(members));
+  _membersCache = members;
   renderMemberList();
   const url = getScriptUrlPortal();
   if (!url) return;
@@ -1223,18 +1223,15 @@ async function saveMembers(members) {
     if (sync) sync.textContent = '✅ Synced to server';
     setTimeout(()=>{ if(sync) sync.textContent=''; }, 3000);
   } catch(e) {
-    if (sync) sync.textContent = '⚠️ Saved locally only';
+    if (sync) sync.textContent = '⚠️ Could not reach server';
   }
 }
 
 function getAdminEmails() {
   const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
-  // Legacy psots_admins key
-  const extra = JSON.parse(localStorage.getItem('psots_admins') || '[]');
-  // New members system — admins are members with role 'admin'
-  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
-  const memberAdmins = members.filter(m => m.role === 'admin').map(m => m.email.toLowerCase());
-  return [...new Set([...base, ...extra, ...memberAdmins])];
+  // Members with role 'admin' also get admin access
+  const memberAdmins = _membersCache.filter(m => m.role === 'admin').map(m => m.email.toLowerCase());
+  return [...new Set([...base, ...memberAdmins])];
 }
 
 function isAdmin(email) {
@@ -1244,8 +1241,8 @@ function isAdmin(email) {
 function renderMemberList() {
   const list = document.getElementById('memberList');
   if (!list) return;
-  const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
-  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+  const base    = (window.PSOTS && window.PSOTS.adminEmails) || [];
+  const members = _membersCache;
 
   // Always show super-admins from config (not editable)
   const superAdminRows = base.map(email => `
@@ -1282,29 +1279,25 @@ function addMember() {
   const name  = (document.getElementById('newMemberName').value||'').trim();
   const role  = document.getElementById('newMemberRole').value;
   if (!email || !email.includes('@')) return toast('Enter a valid email', 'error');
-  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
-  if (members.some(m => m.email === email) || getAdminEmails().includes(email)) return toast('Already in team', 'error');
-  members.push({ email, name, role, addedBy: currentUser?.email||'', addedAt: Date.now() });
+  const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
+  if (base.includes(email) || _membersCache.some(m => m.email === email)) return toast('Already in team', 'error');
+  const updated = [..._membersCache, { email, name, role, addedBy: currentUser?.email||'', addedAt: Date.now() }];
   document.getElementById('newMemberEmail').value = '';
   document.getElementById('newMemberName').value = '';
-  saveMembers(members);
+  saveMembers(updated);
   toast('✅ ' + (name||email) + ' added as ' + ROLE_LABELS[role], 'success');
 }
 
 function removeMember(i) {
-  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
-  const m = members[i];
+  const m = _membersCache[i];
   if (!m) return;
-  members.splice(i, 1);
-  saveMembers(members);
+  saveMembers(_membersCache.filter((_, idx) => idx !== i));
   toast('Removed ' + (m.name||m.email), '');
 }
 
 function changeMemberRole(i, newRole) {
-  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
-  if (!members[i]) return;
-  members[i].role = newRole;
-  saveMembers(members);
+  if (!_membersCache[i]) return;
+  saveMembers(_membersCache.map((m, idx) => idx === i ? {...m, role: newRole} : m));
   toast('✅ Role updated to ' + ROLE_LABELS[newRole], 'success');
 }
 
