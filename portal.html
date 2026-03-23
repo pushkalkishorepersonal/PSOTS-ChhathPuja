@@ -38,13 +38,27 @@
   .nav-r{display:flex;align-items:center;gap:.7rem}
   .nav-home{font-size:.7rem;color:rgba(255,220,120,.55);text-decoration:none;letter-spacing:.08em;text-transform:uppercase;transition:color .2s}
   .nav-home:hover{color:var(--gold)}
-  .nav-avatar{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,194,0,.4);overflow:hidden;display:none;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;transition:border-color .2s,box-shadow .2s}
+  .nav-avatar-wrap{position:relative;display:none;flex-shrink:0}
+  .nav-avatar{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,194,0,.4);overflow:hidden;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:border-color .2s,box-shadow .2s}
   .nav-avatar:hover{border-color:rgba(255,194,0,.75);box-shadow:0 0 0 3px rgba(255,194,0,.12)}
   .nav-avatar img{width:100%;height:100%;object-fit:cover;display:none}
   .nav-av-init{font-size:.85rem;font-weight:700;color:#fff;line-height:1;display:none}
   .btn-signout{background:rgba(255,255,255,.1);color:rgba(255,220,120,.7);border:1px solid rgba(255,255,255,.15);border-radius:50px;padding:.32rem .85rem;font-size:.68rem;cursor:pointer;display:none;flex-shrink:0;transition:background .2s}
   .btn-signout:hover{background:rgba(255,255,255,.18)}
-  @media(max-width:520px){.btn-signout{display:none!important}.nav-home{font-size:.62rem;letter-spacing:.04em}}
+  /* ── Profile dropdown (mobile) ── */
+  .nav-profile-menu{position:absolute;top:calc(100% + 10px);right:0;min-width:180px;background:rgba(28,14,4,.97);border:1px solid rgba(255,180,40,.25);border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,.55);padding:.6rem;z-index:9999;opacity:0;pointer-events:none;transform:translateY(-6px) scale(.95);transition:opacity .2s ease,transform .2s ease}
+  .nav-profile-menu.open{opacity:1;pointer-events:all;transform:translateY(0) scale(1)}
+  .npm-user{padding:.5rem .7rem .6rem;border-bottom:1px solid rgba(255,180,40,.12);margin-bottom:.4rem}
+  .npm-name{font-size:.82rem;font-weight:700;color:rgba(255,220,100,.95);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px}
+  .npm-email{font-size:.68rem;color:rgba(255,200,120,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px;margin-top:.1rem}
+  .npm-btn{width:100%;background:rgba(220,60,20,.18);color:rgba(255,180,80,.9);border:1px solid rgba(255,100,40,.2);border-radius:9px;padding:.52rem .7rem;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer;text-align:left;transition:background .15s}
+  .npm-btn:hover{background:rgba(220,60,20,.32)}
+  @media(max-width:520px){
+    .btn-signout{display:none!important}
+    .nav-home{font-size:.62rem;letter-spacing:.04em}
+    .nav-avatar{width:38px;height:38px}
+    .nav-av-init{font-size:.92rem}
+  }
 
   /* ── Sign-out Confirmation Modal ── */
   #signoutConfirm{position:fixed;inset:0;background:rgba(10,5,0,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:99998;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .35s ease}
@@ -333,9 +347,18 @@
   </div>
   <div class="nav-r">
     <a class="nav-home" href="index.html">← Home</a>
-    <div class="nav-avatar" id="navAvatar" title="Sign out" onclick="confirmSignOut()">
-      <img id="navAvatarImg" src="" alt=""/>
-      <span class="nav-av-init" id="navAvInit"></span>
+    <div class="nav-avatar-wrap" id="navAvatarWrap">
+      <div class="nav-avatar" id="navAvatar" title="Account" onclick="toggleNavProfileMenu(event)" aria-haspopup="true" aria-expanded="false">
+        <img id="navAvatarImg" src="" alt=""/>
+        <span class="nav-av-init" id="navAvInit"></span>
+      </div>
+      <div class="nav-profile-menu" id="navProfileMenu" role="menu">
+        <div class="npm-user">
+          <div class="npm-name" id="npmName">—</div>
+          <div class="npm-email" id="npmEmail"></div>
+        </div>
+        <button class="npm-btn" onclick="closeNavProfileMenu();confirmSignOut()">🚪 Sign out</button>
+      </div>
     </div>
     <button class="btn-signout" id="btnSignout" onclick="confirmSignOut()">Sign Out</button>
   </div>
@@ -1080,6 +1103,33 @@ function resendOtp() {
   document.getElementById('otpCode').value = '';
 }
 
+/* ── Nav profile menu (mobile) ── */
+function toggleNavProfileMenu(e) {
+  if (e) e.stopPropagation();
+  const menu = document.getElementById('navProfileMenu');
+  const btn  = document.getElementById('navAvatar');
+  if (!menu) return;
+  const isOpen = menu.classList.contains('open');
+  if (isOpen) {
+    menu.classList.remove('open');
+    if (btn) btn.setAttribute('aria-expanded','false');
+  } else {
+    menu.classList.add('open');
+    if (btn) btn.setAttribute('aria-expanded','true');
+  }
+}
+function closeNavProfileMenu() {
+  const menu = document.getElementById('navProfileMenu');
+  const btn  = document.getElementById('navAvatar');
+  if (menu) menu.classList.remove('open');
+  if (btn)  btn.setAttribute('aria-expanded','false');
+}
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e) {
+  const wrap = document.getElementById('navAvatarWrap');
+  if (wrap && !wrap.contains(e.target)) closeNavProfileMenu();
+});
+
 function confirmSignOut() {
   const modal        = document.getElementById('signoutConfirm');
   const greetingName = document.getElementById('scGreetingName');
@@ -1328,7 +1378,8 @@ function showPortal() {
   const navAvImg  = document.getElementById('navAvatarImg');
   const navAvInit = document.getElementById('navAvInit');
   const navInitial = (currentUser?.name || currentUser?.email || '?').charAt(0).toUpperCase();
-  navAv.style.display = 'flex';
+  const navWrap = document.getElementById('navAvatarWrap');
+  if (navWrap) navWrap.style.display = 'flex';
   if (currentUser?.picture) {
     navAvImg.src          = currentUser.picture;
     navAvImg.style.display = 'block';
@@ -1338,6 +1389,11 @@ function showPortal() {
     if (navAvInit) { navAvInit.textContent = navInitial; navAvInit.style.display = 'block'; }
     navAv.style.background = 'linear-gradient(135deg,#e85c00,#c93800)';
   }
+  // Populate profile dropdown
+  const npmName = document.getElementById('npmName');
+  const npmEmail = document.getElementById('npmEmail');
+  if (npmName) npmName.textContent = currentUser?.name || currentUser?.email?.split('@')[0] || 'Resident';
+  if (npmEmail) npmEmail.textContent = currentUser?.email || '';
 
   // Load profile from localStorage first, then Sheet
   loadProfile();
