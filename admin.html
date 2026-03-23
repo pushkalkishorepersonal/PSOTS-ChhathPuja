@@ -912,6 +912,63 @@ function parseFlatNumber(flat) {
 }
 
 /* ═══════════════════════════════════════════════════
+   SESSION CACHE  (stale-while-revalidate)
+   Uses sessionStorage — cleared when the browser tab closes.
+   localStorage is never read as source of truth; this is
+   purely a within-session speed layer.
+
+   TTLs (milliseconds):
+     2 min  — volatile data (volunteers)
+     5 min  — moderate (finance, receipts, announcements, timings)
+     10 min — slow-changing (members, reminders, role_perms)
+═══════════════════════════════════════════════════ */
+const CACHE_TTL = {
+  finance:      5 * 60_000,
+  timings:      5 * 60_000,
+  announcements:5 * 60_000,
+  members:     10 * 60_000,
+  receipts:     5 * 60_000,
+  reminders:   10 * 60_000,
+  role_perms:  10 * 60_000,
+  volunteers:   2 * 60_000,
+  cmte_roles:  10 * 60_000,
+};
+
+const PsotsCache = (() => {
+  const PREFIX = '_pc_';
+  const s = (() => { try { return sessionStorage; } catch(e) { return null; } })();
+
+  function get(key) {
+    if (!s) return null;
+    try {
+      const raw = s.getItem(PREFIX + key);
+      if (!raw) return null;
+      const { v, exp } = JSON.parse(raw);
+      if (Date.now() > exp) { s.removeItem(PREFIX + key); return null; }
+      return v;
+    } catch(e) { return null; }
+  }
+
+  function set(key, value, ttlMs) {
+    if (!s) return;
+    try { s.setItem(PREFIX + key, JSON.stringify({ v: value, exp: Date.now() + (ttlMs || 300_000) })); }
+    catch(e) {} // ignore QuotaExceededError
+  }
+
+  function invalidate(key) {
+    if (!s) return;
+    try { s.removeItem(PREFIX + key); } catch(e) {}
+  }
+
+  function clear() {
+    if (!s) return;
+    try { Object.keys(s).filter(k => k.startsWith(PREFIX)).forEach(k => s.removeItem(k)); } catch(e) {}
+  }
+
+  return { get, set, invalidate, clear };
+})();
+
+/* ═══════════════════════════════════════════════════
    ROLE-BASED ACCESS CONTROL
 ═══════════════════════════════════════════════════ */
 const ROLE_META = {
@@ -941,12 +998,17 @@ function getRolePerms() {
 }
 
 async function loadRolePerms() {
+  const cached = PsotsCache.get('role_perms');
+  if (cached) { _rolePermsCache = cached; }
   const url = getScriptUrl();
   if (!url) return;
   try {
     const r = await fetch(url + '?action=getRolePerms&key=' + encodeURIComponent((window.PSOTS||{}).adminKey||''));
     const d = await r.json();
-    if (d.perms && typeof d.perms === 'object') _rolePermsCache = d.perms;
+    if (d.perms && typeof d.perms === 'object') {
+      PsotsCache.set('role_perms', d.perms, CACHE_TTL.role_perms);
+      _rolePermsCache = d.perms;
+    }
   } catch(e) {}
 }
 
@@ -976,10 +1038,15 @@ function applyRoleFilter(role) {
 async function loadMembersToCache() {
   const url = getScriptUrl();
   if (!url) return;
+  const cached = PsotsCache.get('members');
+  if (cached) { _membersCache = cached; }
   try {
     const r = await fetch(url + '?action=getMembers');
     const d = await r.json();
-    if (Array.isArray(d.members)) _membersCache = d.members;
+    if (Array.isArray(d.members)) {
+      PsotsCache.set('members', d.members, CACHE_TTL.members);
+      _membersCache = d.members;
+    }
   } catch(e) {}
 }
 
@@ -1129,16 +1196,13 @@ async function loadAllFromSheet() {
     if (f.timMornLoc)  document.getElementById('l-morning').value = f.timMornLoc;
     if (f.timKharnaTime) document.getElementById('t-kharna').value = f.timKharnaTime;
     if (f.timKharnaDate) document.getElementById('d-kharna').value = f.timKharnaDate;
-    // Cache locally for offline fallback
-    localStorage.setItem('psots_finance', JSON.stringify({
-      carry:f.carry,collected:f.collected,budget:f.budget,expenses:f.expenses,
-      expTent:f.expTent,expKharna:f.expKharna,expThekua:f.expThekua,expAV:f.expAV,expCultural:f.expCultural,expMisc:f.expMisc
-    }));
-    localStorage.setItem('psots_timings', JSON.stringify({
+    // Update session cache with fresh data from sheet
+    PsotsCache.set('finance', f, CACHE_TTL.finance);
+    PsotsCache.set('timings', {
       evening:{time:f.timEveTime,date:f.timEveDate,location:f.timEveLoc},
       morning:{time:f.timMornTime,date:f.timMornDate,location:f.timMornLoc},
       kharna:{time:f.timKharnaTime,date:f.timKharnaDate}
-    }));
+    }, CACHE_TTL.timings);
   } catch(e) { console.warn('loadAllFromSheet finance:', e); }
 
   try {
@@ -1146,8 +1210,8 @@ async function loadAllFromSheet() {
     const ad = await fetch(url + '?action=getAnnouncements').then(r => r.json());
     if (ad.announcements && ad.announcements.length > 0) {
       announcements = ad.announcements;
+      PsotsCache.set('announcements', announcements, CACHE_TTL.announcements);
       renderAnnouncements();
-      localStorage.setItem('psots_announcements', JSON.stringify(announcements));
     }
   } catch(e) { console.warn('loadAllFromSheet announcements:', e); }
 }
@@ -1571,28 +1635,21 @@ function updateAdminCountdown() {
 /* ═══════════════════════════════════════════════════
    FINANCE
 ═══════════════════════════════════════════════════ */
+function _applyFinanceToForm(f) {
+  if (!f) return;
+  const set = (id, v) => { if (v != null && v !== '') { const el = document.getElementById(id); if (el) el.value = v; } };
+  set('f-carry', f.carry); set('f-collected', f.collected);
+  set('f-budget', f.budget); set('f-expenses', f.expenses);
+  set('exp-tent', f.expTent); set('exp-kharna', f.expKharna);
+  set('exp-thekua', f.expThekua); set('exp-av', f.expAV);
+  set('exp-cultural', f.expCultural); set('exp-misc', f.expMisc);
+  set('bud-tent', f.budTent); set('bud-kharna', f.budKharna);
+  set('bud-thekua', f.budThekua); set('bud-av', f.budAV);
+  set('bud-cultural', f.budCultural); set('bud-misc', f.budMisc);
+}
+
 function loadFinance() {
-  const saved = localStorage.getItem('psots_finance');
-  if (!saved) return;
-  try {
-    const f = JSON.parse(saved);
-    if (f.carry    != null) document.getElementById('f-carry').value    = f.carry;
-    if (f.collected!= null) document.getElementById('f-collected').value= f.collected;
-    if (f.budget   != null) document.getElementById('f-budget').value   = f.budget;
-    if (f.expenses != null) document.getElementById('f-expenses').value = f.expenses;
-    if (f.expTent    != null) document.getElementById('exp-tent').value     = f.expTent;
-    if (f.expKharna  != null) document.getElementById('exp-kharna').value   = f.expKharna;
-    if (f.expThekua  != null) document.getElementById('exp-thekua').value   = f.expThekua;
-    if (f.expAV      != null) document.getElementById('exp-av').value        = f.expAV;
-    if (f.expCultural!= null) document.getElementById('exp-cultural').value  = f.expCultural;
-    if (f.expMisc    != null) document.getElementById('exp-misc').value      = f.expMisc;
-    if (f.budTent    != null) document.getElementById('bud-tent').value     = f.budTent;
-    if (f.budKharna  != null) document.getElementById('bud-kharna').value   = f.budKharna;
-    if (f.budThekua  != null) document.getElementById('bud-thekua').value   = f.budThekua;
-    if (f.budAV      != null) document.getElementById('bud-av').value        = f.budAV;
-    if (f.budCultural!= null) document.getElementById('bud-cultural').value  = f.budCultural;
-    if (f.budMisc    != null) document.getElementById('bud-misc').value      = f.budMisc;
-  } catch(e) {}
+  _applyFinanceToForm(PsotsCache.get('finance'));
 }
 
 function calcBudTotal() {
@@ -1640,7 +1697,7 @@ async function saveFinance() {
     budCultural: document.getElementById('bud-cultural').value,
     budMisc: document.getElementById('bud-misc').value,
   };
-  localStorage.setItem('psots_finance', JSON.stringify(data));
+  PsotsCache.invalidate('finance');
   const url = getScriptUrl();
   if (url) {
     try {
@@ -1654,8 +1711,7 @@ async function saveFinance() {
    ANNOUNCEMENTS
 ═══════════════════════════════════════════════════ */
 function loadAnnouncements() {
-  const saved = localStorage.getItem('psots_announcements');
-  announcements = saved ? JSON.parse(saved) : [
+  announcements = PsotsCache.get('announcements') || [
     { tag:'🎊 5th Year', meta:'2026 — Grand Celebration', text:"This year marks our पंच वर्ष महोत्सव! Grander ghat, extended cultural programme. ₹1,04,670 carried forward from 2025." },
     { tag:'🙏 Prasad', meta:'2026 — Prasad Details', text:'2nd Nov खरना प्रसाद & 4th Nov ठेकुआ प्रसाद for all PSOTS residents after Arghya.' },
     { tag:'🤝 Volunteer', meta:'2026 — Volunteers', text:'Volunteers needed for ghat decoration on 2nd November. Breakfast provided for all volunteers.' },
@@ -1696,7 +1752,7 @@ function removeAnn(i) {
 }
 
 async function saveAnnouncements() {
-  localStorage.setItem('psots_announcements', JSON.stringify(announcements));
+  PsotsCache.set('announcements', announcements, CACHE_TTL.announcements);
   const url = getScriptUrl();
   if (url) {
     try {
@@ -1728,26 +1784,16 @@ function loadDayEditor() {
     </div>`).join('');
 }
 
+function _applyTimingsToForm(t) {
+  if (!t) return;
+  const set = (id, v) => { if (v) { const el = document.getElementById(id); if (el) el.value = v; } };
+  if (t.evening) { set('t-evening', t.evening.time); set('d-evening', t.evening.date); set('l-evening', t.evening.location); }
+  if (t.morning) { set('t-morning', t.morning.time); set('d-morning', t.morning.date); set('l-morning', t.morning.location); }
+  if (t.kharna)  { set('t-kharna', t.kharna.time);  set('d-kharna', t.kharna.date); }
+}
+
 function loadTimings() {
-  const saved = localStorage.getItem('psots_timings');
-  if (!saved) return;
-  try {
-    const t = JSON.parse(saved);
-    if (t.evening) {
-      if (t.evening.time)     document.getElementById('t-evening').value = t.evening.time;
-      if (t.evening.date)     document.getElementById('d-evening').value = t.evening.date;
-      if (t.evening.location) document.getElementById('l-evening').value = t.evening.location;
-    }
-    if (t.morning) {
-      if (t.morning.time)     document.getElementById('t-morning').value = t.morning.time;
-      if (t.morning.date)     document.getElementById('d-morning').value = t.morning.date;
-      if (t.morning.location) document.getElementById('l-morning').value = t.morning.location;
-    }
-    if (t.kharna) {
-      if (t.kharna.time) document.getElementById('t-kharna').value = t.kharna.time;
-      if (t.kharna.date) document.getElementById('d-kharna').value = t.kharna.date;
-    }
-  } catch(e) {}
+  _applyTimingsToForm(PsotsCache.get('timings'));
 }
 
 async function saveTimings() {
@@ -1756,7 +1802,7 @@ async function saveTimings() {
     morning: { time: document.getElementById('t-morning').value, date: document.getElementById('d-morning').value, location: document.getElementById('l-morning').value },
     kharna:  { time: document.getElementById('t-kharna').value,  date: document.getElementById('d-kharna').value },
   };
-  localStorage.setItem('psots_timings', JSON.stringify(timings));
+  PsotsCache.set('timings', timings, CACHE_TTL.timings);
   // Persist to Google Sheet so public pages can read live timings
   const url = getScriptUrl();
   if (url) {
@@ -2042,25 +2088,30 @@ let _membersCache = []; // in-memory only, never written to localStorage
 async function loadMembersAdmin() {
   const url = getScriptUrl();
   if (!url) { renderAmList(); return; }
+  // Show cached data instantly while fetching fresh
+  const cached = PsotsCache.get('members');
+  if (cached) { _membersCache = cached; renderAmList(); }
   const sync = document.getElementById('amSync');
-  if (sync) sync.textContent = 'Loading from sheet…';
+  if (sync) sync.textContent = cached ? 'Refreshing…' : 'Loading from sheet…';
   try {
     const r = await fetch(url + '?action=getMembers');
     const d = await r.json();
     if (Array.isArray(d.members)) {
+      PsotsCache.set('members', d.members, CACHE_TTL.members);
       _membersCache = d.members;
       if (sync) sync.textContent = '✅ Loaded from sheet (' + d.members.length + ' member' + (d.members.length===1?'':'s') + ')';
       setTimeout(()=>{ const el=document.getElementById('amSync'); if(el) el.textContent=''; }, 3000);
+      renderAmList();
     }
   } catch(e) {
-    if (sync) sync.textContent = '⚠️ Could not reach server';
+    if (sync) sync.textContent = cached ? '⚠️ Using cached data' : '⚠️ Could not reach server';
     setTimeout(()=>{ const el=document.getElementById('amSync'); if(el) el.textContent=''; }, 4000);
   }
-  renderAmList();
 }
 
 async function adminSaveMembers(members) {
   _membersCache = members;
+  PsotsCache.invalidate('members');
   renderAmList();
   const url = getScriptUrl();
   if (!url) { toast('⚠️ Script URL not set', 'error'); return; }
@@ -2069,7 +2120,6 @@ async function adminSaveMembers(members) {
   try {
     await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ action:'saveMembers', members, key: (window.PSOTS||{}).adminKey||'' }) });
-    // no-cors response is opaque — re-fetch to confirm what the sheet actually has
     if (sync) sync.textContent = 'Verifying…';
     await new Promise(r => setTimeout(r, 1200));
     await loadMembersAdmin();
@@ -2178,12 +2228,12 @@ function renderPermMatrix() {
 
 async function saveRolePerms() {
   const perms = getRolePerms();
-  // Admin always gets everything — only update non-admin roles
   ['treasurer','announcements_manager','event_coordinator','resident_coordinator','volunteer'].forEach(role => {
     perms[role] = Array.from(document.querySelectorAll(`input[data-role="${role}"]:checked`)).map(cb => cb.getAttribute('data-tab'));
     if (!perms[role].includes('settings')) perms[role].push('settings');
   });
   _rolePermsCache = perms;
+  PsotsCache.set('role_perms', perms, CACHE_TTL.role_perms);
   if (currentAdminUser) applyRoleFilter(getMemberRole(currentAdminUser.email));
   const url = getScriptUrl();
   if (url) {
@@ -2197,6 +2247,7 @@ async function saveRolePerms() {
 
 async function resetRolePerms() {
   _rolePermsCache = null;
+  PsotsCache.invalidate('role_perms');
   renderPermMatrix();
   if (currentAdminUser) applyRoleFilter(getMemberRole(currentAdminUser.email));
   const url = getScriptUrl();
@@ -2690,20 +2741,25 @@ function renderRSVPs(rsvps) {
 let _remindersCache = [];
 
 async function loadReminders() {
+  const cached = PsotsCache.get('reminders');
+  if (cached) { _remindersCache = cached; renderReminders(cached); checkDueReminders(cached); }
   const url = getScriptUrl();
-  if (url) {
-    try {
-      const r = await fetch(url + '?action=getReminders&key=' + encodeURIComponent((window.PSOTS||{}).adminKey||''));
-      const d = await r.json();
-      if (Array.isArray(d.reminders)) _remindersCache = d.reminders;
-    } catch(e) {}
-  }
-  renderReminders(_remindersCache);
-  checkDueReminders(_remindersCache);
+  if (!url) return;
+  try {
+    const r = await fetch(url + '?action=getReminders&key=' + encodeURIComponent((window.PSOTS||{}).adminKey||''));
+    const d = await r.json();
+    if (Array.isArray(d.reminders)) {
+      PsotsCache.set('reminders', d.reminders, CACHE_TTL.reminders);
+      _remindersCache = d.reminders;
+      renderReminders(d.reminders);
+      checkDueReminders(d.reminders);
+    }
+  } catch(e) {}
 }
 
 async function _saveReminders(reminders) {
   _remindersCache = reminders;
+  PsotsCache.set('reminders', reminders, CACHE_TTL.reminders);
   renderReminders(reminders);
   const url = getScriptUrl();
   if (!url) return;
@@ -3221,15 +3277,19 @@ const RCPT_CAT_LABELS = {
 };
 
 async function loadReceipts() {
+  const cached = PsotsCache.get('receipts');
+  if (cached) { allReceipts = cached; renderReceiptList(); }
   const url = getScriptUrl();
-  if (url && !url.includes('YOUR_APPS')) {
-    try {
-      const r = await fetch(url + '?action=getReceipts');
-      const d = await r.json();
-      if (Array.isArray(d.receipts)) allReceipts = d.receipts;
-    } catch(e) {}
-  }
-  renderReceiptList();
+  if (!url || url.includes('YOUR_APPS')) return;
+  try {
+    const r = await fetch(url + '?action=getReceipts');
+    const d = await r.json();
+    if (Array.isArray(d.receipts)) {
+      PsotsCache.set('receipts', d.receipts, CACHE_TTL.receipts);
+      allReceipts = d.receipts;
+      renderReceiptList();
+    }
+  } catch(e) {}
 }
 
 function addReceipt() {
@@ -3288,6 +3348,7 @@ function renderReceiptList() {
 }
 
 async function saveReceipts() {
+  PsotsCache.invalidate('receipts');
   const url    = getScriptUrl();
   const syncEl = document.getElementById('rcptSync');
   if (syncEl) syncEl.textContent = 'Saving to sheet…';
@@ -3295,7 +3356,6 @@ async function saveReceipts() {
     try {
       await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ action:'saveReceipts', receipts: allReceipts, key: (window.PSOTS||{}).adminKey }) });
-      // Re-fetch to confirm what the sheet has
       if (syncEl) syncEl.textContent = 'Verifying…';
       await new Promise(r => setTimeout(r, 1200));
       await loadReceipts();
