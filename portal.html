@@ -1914,7 +1914,7 @@ function toggleWASub() {
   const key = 'psots_wa_' + currentUser.id;
   const cur = localStorage.getItem(key) === 'true';
   if (!cur) {
-    if (!userProfile.mobile) {
+    if (!userProfile.mobile && !userProfile.whatsapp) {
       toast('⚠️ Add your WhatsApp number in Profile first', 'error');
       return;
     }
