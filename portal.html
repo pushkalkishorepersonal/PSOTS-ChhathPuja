@@ -429,7 +429,8 @@
       <div class="fg">
         <div class="ff"><label>Full Name</label><input type="text" id="p-name" placeholder="Your full name"/></div>
         <div class="ff"><label>Flat / Unit No.</label><input type="text" id="p-flat" placeholder="e.g. B-204"/></div>
-        <div class="ff"><label>WhatsApp Number</label><input type="tel" id="p-mobile" placeholder="10-digit number" maxlength="10" inputmode="numeric"/><div class="note">Used for payment confirmation and event updates</div></div>
+        <div class="ff"><label>UPI / Primary Mobile</label><input type="tel" id="p-mobile" placeholder="10-digit number" maxlength="10" inputmode="numeric"/><div class="note">The number linked to your UPI — helps us match your payment to your profile</div></div>
+        <div class="ff"><label>Alternate WhatsApp <span style="font-weight:400;color:#a06030;font-size:.78rem">(optional)</span></label><input type="tel" id="p-altmobile" placeholder="If you want updates on a different number" maxlength="10" inputmode="numeric"/><div class="note">Puja reminders &amp; updates will be sent here if provided, otherwise to your primary number</div></div>
         <div class="ff"><label>Tower / Block</label><input type="text" id="p-tower" placeholder="e.g. Tower B"/></div>
         <div class="ff"><label>Family Members</label><input type="number" id="p-family" placeholder="e.g. 4" min="1"/></div>
         <div class="ff"><label>Vrati in Family?</label>
@@ -984,8 +985,8 @@ function confirmSignOut() {
   });
   if (!p.mobile) missing.push({
     icon:   '📱',
-    label:  'Mobile number',
-    detail: "Helps us send you timely arghya reminders and important puja updates — we don't want you to miss a moment."
+    label:  'UPI / Primary Mobile',
+    detail: "This is the number linked to your UPI account — we use it to match your payment to your profile for accurate records."
   });
   if (!p.vrati)  missing.push({
     icon:   '🙏',
@@ -1260,9 +1261,10 @@ function fillProfileUI() {
 
   // Profile form — name/email always from Google, rest from saved profile
   document.getElementById('p-name').value   = p.name  || currentUser?.name  || '';
-  if (p.flat)    document.getElementById('p-flat').value    = p.flat;
-  if (p.mobile)  document.getElementById('p-mobile').value  = p.mobile;
-  if (p.tower)   document.getElementById('p-tower').value   = p.tower;
+  if (p.flat)      document.getElementById('p-flat').value      = p.flat;
+  if (p.mobile)    document.getElementById('p-mobile').value    = p.mobile;
+  if (p.altMobile) document.getElementById('p-altmobile').value = p.altMobile;
+  if (p.tower)     document.getElementById('p-tower').value     = p.tower;
   if (p.family)  document.getElementById('p-family').value  = p.family;
   if (p.vrati)   document.getElementById('p-vrati').value   = p.vrati;
 
@@ -1454,8 +1456,9 @@ async function saveProfile() {
     email:  currentUser.email,
     name:   document.getElementById('p-name').value.trim(),
     flat:   document.getElementById('p-flat').value.trim(),
-    mobile: document.getElementById('p-mobile').value.trim(),
-    tower:  document.getElementById('p-tower').value.trim(),
+    mobile:    document.getElementById('p-mobile').value.trim(),
+    altMobile: document.getElementById('p-altmobile').value.trim(),
+    tower:     document.getElementById('p-tower').value.trim(),
     family: document.getElementById('p-family').value,
     vrati:  document.getElementById('p-vrati').value,
   };
