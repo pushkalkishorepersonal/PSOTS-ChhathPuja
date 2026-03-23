@@ -1074,6 +1074,13 @@ function actionFindByFlat(flat) {
    Setup: fonnte.com → add device → scan QR with your WhatsApp
           → Script Properties: FONNTE_TOKEN
 ══════════════════════════════════════════════════════════ */
+/* Run this ONCE to grant Apps Script permission to make external HTTP calls.
+   After running it successfully, all Fonnte/WhatsApp features will work. */
+function authorizeExternalRequests() {
+  UrlFetchApp.fetch('https://api.fonnte.com/');
+  Logger.log('Authorization granted — external requests are now allowed.');
+}
+
 function sendContributorWhatsApp(p) {
   const token = PropertiesService.getScriptProperties().getProperty('FONNTE_TOKEN');
   if (!token) return; // not configured — skip silently
