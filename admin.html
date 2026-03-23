@@ -213,17 +213,17 @@
 
   <!-- Tabs -->
   <div class="tabs">
-    <button class="tab-btn active" onclick="switchTab('dashboard')">📊 Dashboard</button>
-    <button class="tab-btn" onclick="switchTab('contributors')">🙏 Contributors</button>
-    <button class="tab-btn" onclick="switchTab('finance')">💰 Finance</button>
-    <button class="tab-btn" onclick="switchTab('announcements')">📢 Announcements</button>
-    <button class="tab-btn" onclick="switchTab('timings')">⏰ Arghya Timings</button>
-    <button class="tab-btn" onclick="switchTab('broadcast')">📲 Broadcast</button>
-    <button class="tab-btn" onclick="switchTab('manual')">✍️ Manual Entry</button>
-    <button class="tab-btn" onclick="switchTab('volunteers')">🤝 Volunteers</button>
-    <button class="tab-btn" onclick="switchTab('settings')">⚙️ Settings</button>
-    <button class="tab-btn" onclick="switchTab('directory')">👥 Directory</button>
-    <button class="tab-btn" onclick="switchTab('gallery')">📸 Gallery</button>
+    <button class="tab-btn active" data-tab="dashboard"     onclick="switchTab('dashboard')">📊 Dashboard</button>
+    <button class="tab-btn" data-tab="contributors"         onclick="switchTab('contributors')">🙏 Contributors</button>
+    <button class="tab-btn" data-tab="finance"              onclick="switchTab('finance')">💰 Finance</button>
+    <button class="tab-btn" data-tab="announcements"        onclick="switchTab('announcements')">📢 Announcements</button>
+    <button class="tab-btn" data-tab="timings"              onclick="switchTab('timings')">⏰ Arghya Timings</button>
+    <button class="tab-btn" data-tab="broadcast"            onclick="switchTab('broadcast')">📲 Broadcast</button>
+    <button class="tab-btn" data-tab="manual"               onclick="switchTab('manual')">✍️ Manual Entry</button>
+    <button class="tab-btn" data-tab="volunteers"           onclick="switchTab('volunteers')">🤝 Volunteers</button>
+    <button class="tab-btn" data-tab="settings"             onclick="switchTab('settings')">⚙️ Settings</button>
+    <button class="tab-btn" data-tab="directory"            onclick="switchTab('directory')">👥 Directory</button>
+    <button class="tab-btn" data-tab="gallery"              onclick="switchTab('gallery')">📸 Gallery</button>
     <a href="data-manager.html" class="tab-btn" style="text-decoration:none">📥 Import CSV</a>
   </div>
 
@@ -641,6 +641,46 @@
         <button class="btn-danger" onclick="clearLocalData()">🗑 Clear Local Cache</button>
       </div>
     </div>
+
+    <!-- ── TEAM MEMBERS ── -->
+    <div class="admin-card" id="teamMembersCard">
+      <div class="ac-title">👥 Team Members &amp; Roles</div>
+      <div class="ac-sub">Members are saved to the server — they persist across all devices and logins. Members sign in with their Google account and see only their allowed tabs.</div>
+
+      <div style="display:grid;gap:.5rem;margin-top:1rem">
+        <input id="am-email" type="email" placeholder="Gmail address"
+          style="padding:.65rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;width:100%;box-sizing:border-box"/>
+        <input id="am-name" type="text" placeholder="Display name (optional)"
+          style="padding:.65rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;width:100%;box-sizing:border-box"/>
+        <div style="display:flex;gap:.5rem">
+          <select id="am-role"
+            style="flex:1;padding:.65rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;background:#fff8f0">
+            <option value="admin">🔑 Admin</option>
+            <option value="treasurer">💰 Treasurer</option>
+            <option value="core_committee" selected>⭐ Core Committee</option>
+            <option value="volunteer">🤝 Volunteer</option>
+          </select>
+          <button class="btn-primary" onclick="adminAddMember()" style="white-space:nowrap;padding:.65rem 1.1rem">＋ Add</button>
+        </div>
+      </div>
+
+      <div id="amList" style="margin-top:1.1rem"></div>
+      <div style="margin-top:.6rem;display:flex;gap:.6rem;align-items:center">
+        <span id="amSync" style="font-size:.72rem;color:#c8a880"></span>
+        <button class="btn-secondary" onclick="loadMembersAdmin()" style="font-size:.72rem;padding:.3rem .75rem">🔄 Refresh from Server</button>
+      </div>
+    </div>
+
+    <!-- ── PERMISSION MATRIX ── -->
+    <div class="admin-card" id="permMatrixCard">
+      <div class="ac-title">🔐 Role Permissions</div>
+      <div class="ac-sub">Control which tabs each role can access. Admin always has full access.</div>
+      <div id="permMatrix" style="margin-top:1rem;overflow-x:auto"></div>
+      <div style="margin-top:.85rem;display:flex;gap:.6rem">
+        <button class="btn-primary" onclick="saveRolePerms()">💾 Save Permissions</button>
+        <button class="btn-secondary" onclick="resetRolePerms()">↩ Reset Defaults</button>
+      </div>
+    </div>
   </div>
 
   <!-- ═══ DIRECTORY TAB ═══ -->
@@ -783,6 +823,69 @@ function parseFlatNumber(flat) {
 }
 
 /* ═══════════════════════════════════════════════════
+   ROLE-BASED ACCESS CONTROL
+═══════════════════════════════════════════════════ */
+const ROLE_META = {
+  admin:          { label:'🔑 Admin',          color:'#e85c00' },
+  treasurer:      { label:'💰 Treasurer',       color:'#2e7d32' },
+  core_committee: { label:'⭐ Core Committee',  color:'#1565c0' },
+  volunteer:      { label:'🤝 Volunteer',       color:'#6a1a9a' },
+};
+
+// Default tab access per role. Admins always see Settings.
+const DEFAULT_ROLE_PERMS = {
+  admin:          ['dashboard','contributors','finance','announcements','timings','broadcast','manual','volunteers','settings','directory','gallery'],
+  treasurer:      ['dashboard','contributors','finance','manual'],
+  core_committee: ['dashboard','contributors','announcements','timings','volunteers','gallery'],
+  volunteer:      ['dashboard','volunteers'],
+};
+
+let currentAdminUser = null; // set in enterAdmin()
+
+function getRolePerms() {
+  try {
+    const saved = localStorage.getItem('psots_role_perms');
+    return saved ? JSON.parse(saved) : DEFAULT_ROLE_PERMS;
+  } catch(e) { return DEFAULT_ROLE_PERMS; }
+}
+
+function getMemberRole(email) {
+  if (!email) return 'admin';
+  const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
+  if (base.includes(email.toLowerCase())) return 'admin';
+  const legacy = JSON.parse(localStorage.getItem('psots_admins') || '[]');
+  if (legacy.includes(email.toLowerCase())) return 'admin';
+  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+  const m = members.find(x => x.email.toLowerCase() === email.toLowerCase());
+  return m ? m.role : 'admin'; // default admin for unrecognised (legacy)
+}
+
+function applyRoleFilter(role) {
+  const perms = getRolePerms();
+  const allowed = new Set(perms[role] || perms.admin || Object.keys(DEFAULT_ROLE_PERMS.admin));
+  // Settings always visible so admins can manage roles
+  if (role === 'admin') allowed.add('settings');
+
+  document.querySelectorAll('.tab-btn[data-tab]').forEach(btn => {
+    const tab = btn.getAttribute('data-tab');
+    btn.style.display = allowed.has(tab) ? '' : 'none';
+  });
+  // Import CSV link — admins only
+  const importLink = document.querySelector('.tabs a[href="data-manager.html"]');
+  if (importLink) importLink.style.display = role === 'admin' ? '' : 'none';
+}
+
+async function loadMembersToCache() {
+  const url = getScriptUrl();
+  if (!url) return;
+  try {
+    const r = await fetch(url + '?action=getMembers');
+    const d = await r.json();
+    if (d.members) localStorage.setItem('psots_members', JSON.stringify(d.members));
+  } catch(e) {}
+}
+
+/* ═══════════════════════════════════════════════════
    CONFIG
 ═══════════════════════════════════════════════════ */
 const SCRIPT_URL_KEY = 'psots_script_url';
@@ -842,16 +945,35 @@ function handleAdminLogin(response) {
 }
 
 function enterAdmin(u) {
+  currentAdminUser = u;
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('adminApp').style.display = 'block';
-  // Show user in nav
+
+  // Detect role (from cached members; will refresh from server shortly)
+  const role = getMemberRole(u.email);
+  const roleMeta = ROLE_META[role] || ROLE_META.admin;
+
+  // Show user + role badge in nav
   const nav = document.querySelector('.an-actions');
   nav.insertAdjacentHTML('afterbegin', `
     <div style="display:flex;align-items:center;gap:.5rem;margin-right:.5rem">
-      ${u.picture ? `<img src="${u.picture}" style="width:28px;height:28px;border-radius:50%;object-fit:cover"/>` : ''}
-      <span style="font-size:.75rem;color:rgba(255,255,255,.8)">${u.name}</span>
+      ${u.picture ? `<img src="${u.picture}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1.5px solid rgba(255,255,255,.4)"/>` : ''}
+      <div>
+        <div style="font-size:.75rem;color:rgba(255,255,255,.9);line-height:1.2">${u.name}</div>
+        <div style="font-size:.6rem;color:${roleMeta.color};background:rgba(255,255,255,.12);border-radius:50px;padding:.05rem .4rem;display:inline-block">${roleMeta.label}</div>
+      </div>
     </div>`);
+
+  // Apply tab visibility for this role
+  applyRoleFilter(role);
+
   initAdmin();
+
+  // Refresh members from server (so role assignments are always up to date)
+  loadMembersToCache().then(() => {
+    const freshRole = getMemberRole(u.email);
+    if (freshRole !== role) applyRoleFilter(freshRole); // re-apply if role changed
+  });
 }
 
 function logout() {
@@ -978,7 +1100,7 @@ function switchTab(id) {
   event.target.classList.add('active');
   if (id === 'directory') loadDirectory();
   if (id === 'volunteers') loadVolunteers();
-  if (id === 'settings') loadCmteRoles();
+  if (id === 'settings') { loadCmteRoles(); renderAmList(); renderPermMatrix(); loadMembersAdmin(); }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1822,6 +1944,163 @@ function loadCmteRoles() {
       renderCmteRoles();
     }
   });
+}
+
+/* ═══════════════════════════════════════════════════
+   TEAM MEMBERS (admin.html Settings tab)
+═══════════════════════════════════════════════════ */
+async function loadMembersAdmin() {
+  const url = getScriptUrl();
+  if (!url) { renderAmList(); return; }
+  document.getElementById('amSync').textContent = 'Loading…';
+  try {
+    const r = await fetch(url + '?action=getMembers');
+    const d = await r.json();
+    if (d.members) {
+      localStorage.setItem('psots_members', JSON.stringify(d.members));
+      document.getElementById('amSync').textContent = '✅ Loaded from server';
+      setTimeout(()=>{ const el=document.getElementById('amSync'); if(el) el.textContent=''; }, 2500);
+    }
+  } catch(e) {
+    document.getElementById('amSync').textContent = '⚠️ Using cached data';
+  }
+  renderAmList();
+}
+
+async function adminSaveMembers(members) {
+  localStorage.setItem('psots_members', JSON.stringify(members));
+  renderAmList();
+  const url = getScriptUrl();
+  if (!url) return;
+  const sync = document.getElementById('amSync');
+  if (sync) sync.textContent = 'Saving…';
+  try {
+    await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'saveMembers', members, key: (window.PSOTS||{}).adminKey||'' }) });
+    if (sync) sync.textContent = '✅ Saved to server';
+    setTimeout(()=>{ if(sync) sync.textContent=''; }, 2500);
+  } catch(e) {
+    if (sync) sync.textContent = '⚠️ Saved locally only';
+  }
+}
+
+function renderAmList() {
+  const el = document.getElementById('amList');
+  if (!el) return;
+  const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
+  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+
+  const baseRows = base.map(email => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.65rem .2rem;border-bottom:1px solid #f5e8d8">
+      <div>
+        <span style="font-size:.85rem;font-weight:600">${email}</span>
+        <span style="margin-left:.5rem;font-size:.62rem;background:#fff5e8;color:var(--or);border:1px solid #f0d5b8;border-radius:50px;padding:.1rem .45rem">superadmin</span>
+      </div>
+      <span style="font-size:.7rem;color:var(--lbr)">🔑 Admin</span>
+    </div>`).join('');
+
+  const memberRows = members.map((m, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:.5rem;padding:.65rem .2rem;border-bottom:1px solid #f5e8d8">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.85rem;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.name||m.email}</div>
+        <div style="font-size:.7rem;color:var(--lbr)">${m.email}</div>
+      </div>
+      <select onchange="adminChangeMemberRole(${i},this.value)"
+        style="font-size:.72rem;border:1px solid #f0d5b8;border-radius:6px;padding:.22rem .4rem;background:var(--warm);outline:none;font-family:'DM Sans',sans-serif;flex-shrink:0">
+        ${Object.entries(ROLE_META).map(([v,r])=>`<option value="${v}"${m.role===v?' selected':''}>${r.label}</option>`).join('')}
+      </select>
+      <button onclick="adminRemoveMember(${i})" style="background:none;border:none;color:#c0392b;cursor:pointer;font-weight:700;font-size:.85rem;flex-shrink:0" title="Remove">✕</button>
+    </div>`).join('');
+
+  el.innerHTML = (baseRows + (members.length ? memberRows : '<div style="font-size:.82rem;color:#c8a880;padding:.5rem 0">No members yet. Add one above.</div>'));
+}
+
+function adminAddMember() {
+  const email = (document.getElementById('am-email').value||'').trim().toLowerCase();
+  const name  = (document.getElementById('am-name').value||'').trim();
+  const role  = document.getElementById('am-role').value;
+  if (!email || !email.includes('@')) return toast('Enter a valid email', 'error');
+  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+  const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
+  if (base.includes(email) || members.some(m => m.email === email)) return toast('Already in team', 'error');
+  members.push({ email, name, role, addedBy: currentAdminUser?.email||'', addedAt: Date.now() });
+  document.getElementById('am-email').value = '';
+  document.getElementById('am-name').value = '';
+  adminSaveMembers(members);
+  toast('✅ ' + (name||email) + ' added as ' + ROLE_META[role].label, 'success');
+}
+
+function adminRemoveMember(i) {
+  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+  const m = members[i];
+  if (m && !confirm('Remove ' + (m.name||m.email) + ' from the team?')) return;
+  members.splice(i, 1);
+  adminSaveMembers(members);
+  toast('Removed', '');
+}
+
+function adminChangeMemberRole(i, newRole) {
+  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+  if (!members[i]) return;
+  members[i].role = newRole;
+  adminSaveMembers(members);
+  toast('✅ Role updated to ' + ROLE_META[newRole].label, 'success');
+}
+
+/* ── PERMISSION MATRIX ── */
+const TAB_LABELS = {
+  dashboard:'📊 Dashboard', contributors:'🙏 Contributors', finance:'💰 Finance',
+  announcements:'📢 Announcements', timings:'⏰ Timings', broadcast:'📲 Broadcast',
+  manual:'✍️ Manual Entry', volunteers:'🤝 Volunteers', settings:'⚙️ Settings',
+  directory:'👥 Directory', gallery:'📸 Gallery',
+};
+
+function renderPermMatrix() {
+  const el = document.getElementById('permMatrix');
+  if (!el) return;
+  const perms = getRolePerms();
+  const roles = ['treasurer','core_committee','volunteer']; // admin always full
+  const tabs  = Object.keys(TAB_LABELS);
+
+  el.innerHTML = `<table style="border-collapse:collapse;font-size:.78rem;min-width:100%">
+    <thead><tr>
+      <th style="text-align:left;padding:.4rem .6rem;background:#fff5e8;border-radius:6px 0 0 0">Tab</th>
+      ${roles.map(r=>`<th style="text-align:center;padding:.4rem .5rem;background:#fff5e8;white-space:nowrap">${ROLE_META[r].label}</th>`).join('')}
+    </tr></thead>
+    <tbody>
+      ${tabs.map(tab => `<tr>
+        <td style="padding:.4rem .6rem;border-bottom:1px solid #f5e8d8;font-weight:500">${TAB_LABELS[tab]}</td>
+        ${roles.map(role => {
+          const checked = (perms[role]||[]).includes(tab);
+          const disabled = tab === 'settings' && role !== 'volunteer' ? '' : ''; // settings always visible to non-volunteers
+          return `<td style="text-align:center;border-bottom:1px solid #f5e8d8">
+            <input type="checkbox" data-role="${role}" data-tab="${tab}" ${checked?'checked':''} style="width:15px;height:15px;cursor:pointer"/>
+          </td>`;
+        }).join('')}
+      </tr>`).join('')}
+    </tbody>
+  </table>`;
+}
+
+function saveRolePerms() {
+  const perms = getRolePerms();
+  // Admin always gets everything — only update non-admin roles
+  ['treasurer','core_committee','volunteer'].forEach(role => {
+    perms[role] = Array.from(document.querySelectorAll(`input[data-role="${role}"]:checked`)).map(cb => cb.getAttribute('data-tab'));
+    // Settings always included so they can get back to this screen
+    if (!perms[role].includes('settings')) perms[role].push('settings');
+  });
+  localStorage.setItem('psots_role_perms', JSON.stringify(perms));
+  // Re-apply filter for current user
+  if (currentAdminUser) applyRoleFilter(getMemberRole(currentAdminUser.email));
+  toast('✅ Permissions saved', 'success');
+}
+
+function resetRolePerms() {
+  localStorage.removeItem('psots_role_perms');
+  renderPermMatrix();
+  if (currentAdminUser) applyRoleFilter(getMemberRole(currentAdminUser.email));
+  toast('↩ Reset to defaults', '');
 }
 
 /* ═══════════════════════════════════════════════════

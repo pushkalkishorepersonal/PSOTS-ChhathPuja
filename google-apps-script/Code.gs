@@ -183,6 +183,10 @@ function doGet(e) {
     case 'getGalleryPhotos':
       result = actionGetGalleryPhotos(e.parameter.year, e.parameter.status);
       break;
+    case 'getMembers':
+      result = actionGetMembers(e.parameter.key);
+      break;
+    case 'getRsvps':
     case 'ping':
       result = { ok: true, message: 'PSOTS Backend is running!' };
       break;
@@ -234,6 +238,8 @@ function doPost(e) {
       result = actionUploadPhoto(body);
     } else if (body.action === 'updateGalleryStatus') {
       result = actionUpdateGalleryStatus(body);
+    } else if (body.action === 'saveMembers') {
+      result = actionSaveMembers(body.members || [], body.key);
     } else if (body.action === 'sendInvoiceEmail') {
       result = actionSendInvoiceEmail(body);
     } else {
@@ -1233,6 +1239,24 @@ function actionSendInvoiceEmail(params) {
     verified: true   // PayU gateway — instant confirmation
   }); } catch(e) {}
 
+  return { ok: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Team Members / Roles  (stored in Script Properties)
+   Members JSON: [{email, name, role, addedBy, addedAt}]
+   Roles: admin | treasurer | core_committee | volunteer
+══════════════════════════════════════════════════════════ */
+function actionGetMembers(key) {
+  // Public-readable so the login page can check if a given email has access
+  const raw = PropertiesService.getScriptProperties().getProperty('PSOTS_MEMBERS');
+  return { members: raw ? JSON.parse(raw) : [] };
+}
+
+function actionSaveMembers(members, key) {
+  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+  PropertiesService.getScriptProperties().setProperty('PSOTS_MEMBERS', JSON.stringify(members));
   return { ok: true };
 }
 

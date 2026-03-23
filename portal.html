@@ -560,21 +560,35 @@
     </div>
   </div>
 
-  <!-- ═══ ADMIN MANAGEMENT TAB ═══ -->
+  <!-- ═══ TEAM MEMBERS TAB ═══ -->
   <div class="portal-panel" id="tab-adminmgmt">
     <div class="pcard">
-      <div class="pcard-title">⚙️ Admin Management</div>
-      <div class="pcard-sub">Add or remove committee members who have admin access to the portal.</div>
-      <div style="display:flex;gap:.6rem;margin-top:1rem">
-        <input id="newAdminEmail" type="email" placeholder="Enter Gmail address…"
-          style="flex:1;border:1.5px solid #f0d5b8;border-radius:10px;padding:.7rem 1rem;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none"/>
-        <button onclick="addAdmin()"
-          style="background:var(--or);color:#fff;border:none;border-radius:10px;padding:.7rem 1.2rem;font-weight:600;font-size:.85rem;cursor:pointer">Add</button>
+      <div class="pcard-title">👥 Team Members &amp; Roles</div>
+      <div class="pcard-sub">Add committee members by their Google email. They sign in and only see what their role allows. Changes sync to the server instantly — no reset on new login.</div>
+      <div style="display:grid;gap:.55rem;margin-top:1.1rem">
+        <input id="newMemberEmail" type="email" placeholder="Gmail address (e.g. name@gmail.com)"
+          style="border:1.5px solid #f0d5b8;border-radius:10px;padding:.7rem 1rem;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;width:100%;box-sizing:border-box"/>
+        <input id="newMemberName" type="text" placeholder="Display name (optional)"
+          style="border:1.5px solid #f0d5b8;border-radius:10px;padding:.7rem 1rem;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;width:100%;box-sizing:border-box"/>
+        <div style="display:flex;gap:.55rem">
+          <select id="newMemberRole"
+            style="flex:1;border:1.5px solid #f0d5b8;border-radius:10px;padding:.7rem 1rem;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;background:#fff8f0">
+            <option value="admin">🔑 Admin — full access</option>
+            <option value="treasurer">💰 Treasurer — finance &amp; payments</option>
+            <option value="core_committee" selected>⭐ Core Committee — events &amp; volunteers</option>
+            <option value="volunteer">🤝 Volunteer — view only</option>
+          </select>
+          <button onclick="addMember()"
+            style="background:var(--or);color:#fff;border:none;border-radius:10px;padding:.7rem 1.3rem;font-weight:700;font-size:.88rem;cursor:pointer;white-space:nowrap">＋ Add</button>
+        </div>
       </div>
     </div>
     <div class="pcard">
-      <div class="pcard-title">Current Admins</div>
-      <div id="adminList" style="margin-top:.5rem"></div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem">
+        <div class="pcard-title" style="margin:0">Current Team</div>
+        <span id="membersSync" style="font-size:.7rem;color:#c8a880"></span>
+      </div>
+      <div id="memberList"></div>
     </div>
   </div>
 
@@ -831,52 +845,131 @@ function signOut() {
   setTimeout(() => { window.location.href = 'index.html'; }, 2700);
 }
 
+/* ── ROLE LABELS ──────────────────── */
+const ROLE_LABELS = { admin:'🔑 Admin', treasurer:'💰 Treasurer', core_committee:'⭐ Core Committee', volunteer:'🤝 Volunteer' };
+
+function getScriptUrlPortal() {
+  return (window.PSOTS && window.PSOTS.scriptUrl) || localStorage.getItem('psots_script_url') || '';
+}
+
+/* Load members from server → merge into localStorage */
+async function loadMembers() {
+  const url = getScriptUrlPortal();
+  if (!url) return;
+  try {
+    const r = await fetch(url + '?action=getMembers');
+    const d = await r.json();
+    if (d.members) {
+      localStorage.setItem('psots_members', JSON.stringify(d.members));
+      renderMemberList();
+      // Rebuild admin email list from server data
+      getAdminEmails(); // refreshes cache
+    }
+  } catch(e) {}
+}
+
+/* Save members to server + localStorage */
+async function saveMembers(members) {
+  localStorage.setItem('psots_members', JSON.stringify(members));
+  renderMemberList();
+  const url = getScriptUrlPortal();
+  if (!url) return;
+  const sync = document.getElementById('membersSync');
+  if (sync) sync.textContent = 'Saving…';
+  try {
+    await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'saveMembers', members, key: (window.PSOTS||{}).adminKey||'' }) });
+    if (sync) sync.textContent = '✅ Synced to server';
+    setTimeout(()=>{ if(sync) sync.textContent=''; }, 3000);
+  } catch(e) {
+    if (sync) sync.textContent = '⚠️ Saved locally only';
+  }
+}
+
 function getAdminEmails() {
   const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
+  // Legacy psots_admins key
   const extra = JSON.parse(localStorage.getItem('psots_admins') || '[]');
-  return [...new Set([...base, ...extra])];
+  // New members system — admins are members with role 'admin'
+  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+  const memberAdmins = members.filter(m => m.role === 'admin').map(m => m.email.toLowerCase());
+  return [...new Set([...base, ...extra, ...memberAdmins])];
 }
 
 function isAdmin(email) {
-  return getAdminEmails().includes(email);
+  return getAdminEmails().includes((email||'').toLowerCase());
 }
 
-function showAdminList() {
-  const list = document.getElementById('adminList');
+function renderMemberList() {
+  const list = document.getElementById('memberList');
+  if (!list) return;
   const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
-  const all = getAdminEmails();
-  list.innerHTML = all.map(email => {
-    const isSuperAdmin = base.includes(email);
-    return `<div style="display:flex;align-items:center;justify-content:space-between;padding:.7rem .2rem;border-bottom:1px solid #f5e8d8">
+  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+
+  // Always show super-admins from config (not editable)
+  const superAdminRows = base.map(email => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .2rem;border-bottom:1px solid #f5e8d8">
       <div>
-        <span style="font-size:.88rem;font-weight:600;color:var(--ink)">${email}</span>
-        ${isSuperAdmin ? '<span style="margin-left:.5rem;font-size:.68rem;background:#fff5e8;color:var(--or);border:1px solid #f0d5b8;border-radius:50px;padding:.1rem .5rem">superadmin</span>' : ''}
+        <div style="font-size:.88rem;font-weight:600;color:var(--ink)">${email}</div>
+        <span style="font-size:.65rem;background:#fff5e8;color:var(--or);border:1px solid #f0d5b8;border-radius:50px;padding:.1rem .5rem">superadmin</span>
       </div>
-      ${!isSuperAdmin ? `<button onclick="removeAdmin('${email}')" style="background:none;border:none;color:#c0392b;font-size:.8rem;cursor:pointer;font-weight:600">Remove</button>` : ''}
-    </div>`;
-  }).join('');
+      <span style="font-size:.7rem;color:var(--lbr)">🔑 Admin</span>
+    </div>`).join('');
+
+  const memberRows = members.length === 0
+    ? '<div style="font-size:.82rem;color:#c8a880;padding:.5rem 0">No members added yet.</div>'
+    : members.map((m, i) => `
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:.75rem .2rem;border-bottom:1px solid #f5e8d8">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:.88rem;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${m.name||m.email}</div>
+        <div style="font-size:.72rem;color:var(--lbr)">${m.email}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem;flex-shrink:0;margin-left:.5rem">
+        <select onchange="changeMemberRole(${i}, this.value)"
+          style="font-size:.72rem;border:1px solid #f0d5b8;border-radius:6px;padding:.2rem .4rem;background:var(--warm);outline:none;font-family:'DM Sans',sans-serif">
+          ${Object.entries(ROLE_LABELS).map(([v,l])=>`<option value="${v}"${m.role===v?' selected':''}>${l}</option>`).join('')}
+        </select>
+        <button onclick="removeMember(${i})" style="background:none;border:none;color:#c0392b;font-size:.82rem;cursor:pointer;padding:.2rem .4rem;font-weight:700" title="Remove">✕</button>
+      </div>
+    </div>`).join('');
+
+  list.innerHTML = superAdminRows + memberRows;
 }
 
-function addAdmin() {
-  const input = document.getElementById('newAdminEmail');
-  const email = input.value.trim().toLowerCase();
+function addMember() {
+  const email = (document.getElementById('newMemberEmail').value||'').trim().toLowerCase();
+  const name  = (document.getElementById('newMemberName').value||'').trim();
+  const role  = document.getElementById('newMemberRole').value;
   if (!email || !email.includes('@')) return toast('Enter a valid email', 'error');
-  const extra = JSON.parse(localStorage.getItem('psots_admins') || '[]');
-  if (getAdminEmails().includes(email)) return toast('Already an admin', 'error');
-  extra.push(email);
-  localStorage.setItem('psots_admins', JSON.stringify(extra));
-  input.value = '';
-  showAdminList();
-  toast('✅ Admin added: ' + email, 'success');
+  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+  if (members.some(m => m.email === email) || getAdminEmails().includes(email)) return toast('Already in team', 'error');
+  members.push({ email, name, role, addedBy: currentUser?.email||'', addedAt: Date.now() });
+  document.getElementById('newMemberEmail').value = '';
+  document.getElementById('newMemberName').value = '';
+  saveMembers(members);
+  toast('✅ ' + (name||email) + ' added as ' + ROLE_LABELS[role], 'success');
 }
 
-function removeAdmin(email) {
-  const extra = JSON.parse(localStorage.getItem('psots_admins') || '[]');
-  const updated = extra.filter(e => e !== email);
-  localStorage.setItem('psots_admins', JSON.stringify(updated));
-  showAdminList();
-  toast('Removed: ' + email, '');
+function removeMember(i) {
+  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+  const m = members[i];
+  if (!m) return;
+  members.splice(i, 1);
+  saveMembers(members);
+  toast('Removed ' + (m.name||m.email), '');
 }
+
+function changeMemberRole(i, newRole) {
+  const members = JSON.parse(localStorage.getItem('psots_members') || '[]');
+  if (!members[i]) return;
+  members[i].role = newRole;
+  saveMembers(members);
+  toast('✅ Role updated to ' + ROLE_LABELS[newRole], 'success');
+}
+
+// Keep legacy addAdmin stub so old code doesn't break
+function addAdmin() { addMember(); }
+function showAdminList() { renderMemberList(); }
 
 function showPortal() {
   document.getElementById('loginScreen').style.display = 'none';
@@ -888,7 +981,8 @@ function showPortal() {
     document.getElementById('wbBadge').textContent = '⚙️ Admin';
     document.getElementById('adminLink').style.display = 'inline-block';
     document.getElementById('adminTab').style.display = 'inline-block';
-    showAdminList();
+    renderMemberList();
+    loadMembers(); // async — syncs from server then re-renders
   }
 
   // Set avatar in nav
