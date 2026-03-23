@@ -1983,17 +1983,19 @@ async function checkFonnteStatus() {
 }
 
 /* Call Apps Script to send via Fonnte.
+   Uses GET to avoid CORS preflight (Apps Script doesn't handle OPTIONS).
    targets: array of phone strings (raw — backend normalises them)
    message: plain WhatsApp text (bold with *asterisks*)
    Returns { ok, sent, msg } */
 async function _fonntePost(targets, message) {
   const su = _scriptUrl();
   if (!su || su.includes('YOUR_APPS')) throw new Error('Script URL not configured');
-  const resp = await fetch(su, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ action: 'sendFonnteMessage', targets, message })
+  const params = new URLSearchParams({
+    action:  'sendFonnteMessage',
+    targets: targets.join(','),
+    message: message
   });
+  const resp = await fetch(su + '?' + params.toString());
   return resp.json();
 }
 
