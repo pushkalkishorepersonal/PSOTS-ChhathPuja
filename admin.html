@@ -137,6 +137,46 @@
   #toast.show { transform: translateX(-50%) translateY(0); }
   #toast.success { background: var(--green); }
   #toast.error { background: var(--red); }
+  /* Fonnte confirmation modal */
+  #fonnteConfirmOverlay {
+    display: none; position: fixed; inset: 0; background: rgba(0,0,0,.55);
+    z-index: 10000; align-items: center; justify-content: center;
+  }
+  #fonnteConfirmOverlay.open { display: flex; }
+  #fonnteConfirmBox {
+    background: #fff; border-radius: 16px; padding: 1.6rem 1.8rem;
+    max-width: 520px; width: 92vw; box-shadow: 0 12px 40px rgba(0,0,0,.25);
+    font-family: 'DM Sans', sans-serif;
+  }
+  #fonnteConfirmBox h3 { margin: 0 0 1rem; font-size: 1.05rem; color: #1a1a1a; }
+  #fonnteConfirmBox .fc-label {
+    font-size: .75rem; font-weight: 700; text-transform: uppercase;
+    letter-spacing: .06em; color: #888; margin: .9rem 0 .3rem;
+  }
+  #fonnteConfirmBox .fc-msg {
+    background: #f7f7f7; border-radius: 8px; padding: .75rem .9rem;
+    font-size: .82rem; white-space: pre-wrap; word-break: break-word;
+    max-height: 180px; overflow-y: auto; color: #333; line-height: 1.5;
+  }
+  #fonnteConfirmBox .fc-recipients {
+    background: #fff8f0; border: 1px solid #ffd9b3; border-radius: 8px;
+    padding: .6rem .9rem; font-size: .8rem; max-height: 130px;
+    overflow-y: auto; color: #555; line-height: 1.7;
+  }
+  #fonnteConfirmBox .fc-actions {
+    display: flex; gap: .7rem; justify-content: flex-end; margin-top: 1.2rem;
+  }
+  #fonnteConfirmBox .fc-cancel {
+    background: #f0f0f0; color: #444; border: none; border-radius: 8px;
+    padding: .6rem 1.2rem; font-size: .88rem; font-weight: 600; cursor: pointer;
+  }
+  #fonnteConfirmBox .fc-send {
+    background: linear-gradient(135deg, #25d366, #128c7e); color: #fff;
+    border: none; border-radius: 8px; padding: .6rem 1.4rem;
+    font-size: .88rem; font-weight: 600; cursor: pointer;
+  }
+  #fonnteConfirmBox .fc-cancel:hover { background: #e0e0e0; }
+  #fonnteConfirmBox .fc-send:hover { opacity: .9; }
 
   /* ── CONTRIBUTORS TABLE ───────────── */
   .con-table { width: 100%; border-collapse: collapse; font-size: .83rem; }
@@ -917,6 +957,21 @@
 </div><!-- end adminApp -->
 
 <div id="toast"></div>
+
+<!-- Fonnte send confirmation modal -->
+<div id="fonnteConfirmOverlay">
+  <div id="fonnteConfirmBox">
+    <h3 id="fcTitle">📲 Confirm WhatsApp Send</h3>
+    <div class="fc-label">Message preview</div>
+    <div class="fc-msg" id="fcMsg"></div>
+    <div class="fc-label">Recipients (<span id="fcCount"></span>)</div>
+    <div class="fc-recipients" id="fcRecipients"></div>
+    <div class="fc-actions">
+      <button class="fc-cancel" onclick="_fcCancel()">Cancel</button>
+      <button class="fc-send" id="fcSendBtn" onclick="_fcConfirm()">Send now</button>
+    </div>
+  </div>
+</div>
 
 <script>
 /* ═══════════════════════════════════════════════════
@@ -1954,6 +2009,41 @@ function updatePreview() {
   document.getElementById('charCount').textContent = msg.length;
 }
 
+/* ─── Fonnte confirmation modal ─── */
+let _fcResolve = null;
+
+function showFonnteConfirm(title, message, recipients) {
+  // recipients: array of { label, mobile } objects
+  document.getElementById('fcTitle').textContent = title;
+  document.getElementById('fcMsg').textContent = message;
+  document.getElementById('fcCount').textContent = recipients.length;
+  const MAX_SHOWN = 20;
+  const shown = recipients.slice(0, MAX_SHOWN);
+  const extra = recipients.length - shown.length;
+  let html = shown.map(r => `<span>• ${r.label} <span style="color:#999;font-size:.75rem">${r.mobile}</span></span>`).join('<br>');
+  if (extra > 0) html += `<br><em style="color:#888">…and ${extra} more</em>`;
+  document.getElementById('fcRecipients').innerHTML = html;
+  document.getElementById('fonnteConfirmOverlay').classList.add('open');
+  return new Promise(resolve => { _fcResolve = resolve; });
+}
+
+function _fcConfirm() {
+  document.getElementById('fonnteConfirmOverlay').classList.remove('open');
+  if (_fcResolve) { _fcResolve(true); _fcResolve = null; }
+}
+
+function _fcCancel() {
+  document.getElementById('fonnteConfirmOverlay').classList.remove('open');
+  if (_fcResolve) { _fcResolve(false); _fcResolve = null; }
+}
+
+// Close on overlay click outside the box
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('fonnteConfirmOverlay').addEventListener('click', e => {
+    if (e.target === e.currentTarget) _fcCancel();
+  });
+});
+
 /* ─── Fonnte helpers ─── */
 function _scriptUrl() {
   return localStorage.getItem('psots_script_url') || (window.PSOTS && window.PSOTS.scriptUrl) || '';
@@ -2019,7 +2109,12 @@ async function sendFonnteBlast() {
     return;
   }
 
-  if (!confirm(`Send this message via Fonnte to ${subs.length} subscriber${subs.length !== 1 ? 's' : ''}?\n\nThis will deliver directly to their WhatsApp.`)) return;
+  const recipients = subs.map(s => ({ label: s.name || s.mobile, mobile: s.mobile }));
+  const confirmed = await showFonnteConfirm(
+    `📲 Confirm Broadcast to ${subs.length} Subscriber${subs.length !== 1 ? 's' : ''}`,
+    msg, recipients
+  );
+  if (!confirmed) return;
 
   btn.disabled = true;
   if (statusEl) statusEl.innerHTML = `⏳ Sending to ${subs.length} subscribers…`;
@@ -3415,7 +3510,12 @@ async function sendBulkReminder() {
     `📱 Visit: https://chhath.psots.in/pages/payment.html\n\n` +
     `जय छठी मैया! 🌅\n— PSOTS Chhath Committee`;
 
-  if (!confirm(`Send payment reminder via Fonnte to ${withMobile.length} flat${withMobile.length !== 1 ? 's' : ''} that haven't contributed yet?`)) return;
+  const recipients = withMobile.map(x => ({ label: `${x.flat || ''} – ${x.name || x.mobile}`, mobile: x.mobile }));
+  const confirmed = await showFonnteConfirm(
+    `📲 Confirm Payment Reminder to ${withMobile.length} Flat${withMobile.length !== 1 ? 's' : ''}`,
+    reminderMsg, recipients
+  );
+  if (!confirmed) return;
 
   btn.disabled = true;
   if (statusEl) statusEl.textContent = `⏳ Sending reminders to ${withMobile.length} contacts…`;
@@ -3453,6 +3553,13 @@ async function sendFonnteReminder(mobile, name, flat) {
     `📱 Or visit: https://chhath.psots.in/pages/payment.html\n\n` +
     `Your contribution of ₹1,001+ makes you eligible for prasad! 🙏\n\n` +
     `जय छठी मैया! 🌅\n— PSOTS Chhath Committee`;
+
+  const confirmed = await showFonnteConfirm(
+    `📲 Confirm Reminder — Flat ${flat}`,
+    msg,
+    [{ label: `${name} (Flat ${flat})`, mobile }]
+  );
+  if (!confirmed) return;
 
   try {
     const d = await _fonntePost([mobile], msg);
