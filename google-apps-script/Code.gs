@@ -465,7 +465,42 @@ function actionUpdateStatus(flat, year, newStatus) {
   for (let i = 0; i < data.length; i++) {
     if (String(data[i][2]).trim() === String(flat).trim() &&
         (Number(data[i][10]) === Number(year) || !year)) {
-      sheet.getRange(i + 2, 8).setValue(newStatus); // Status column
+      sheet.getRange(i + 2, 8).setValue(newStatus);
+
+      // Auto WhatsApp to contributor on verify or reject
+      const name   = data[i][1] || '';
+      const mobile = data[i][3] || '';
+      const amount = data[i][4] || '';
+      const method = data[i][5] || 'UPI';
+      const date   = data[i][6] || '';
+      const amt    = amount ? '₹' + parseFloat(amount).toLocaleString('en-IN') : '';
+
+      if (mobile) {
+        if (newStatus.includes('Received') || newStatus.includes('✅')) {
+          sendWA(mobile,
+            '🌅 *PSOTS Chhath Puja 2026*\n' +
+            '✅ *Payment Verified!*\n\n' +
+            '👤 ' + name + '\n' +
+            '🏠 Flat ' + flat + ' · Prestige Song of the South\n' +
+            '💰 *' + amt + '* via ' + method + '\n' +
+            (date ? '📅 ' + date + '\n' : '') +
+            '\n📋 View your receipt: https://chhath.psots.in/portal.html\n\n' +
+            'आपके योगदान के लिए हृदय से धन्यवाद! 🙏\n' +
+            'जय छठी मैया! 🌅'
+          );
+        } else if (newStatus.includes('Rejected') || newStatus.includes('❌')) {
+          sendWA(mobile,
+            '🌅 *PSOTS Chhath Puja 2026*\n' +
+            '❌ *Payment Not Verified*\n\n' +
+            'नमस्ते ' + name + ' जी 🙏\n\n' +
+            'We could not verify your payment of *' + amt + '* for Flat ' + flat + '.\n\n' +
+            'This may be due to a mismatch in UPI details. Please contact the committee:\n' +
+            '📞 9482088904 or reply to this message.\n\n' +
+            'जय छठी मैया! 🌅'
+          );
+        }
+      }
+
       return { success: true };
     }
   }
@@ -976,6 +1011,49 @@ function actionUpdateGalleryStatus(body) {
   for (let i = 0; i < data.length; i++) {
     if (String(data[i][6]) === String(body.driveUrl)) {
       sheet.getRange(i + 2, 8).setValue(body.newStatus);
+
+      // Notify the uploader — need their mobile from Profiles sheet
+      const name    = data[i][1] || '';
+      const flat    = data[i][2] || '';
+      const year    = data[i][3] || '';
+      const moment  = data[i][4] || '';
+      const caption = data[i][5] || '';
+      const newStatus = body.newStatus || '';
+
+      // Look up mobile from Profiles by flat
+      const profSheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_PROFILES);
+      let mobile = '';
+      if (profSheet && profSheet.getLastRow() > 1) {
+        const profiles = profSheet.getRange(2, 1, profSheet.getLastRow() - 1, PROF_HEADERS.length).getValues();
+        for (const p of profiles) {
+          if (String(p[3]).trim() === String(flat).trim()) { mobile = String(p[4] || ''); break; }
+        }
+      }
+
+      if (mobile) {
+        if (newStatus === 'Approved') {
+          sendWA(mobile,
+            '🌅 *PSOTS Chhath Puja 2026 — Photo Approved* ✅\n\n' +
+            'नमस्ते ' + name + ' जी 🙏\n\n' +
+            'Your photo is now *live in the gallery*! 📸\n\n' +
+            '📷 ' + (caption || (moment + ' — ' + year)) + '\n' +
+            '🏠 Flat: ' + flat + '\n\n' +
+            'View it at: https://chhath.psots.in/pages/gallery.html\n\n' +
+            'जय छठी मैया! 🌅'
+          );
+        } else if (newStatus === 'Rejected') {
+          sendWA(mobile,
+            '🌅 *PSOTS Chhath Puja 2026 — Photo Update*\n\n' +
+            'नमस्ते ' + name + ' जी 🙏\n\n' +
+            'Unfortunately your photo could not be approved for the gallery.\n\n' +
+            '📷 ' + (caption || (moment + ' — ' + year)) + '\n\n' +
+            'If you have questions, please contact the committee:\n' +
+            '📞 9482088904\n\n' +
+            'जय छठी मैया! 🌅'
+          );
+        }
+      }
+
       return { success: true };
     }
   }
@@ -1028,6 +1106,31 @@ function actionUploadPhoto(body) {
   const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
   const status = body.adminUpload === true ? 'Approved' : 'Pending Review';
   sheet.appendRow([now, name, flat, year || '', moment || '', caption || '', driveUrl, status]);
+
+  const mobile = body.mobile || '';
+
+  // Confirm to uploader
+  if (mobile) {
+    sendWA(mobile,
+      '🌅 *PSOTS Chhath Puja 2026 — Photo Received* 📸\n\n' +
+      'नमस्ते ' + name + ' जी 🙏\n\n' +
+      (body.adminUpload
+        ? 'Your photo has been published to the gallery! ✅\n'
+        : 'Your photo has been submitted and is *under review*. We\'ll notify you once approved.\n') +
+      '\n📷 ' + (caption || (moment + ' — ' + year)) + '\n' +
+      '🏠 Flat: ' + flat + '\n\n' +
+      'जय छठी मैया! 🌅'
+    );
+  }
+
+  // Notify committee
+  notifyCommittee(
+    '📸 *New Gallery Photo — PSOTS Chhath 2026*\n' +
+    '👤 ' + name + ' · Flat ' + flat + '\n' +
+    '🗓️ ' + (year || '') + ' · ' + (moment || '') + '\n' +
+    (caption ? '💬 ' + caption : '') + '\n' +
+    'Status: ' + status
+  );
 
   return { success: true, driveUrl, status, message: body.adminUpload ? 'Photo published to gallery!' : 'Photo submitted for review!' };
 }
@@ -1191,39 +1294,66 @@ function actionSendFonnteMessage(body) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   HELPER: Notify committee on WhatsApp via CallMeBot (free)
-   Setup: Script Properties → CALLMEBOT_PHONE + CALLMEBOT_APIKEY
-   Activation: wa.me/+34644598973 → "I allow callmebot to send me messages"
+   HELPER: Generic single-number WhatsApp send via Fonnte
+   phone: raw string — normalised to 91xxxxxxxxxx internally
 ══════════════════════════════════════════════════════════ */
-function notifyCommitteeWhatsApp(body) {
-  const props   = PropertiesService.getScriptProperties();
-  const phone   = props.getProperty('CALLMEBOT_PHONE');   // e.g. 919482088904
-  const apikey  = props.getProperty('CALLMEBOT_APIKEY');  // e.g. 123456
+function sendWA(phone, message) {
+  const token = PropertiesService.getScriptProperties().getProperty('FONNTE_TOKEN');
+  if (!token) return;
 
-  if (!phone || !apikey) return; // not configured — skip silently
-
-  const amt    = body.amount ? '₹' + parseFloat(body.amount).toLocaleString('en-IN') : '?';
-  const name   = body.name  || 'Unknown';
-  const flat   = body.flat  || '?';
-  const method = body.method || 'UPI';
-  const date   = body.date  || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd MMM yyyy');
-
-  const msg = '🌅 *New Chhath 2026 Payment*\n' +
-              '👤 ' + name + ' · Flat ' + flat + '\n' +
-              '💰 ' + amt + ' via ' + method + '\n' +
-              '📅 ' + date + '\n' +
-              '⏳ Pending verification';
-
-  const url = 'https://api.callmebot.com/whatsapp.php' +
-              '?phone='  + encodeURIComponent(phone) +
-              '&text='   + encodeURIComponent(msg) +
-              '&apikey=' + encodeURIComponent(apikey);
+  var p = String(phone || '').replace(/\D/g, '');
+  if (!p) return;
+  if (p.startsWith('0')) p = p.slice(1);
+  if (!p.startsWith('91')) p = '91' + p;
+  if (p.length < 12) return;
 
   try {
-    UrlFetchApp.fetch(url, { muteHttpExceptions: true });
+    UrlFetchApp.fetch('https://api.fonnte.com/send', {
+      method:  'post',
+      headers: { 'Authorization': token },
+      payload: { target: p, message: message, countryCode: '91' },
+      muteHttpExceptions: true
+    });
   } catch(e) {
-    Logger.log('CallMeBot notification failed: ' + e.message);
+    Logger.log('sendWA failed (' + p + '): ' + e.message);
   }
+}
+
+/* ══════════════════════════════════════════════════════════
+   HELPER: Notify committee on WhatsApp via Fonnte
+   Script Properties: COMMITTEE_PHONE (e.g. 919482088904)
+   Falls back to CALLMEBOT_PHONE if COMMITTEE_PHONE not set.
+══════════════════════════════════════════════════════════ */
+function notifyCommitteeWhatsApp(body) {
+  const props = PropertiesService.getScriptProperties();
+  // Use dedicated committee phone, or fall back to old CallMeBot phone field
+  const phone = props.getProperty('COMMITTEE_PHONE') || props.getProperty('CALLMEBOT_PHONE');
+  if (!phone) return;
+
+  const amt    = body.amount ? '₹' + parseFloat(body.amount).toLocaleString('en-IN') : '?';
+  const name   = body.name   || 'Unknown';
+  const flat   = body.flat   || '?';
+  const method = body.method || 'UPI';
+  const date   = body.date   || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd MMM yyyy');
+
+  const msg =
+    '🌅 *New Chhath 2026 Payment*\n' +
+    '👤 ' + name + ' · Flat ' + flat + '\n' +
+    '💰 ' + amt + ' via ' + method + '\n' +
+    '📅 ' + date + '\n' +
+    '⏳ Pending verification';
+
+  sendWA(phone, msg);
+}
+
+/* ══════════════════════════════════════════════════════════
+   HELPER: Notify committee with a custom message
+══════════════════════════════════════════════════════════ */
+function notifyCommittee(message) {
+  const props = PropertiesService.getScriptProperties();
+  const phone = props.getProperty('COMMITTEE_PHONE') || props.getProperty('CALLMEBOT_PHONE');
+  if (!phone) return;
+  sendWA(phone, message);
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1564,6 +1694,37 @@ function actionSubmitRsvp(body) {
     thekuaPackets:Number(body.thekuaPackets)|| 0
   });
   props.setProperty('PSOTS_RSVPS', JSON.stringify(rsvps));
+
+  const name    = body.name   || 'Resident';
+  const flat    = body.flat   || '?';
+  const mobile  = body.mobile || '';
+  const kharna  = Number(body.kharnaPlates)  || 0;
+  const thekua  = Number(body.thekuaPackets) || 0;
+  const family  = Number(body.family)        || 0;
+
+  // Confirm to resident
+  if (mobile) {
+    sendWA(mobile,
+      '🌅 *PSOTS Chhath Puja 2026 — RSVP Confirmed* ✅\n\n' +
+      'नमस्ते ' + name + ' जी 🙏\n\n' +
+      'Your prasad RSVP has been recorded:\n' +
+      '🏠 Flat: ' + flat + '\n' +
+      '👨‍👩‍👧‍👦 Family members: ' + family + '\n' +
+      '🍽️ Kharna plates: ' + kharna + '\n' +
+      '🪔 Thekua packets: ' + thekua + '\n\n' +
+      'Event: *Nov 1–4, 2026*\n' +
+      'Kharna: Nov 2  |  Thekua: Nov 4\n\n' +
+      'जय छठी मैया! 🌅'
+    );
+  }
+
+  // Notify committee
+  notifyCommittee(
+    '🙏 *New RSVP — PSOTS Chhath 2026*\n' +
+    '👤 ' + name + ' · Flat ' + flat + '\n' +
+    '👨‍👩‍👧‍👦 Family: ' + family + '  |  🍽️ Kharna: ' + kharna + '  |  🪔 Thekua: ' + thekua
+  );
+
   return { ok: true };
 }
 
@@ -1588,6 +1749,35 @@ function actionSubmitVolunteer(body) {
     'false',          // CheckedIn
     ''                // CheckinTime
   ]);
+
+  const name   = body.name   || 'Volunteer';
+  const flat   = body.flat   || '?';
+  const mobile = body.mobile || '';
+  const days   = body.days   || 'TBD';
+  const tasks  = body.tasks  || 'TBD';
+
+  // Confirm to volunteer
+  if (mobile) {
+    sendWA(mobile,
+      '🌅 *PSOTS Chhath Puja 2026 — Volunteer Registered* ✅\n\n' +
+      'नमस्ते ' + name + ' जी 🙏\n\n' +
+      'Thank you for signing up to volunteer!\n\n' +
+      '🏠 Flat: ' + flat + '\n' +
+      '📅 Days: ' + days + '\n' +
+      '🛠️ Tasks: ' + tasks + '\n\n' +
+      'The committee will be in touch with your assigned role closer to the event.\n\n' +
+      'जय छठी मैया! 🌅\n— PSOTS Chhath Committee'
+    );
+  }
+
+  // Notify committee
+  notifyCommittee(
+    '🙋 *New Volunteer — PSOTS Chhath 2026*\n' +
+    '👤 ' + name + ' · Flat ' + flat + '\n' +
+    '📅 Days: ' + days + '\n' +
+    '🛠️ Tasks: ' + tasks
+  );
+
   return { ok: true };
 }
 
