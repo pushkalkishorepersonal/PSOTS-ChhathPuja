@@ -190,6 +190,9 @@ function doGet(e) {
       result = actionGetReceipts(e.parameter.key);
       break;
     case 'getRsvps':
+    case 'getRSVPs':
+      result = actionGetRsvps();
+      break;
     case 'ping':
       result = { ok: true, message: 'PSOTS Backend is running!' };
       break;
@@ -247,6 +250,10 @@ function doPost(e) {
       result = actionSaveReceipts(body.receipts || [], body.key);
     } else if (body.action === 'sendInvoiceEmail') {
       result = actionSendInvoiceEmail(body);
+    } else if (body.action === 'submitRSVP') {
+      result = actionSubmitRsvp(body);
+    } else if (body.action === 'submitVolunteer') {
+      result = actionSubmitVolunteer(body);
     } else {
       // Default: new contribution
       result = actionAddContribution(body);
@@ -1277,6 +1284,56 @@ function actionSaveReceipts(receipts, key) {
   const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
   if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
   PropertiesService.getScriptProperties().setProperty('PSOTS_RECEIPTS', JSON.stringify(receipts));
+  return { ok: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   Prasad RSVPs — stored in Script Properties (JSON array)
+   Fields: name, flat, mobile, family, kharnaPlates, thekuaPackets, timestamp
+══════════════════════════════════════════════════════════ */
+function actionGetRsvps() {
+  const raw = PropertiesService.getScriptProperties().getProperty('PSOTS_RSVPS');
+  return { rsvps: raw ? JSON.parse(raw) : [] };
+}
+
+function actionSubmitRsvp(body) {
+  const props = PropertiesService.getScriptProperties();
+  const raw   = props.getProperty('PSOTS_RSVPS');
+  const rsvps = raw ? JSON.parse(raw) : [];
+  rsvps.push({
+    timestamp:    body.timestamp || new Date().toISOString(),
+    name:         body.name         || '',
+    flat:         body.flat         || '',
+    mobile:       body.mobile       || '',
+    family:       Number(body.family)       || 0,
+    kharnaPlates: Number(body.kharnaPlates) || 0,
+    thekuaPackets:Number(body.thekuaPackets)|| 0
+  });
+  props.setProperty('PSOTS_RSVPS', JSON.stringify(rsvps));
+  return { ok: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Individual volunteer sign-up (POST from volunteer page)
+   Appends one row to the Volunteers sheet
+══════════════════════════════════════════════════════════ */
+function actionSubmitVolunteer(body) {
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_VOLUNTEERS);
+  if (!sheet) return { error: 'Volunteers sheet not found' };
+  const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+  sheet.appendRow([
+    body.timestamp ? new Date(body.timestamp).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }) : now,
+    body.name   || '',
+    body.flat   || '',
+    body.mobile || '',
+    body.days   || '',
+    body.tasks  || '',
+    '',               // AssignedTask (blank until admin assigns)
+    body.status || 'Registered',
+    body.note   || '',
+    'false',          // CheckedIn
+    ''                // CheckinTime
+  ]);
   return { ok: true };
 }
 
