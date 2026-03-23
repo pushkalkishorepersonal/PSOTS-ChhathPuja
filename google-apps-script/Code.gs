@@ -21,6 +21,7 @@ const SHEET_VOLUNTEERS    = 'Volunteers';
 const SHEET_GALLERY       = 'GallerySubmissions';
 const SHEET_MEMBERS       = 'Members';
 const SHEET_RECEIPTS      = 'Receipts';
+const SHEET_ROLE_PERMS    = 'RolePerms';
 
 // ─── Column headers ───
 const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','Date','Status','AccountType','UserID','Year'];
@@ -31,6 +32,7 @@ const VOL_HEADERS  = ['Timestamp','Name','Flat','Mobile','Days','Tasks','Assigne
 const GAL_HEADERS  = ['Timestamp','Name','Flat','Year','Moment','Caption','DriveUrl','Status'];
 const MEM_HEADERS  = ['Email','DisplayName','Role','AddedBy','AddedAt'];
 const RCPT_HEADERS = ['ID','Category','Vendor','Amount','Date','Link','Notes'];
+const RPERMS_HEADERS = ['Role','Tabs'];
 
 /* ══════════════════════════════════════════════════════════
    INITIAL SETUP — Run this ONCE
@@ -1430,20 +1432,52 @@ function actionSaveReminders(reminders, key) {
 }
 
 /* ══════════════════════════════════════════════════════════
-   Role Permissions — stored in Script Properties (admin-only config)
-   JSON object: {role: [tab, ...], ...}
+   Role Permissions — stored in RolePerms sheet
+   Columns: Role | Tabs (JSON array of tab keys)
+   One row per role; sheet is auto-created on first access.
 ══════════════════════════════════════════════════════════ */
+function _getRolePermsSheet(ss) {
+  let sh = ss.getSheetByName(SHEET_ROLE_PERMS);
+  if (!sh) {
+    sh = ss.insertSheet(SHEET_ROLE_PERMS);
+    sh.appendRow(RPERMS_HEADERS);
+    sh.getRange(1, 1, 1, RPERMS_HEADERS.length)
+      .setFontWeight('bold').setBackground('#7A3800').setFontColor('#FFFFFF');
+    sh.setFrozenRows(1);
+    sh.setColumnWidth(1, 200);
+    sh.setColumnWidth(2, 500);
+  }
+  return sh;
+}
+
 function actionGetRolePerms(key) {
   const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
   if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
-  const raw = PropertiesService.getScriptProperties().getProperty('PSOTS_ROLE_PERMS');
-  return { perms: raw ? JSON.parse(raw) : null };  // null = use client defaults
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = _getRolePermsSheet(ss);
+  const lastRow = sh.getLastRow();
+  if (lastRow < 2) return { perms: null };  // null = use client defaults
+  const rows = sh.getRange(2, 1, lastRow - 1, 2).getValues();
+  const perms = {};
+  rows.forEach(r => {
+    const role = String(r[0]).trim();
+    if (!role) return;
+    try { perms[role] = JSON.parse(String(r[1])); } catch(e) { perms[role] = []; }
+  });
+  return { perms: Object.keys(perms).length ? perms : null };
 }
 
 function actionSaveRolePerms(perms, key) {
   const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
   if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
-  PropertiesService.getScriptProperties().setProperty('PSOTS_ROLE_PERMS', JSON.stringify(perms));
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = _getRolePermsSheet(ss);
+  const lastRow = sh.getLastRow();
+  if (lastRow > 1) sh.deleteRows(2, lastRow - 1);
+  const rows = Object.entries(perms).map(([role, tabs]) => [role, JSON.stringify(tabs)]);
+  if (rows.length > 0) {
+    sh.getRange(2, 1, rows.length, 2).setValues(rows);
+  }
   return { ok: true };
 }
 
