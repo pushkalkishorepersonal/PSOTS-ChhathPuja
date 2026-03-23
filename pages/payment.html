@@ -57,6 +57,11 @@
   .success-box h4{font-family:'Yatra One',serif;font-size:1.2rem;color:var(--green);margin-bottom:.45rem}
   .success-box p{font-size:.86rem;color:#555;line-height:1.65;margin-bottom:1.1rem}
   .err-box{display:none;background:#fff3f0;border:1px solid #ffb8a0;border-radius:9px;padding:.7rem .95rem;color:#c03000;font-size:.82rem;margin-top:.75rem}
+  .already-submitted-banner{background:linear-gradient(135deg,#f0fff4,#e4fce9);border:1.5px solid #a5d6a7;border-radius:14px;padding:1.1rem 1.25rem;margin-bottom:1.1rem;display:none}
+  .asb-title{font-size:.95rem;font-weight:700;color:#1b5e20;margin-bottom:.3rem}
+  .asb-sub{font-size:.8rem;color:#4a7c59;line-height:1.55}
+  .asb-meta{display:flex;flex-wrap:wrap;gap:.4rem .9rem;margin-top:.6rem}
+  .asb-chip{background:#fff;border:1px solid #a5d6a7;border-radius:50px;padding:.2rem .75rem;font-size:.76rem;font-weight:600;color:#2e7d32}
 
   /* ── Device-adaptive pay panels ── */
   .pay-panels{display:flex;flex-direction:column;gap:.65rem;margin-bottom:.85rem}
@@ -226,6 +231,13 @@
 
   </div>
 
+  <!-- Already-submitted banner (shown when localStorage has a recent submission) -->
+  <div class="already-submitted-banner" id="asbBanner">
+    <div class="asb-title">✅ Contribution already recorded</div>
+    <div class="asb-sub">You've already submitted a confirmation today. The committee will verify it within 24 hours and send a WhatsApp confirmation. 🙏<br>If you've made an additional payment, please <a href="https://wa.me/919482088904" style="color:var(--or);font-weight:600">WhatsApp the committee directly</a>.</div>
+    <div class="asb-meta" id="asbMeta"></div>
+  </div>
+
   <!-- Confirm form -->
   <div class="card conf-card" id="confirmCard">
     <button class="conf-hdr" onclick="toggleConfirm()">
@@ -350,11 +362,53 @@ function downloadQR(){
   }catch(e){toast('Could not download QR');}
 }
 
+// ── Duplicate submission guard ───────────────────────────────
+const SUBMIT_KEY='psots_last_submit_2026';
+const COOLDOWN_MS=24*60*60*1000; // 24 hours
+
+function lockSubmitButton(label){
+  const btn=document.getElementById('submitBtn');
+  btn.disabled=true;
+  btn.style.opacity='.6';
+  btn.style.cursor='not-allowed';
+  btn.textContent=label||'✅ Submitted';
+}
+
+function checkPreviousSubmission(){
+  const raw=localStorage.getItem(SUBMIT_KEY);
+  if(!raw) return;
+  let rec;
+  try{ rec=JSON.parse(raw); }catch(e){ return; }
+  const age=Date.now()-(rec.ts||0);
+  if(age>COOLDOWN_MS){
+    // Cooldown expired — allow fresh submission but clear old record
+    localStorage.removeItem(SUBMIT_KEY);
+    return;
+  }
+  // Within 24h — show banner and lock button
+  const banner=document.getElementById('asbBanner');
+  const meta=document.getElementById('asbMeta');
+  if(banner){
+    banner.style.display='block';
+    const hoursAgo=Math.floor(age/3600000);
+    const minsAgo=Math.floor((age%3600000)/60000);
+    const timeStr=hoursAgo>0?`${hoursAgo}h ${minsAgo}m ago`:`${minsAgo}m ago`;
+    meta.innerHTML=[
+      rec.name?`<span class="asb-chip">👤 ${rec.name}</span>`:'',
+      rec.flat?`<span class="asb-chip">🏠 ${rec.flat}</span>`:'',
+      rec.amount?`<span class="asb-chip">💰 ₹${parseInt(rec.amount).toLocaleString('en-IN')}</span>`:'',
+      `<span class="asb-chip">🕐 Submitted ${timeStr}</span>`
+    ].join('');
+  }
+  lockSubmitButton('✅ Already Submitted Today');
+}
+
 // Init
 window.addEventListener('DOMContentLoaded',()=>{
   document.getElementById('f-date').valueAsDate=new Date();
   initLayout();
   initQR();
+  checkPreviousSubmission();
   // Accept either resident session (psots_user) or admin session (psots_admin_user)
   const u=localStorage.getItem('psots_user') || localStorage.getItem('psots_admin_user');
   if(u){
@@ -532,7 +586,10 @@ async function submitForm(){
   }
   // Save cookies for guest
   if(!currentUser){['name','flat','mobile'].forEach(k=>{const d=new Date();d.setTime(d.getTime()+365*864e5);document.cookie=`cp_${k}=${encodeURIComponent(document.getElementById('f-'+k).value)};expires=${d.toUTCString()};path=/;SameSite=Lax`;});}
-  btn.disabled=false;btn.textContent='✅ Submitted!';
+  // Lock form — save submission record to localStorage (24-hour cooldown)
+  const submitRecord={name,flat,amount,ts:Date.now()};
+  localStorage.setItem('psots_last_submit_2026',JSON.stringify(submitRecord));
+  lockSubmitButton('✅ Submitted — awaiting verification');
   openConfirm();
   document.getElementById('successBox').style.display='block';
   document.getElementById('successTxt').textContent=`Your contribution of ₹${parseInt(amount).toLocaleString('en-IN')} has been recorded. The committee will verify and send you a WhatsApp confirmation within 24 hours. 🙏`;
