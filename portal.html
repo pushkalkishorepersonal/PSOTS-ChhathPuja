@@ -38,10 +38,33 @@
   .nav-r{display:flex;align-items:center;gap:.7rem}
   .nav-home{font-size:.7rem;color:rgba(255,220,120,.55);text-decoration:none;letter-spacing:.08em;text-transform:uppercase;transition:color .2s}
   .nav-home:hover{color:var(--gold)}
-  .nav-avatar{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,194,0,.4);overflow:hidden;display:none;cursor:pointer}
-  .nav-avatar img{width:100%;height:100%;object-fit:cover}
-  .btn-signout{background:rgba(255,255,255,.1);color:rgba(255,220,120,.7);border:1px solid rgba(255,255,255,.15);border-radius:50px;padding:.32rem .85rem;font-size:.68rem;cursor:pointer;display:none}
+  .nav-avatar{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,194,0,.4);overflow:hidden;display:none;cursor:pointer;align-items:center;justify-content:center;flex-shrink:0;transition:border-color .2s,box-shadow .2s}
+  .nav-avatar:hover{border-color:rgba(255,194,0,.75);box-shadow:0 0 0 3px rgba(255,194,0,.12)}
+  .nav-avatar img{width:100%;height:100%;object-fit:cover;display:none}
+  .nav-av-init{font-size:.85rem;font-weight:700;color:#fff;line-height:1;display:none}
+  .btn-signout{background:rgba(255,255,255,.1);color:rgba(255,220,120,.7);border:1px solid rgba(255,255,255,.15);border-radius:50px;padding:.32rem .85rem;font-size:.68rem;cursor:pointer;display:none;flex-shrink:0;transition:background .2s}
   .btn-signout:hover{background:rgba(255,255,255,.18)}
+  @media(max-width:520px){.btn-signout{display:none!important}.nav-home{font-size:.62rem;letter-spacing:.04em}}
+
+  /* ── Sign-out Confirmation Modal ── */
+  #signoutConfirm{position:fixed;inset:0;background:rgba(10,5,0,.88);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:99998;display:flex;align-items:center;justify-content:center;padding:1rem;opacity:0;pointer-events:none;transition:opacity .35s ease}
+  #signoutConfirm.visible{opacity:1;pointer-events:all}
+  .sc-card{background:linear-gradient(160deg,rgba(58,32,6,.97) 0%,rgba(28,16,4,.97) 100%);border:1px solid rgba(255,180,40,.22);border-radius:24px;padding:2rem 1.8rem 1.8rem;max-width:390px;width:100%;text-align:center;box-shadow:0 12px 60px rgba(0,0,0,.65);transform:scale(.9) translateY(18px);transition:transform .42s cubic-bezier(.34,1.2,.64,1),opacity .35s ease;opacity:0;overflow:hidden}
+  #signoutConfirm.visible .sc-card{transform:scale(1) translateY(0);opacity:1}
+  .sc-logo img{width:52px;height:52px;display:block;margin:0 auto .8rem;filter:drop-shadow(0 0 10px rgba(255,180,40,.45));animation:soSpin 6s ease-in-out infinite}
+  .sc-title{font-size:1.05rem;font-weight:700;color:rgba(255,220,100,1);margin-bottom:1rem;letter-spacing:.01em}
+  .sc-greeting{background:rgba(255,255,255,.04);border:1px solid rgba(255,180,40,.1);border-radius:14px;padding:.95rem 1.1rem;margin-bottom:.9rem}
+  .sc-greeting-name{font-size:1rem;font-weight:700;color:var(--gold);margin-bottom:.3rem}
+  .sc-greeting-msg{font-size:.82rem;color:rgba(255,200,120,.82);line-height:1.65}
+  .sc-jay{font-size:.72rem;font-weight:600;color:rgba(255,160,60,.9);letter-spacing:.07em;text-transform:uppercase;margin-top:.55rem}
+  .sc-nudge{background:rgba(255,194,0,.05);border:1px solid rgba(255,194,0,.14);border-radius:12px;padding:.85rem 1rem;margin-bottom:.9rem;text-align:left}
+  .sc-nudge-title{font-size:.7rem;font-weight:700;color:rgba(255,194,0,.65);letter-spacing:.09em;text-transform:uppercase;margin-bottom:.5rem}
+  .sc-nudge-item{font-size:.79rem;color:rgba(255,210,110,.72);padding:.2rem 0;display:flex;align-items:flex-start;gap:.45rem;line-height:1.45}
+  .sc-actions{display:flex;gap:.65rem;margin-top:1.2rem}
+  .sc-cancel{flex:1;background:rgba(255,255,255,.07);color:rgba(255,220,120,.75);border:1px solid rgba(255,255,255,.12);border-radius:50px;padding:.65rem .9rem;font-family:'DM Sans',sans-serif;font-size:.83rem;cursor:pointer;transition:background .2s}
+  .sc-cancel:hover{background:rgba(255,255,255,.13)}
+  .sc-confirm{flex:1;background:linear-gradient(135deg,rgba(190,55,15,.92),rgba(140,28,8,.92));color:#fff;border:none;border-radius:50px;padding:.65rem .9rem;font-family:'DM Sans',sans-serif;font-size:.83rem;font-weight:700;cursor:pointer;transition:opacity .2s}
+  .sc-confirm:hover{opacity:.85}
 
   /* ── LOGIN SCREEN ─── */
   #loginScreen{
@@ -269,8 +292,11 @@
   </div>
   <div class="nav-r">
     <a class="nav-home" href="index.html">← Home</a>
-    <div class="nav-avatar" id="navAvatar"><img id="navAvatarImg" src="" alt=""/></div>
-    <button class="btn-signout" id="btnSignout" onclick="signOut()">Sign Out</button>
+    <div class="nav-avatar" id="navAvatar" title="Sign out" onclick="confirmSignOut()">
+      <img id="navAvatarImg" src="" alt=""/>
+      <span class="nav-av-init" id="navAvInit"></span>
+    </div>
+    <button class="btn-signout" id="btnSignout" onclick="confirmSignOut()">Sign Out</button>
   </div>
 </nav>
 
@@ -670,6 +696,27 @@
   <button class="pn-dismiss" onclick="dismissNudge()" title="Remind me later">×</button>
 </div>
 
+<!-- Sign-out Confirmation Modal -->
+<div id="signoutConfirm">
+  <div class="sc-card">
+    <div class="sc-logo"><img src="images/logo-main.png" alt="PSOTS"/></div>
+    <div class="sc-title">Ready to leave?</div>
+    <div class="sc-greeting">
+      <div class="sc-greeting-name" id="scGreetingName">We'll miss you!</div>
+      <div class="sc-greeting-msg" id="scGreetingMsg">Your devotion lights our community.<br>The celebration will feel your absence.</div>
+      <div class="sc-jay">🙏 Jay Chhathi Maiya 🙏</div>
+    </div>
+    <div class="sc-nudge" id="scNudge" style="display:none">
+      <div class="sc-nudge-title">A gentle reminder before you go</div>
+      <div id="scNudgeItems"></div>
+    </div>
+    <div class="sc-actions">
+      <button class="sc-cancel" onclick="closeSignoutConfirm()">Stay &amp; Continue</button>
+      <button class="sc-confirm" onclick="signOut()">Yes, Sign Out</button>
+    </div>
+  </div>
+</div>
+
 <!-- Sign-out farewell overlay -->
 <div id="signoutOverlay">
   <div class="so-card">
@@ -686,7 +733,7 @@
    CONFIG
 ═══════════════════════════════════════════════════ */
 const C = {
-  upiId:     '9482088904-3@ybl',
+  upiId:     '9482088904@sbi',
   payeeName: 'ChhathPuja2026PSOTS',
   waOrg:     '919482088904',
   scriptUrl: localStorage.getItem('psots_script_url') || (window.PSOTS && window.PSOTS.scriptUrl) || 'YOUR_APPS_SCRIPT_URL_HERE',
@@ -887,7 +934,45 @@ function resendOtp() {
   document.getElementById('otpCode').value = '';
 }
 
+function confirmSignOut() {
+  const modal        = document.getElementById('signoutConfirm');
+  const greetingName = document.getElementById('scGreetingName');
+  const greetingMsg  = document.getElementById('scGreetingMsg');
+  const nudge        = document.getElementById('scNudge');
+  const nudgeItems   = document.getElementById('scNudgeItems');
+
+  const name = currentUser?.name ? currentUser.name.split(' ')[0] : '';
+  if (greetingName) greetingName.textContent = name ? 'We'll miss you, ' + name + '!' : 'We'll miss you!';
+  if (greetingMsg)  greetingMsg.innerHTML = 'We hope to see you again very soon.<br>Your devotion truly lights our community.';
+
+  // Check incomplete profile fields — show gently what they could be missing
+  const p      = userProfile || {};
+  const missing = [];
+  if (!p.flat)   missing.push({ icon: '🏠', text: 'Flat number — needed so we know where to deliver prasad' });
+  if (!p.mobile) missing.push({ icon: '📱', text: 'Mobile number — for important event alerts & updates' });
+  if (!p.vrati)  missing.push({ icon: '🙏', text: 'Vrati preference — let us know if you\'re observing the fast' });
+  if (!p.family) missing.push({ icon: '👨‍👩‍👧', text: 'Family size — helps us plan the right prasad quantities' });
+
+  if (missing.length > 0 && nudge && nudgeItems) {
+    nudge.style.display = 'block';
+    nudgeItems.innerHTML = missing.map(m =>
+      `<div class="sc-nudge-item"><span>${m.icon}</span><span>${m.text}</span></div>`
+    ).join('');
+  } else if (nudge) {
+    nudge.style.display = 'none';
+  }
+
+  if (modal) modal.classList.add('visible');
+}
+
+function closeSignoutConfirm() {
+  const modal = document.getElementById('signoutConfirm');
+  if (modal) modal.classList.remove('visible');
+}
+
 function signOut() {
+  // Close confirmation modal if open
+  closeSignoutConfirm();
   if (typeof google !== 'undefined') {
     google.accounts.id.disableAutoSelect();
   }
@@ -1062,11 +1147,20 @@ function showPortal() {
     loadMembers(); // async — syncs from server then re-renders
   }
 
-  // Set avatar in nav
-  const navAv = document.getElementById('navAvatar');
-  if (currentUser.picture) {
-    navAv.style.display = 'block';
-    document.getElementById('navAvatarImg').src = currentUser.picture;
+  // Set avatar in nav — always show (picture or initials fallback)
+  const navAv     = document.getElementById('navAvatar');
+  const navAvImg  = document.getElementById('navAvatarImg');
+  const navAvInit = document.getElementById('navAvInit');
+  const navInitial = (currentUser?.name || currentUser?.email || '?').charAt(0).toUpperCase();
+  navAv.style.display = 'flex';
+  if (currentUser?.picture) {
+    navAvImg.src          = currentUser.picture;
+    navAvImg.style.display = 'block';
+    if (navAvInit) navAvInit.style.display = 'none';
+  } else {
+    navAvImg.style.display = 'none';
+    if (navAvInit) { navAvInit.textContent = navInitial; navAvInit.style.display = 'block'; }
+    navAv.style.background = 'linear-gradient(135deg,#e85c00,#c93800)';
   }
 
   // Load profile from localStorage first, then Sheet

@@ -11,7 +11,7 @@
 window.PSOTS = {
 
   /* ── PAYMENT ──────────────────── */
-  upiId:     '9482088904-3@ybl',
+  upiId:     '9482088904@sbi',
   upiMobile: '9482088904',
   payeeName: 'ChhathPuja2026PSOTS',
 

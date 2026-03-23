@@ -21,7 +21,7 @@
 
 ## ✅ WHAT'S ALREADY FILLED IN (you don't need to change these)
 
-- UPI ID: `9482088904-3@ybl`
+- UPI ID: `9482088904@sbi`
 - Mobile: `9482088904` and `9902837002`
 - Event dates: Nov 1–4, 2026
 - Arghya times: 5:45 PM (Nov 3) and 6:15 AM (Nov 4)

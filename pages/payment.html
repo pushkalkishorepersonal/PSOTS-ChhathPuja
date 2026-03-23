@@ -130,6 +130,15 @@
 
 <div class="page-content">
 
+  <!-- Why manual UPI? Info banner -->
+  <div style="background:linear-gradient(135deg,rgba(255,194,0,.08),rgba(255,194,0,.04));border:1px solid rgba(255,194,0,.2);border-radius:14px;padding:.9rem 1.1rem;margin-bottom:1.1rem;display:flex;align-items:flex-start;gap:.7rem">
+    <span style="font-size:1.3rem;flex-shrink:0;line-height:1.2">💡</span>
+    <div>
+      <div style="font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#8b4a10;margin-bottom:.35rem">Why a manual UPI process?</div>
+      <p style="font-size:.78rem;color:#6b3a18;line-height:1.6;margin:0">Online payment gateways (Razorpay, Paytm, etc.) require a registered business entity and impose per-transaction fees — neither of which suits a resident-run community celebration. Our UPI-direct model means <strong>100% of your contribution</strong> reaches the puja fund with zero platform charges. Simply pay via your UPI app, then confirm below so we can record it — it only takes a minute!</p>
+    </div>
+  </div>
+
   <!-- Step bar -->
   <div class="step-bar">
     <div class="step-pill on">1 Enter Amount</div><div class="step-sep"></div>
@@ -170,7 +179,7 @@
     <!-- UPI ID + amount line — always visible -->
     <div class="upi-id-row" style="margin-bottom:.6rem">
       <span style="font-size:.76rem;color:#6b3a18;white-space:nowrap">UPI ID:</span>
-      <span class="upi-id-text">9482088904-3@ybl</span>
+      <span class="upi-id-text">9482088904@sbi</span>
       <button class="copy-btn" id="copyBtn" onclick="copyUpiId()">📋 Copy</button>
     </div>
     <p id="amtDisplay" style="font-size:.78rem;color:#6b3a18;margin:0 0 .75rem;text-align:center">Amount: enter above</p>
@@ -279,7 +288,7 @@
 <script>
 const _cfg=window.PSOTS||{};
 const C={
-  upiId:     _cfg.upiId     ||'9482088904-3@ybl',
+  upiId:     _cfg.upiId     ||'9482088904@sbi',
   payeeName: _cfg.payeeName ||'ChhathPuja2026PSOTS',
   waOrg:     _cfg.waOrg     ||'919482088904',
   scriptUrl: _cfg.scriptUrl ||localStorage.getItem('psots_script_url')||''
