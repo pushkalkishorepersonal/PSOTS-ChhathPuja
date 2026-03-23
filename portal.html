@@ -1219,7 +1219,7 @@ async function saveMembers(members) {
   if (sync) sync.textContent = 'Saving…';
   try {
     await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'saveMembers', members, key: (window.PSOTS||{}).adminKey||'' }) });
+      body: JSON.stringify({ action:'saveMembers', members }) });
     if (sync) sync.textContent = 'Verifying…';
     // Wait for Apps Script to commit, then re-fetch to confirm
     await new Promise(r => setTimeout(r, 1500));

@@ -200,7 +200,7 @@ function doGet(e) {
       result = actionList();
       break;
     case 'list_all':
-      result = actionListAll(e.parameter.key);
+      result = actionListAll();
       break;
     case 'myContribs':
       result = actionMyContribs(e.parameter.flat, e.parameter.mobile);
@@ -224,16 +224,16 @@ function doGet(e) {
       result = actionGetGalleryPhotos(e.parameter.year, e.parameter.status);
       break;
     case 'getMembers':
-      result = actionGetMembers(e.parameter.key);
+      result = actionGetMembers();
       break;
     case 'getReceipts':
-      result = actionGetReceipts(e.parameter.key);
+      result = actionGetReceipts();
       break;
     case 'getReminders':
-      result = actionGetReminders(e.parameter.key);
+      result = actionGetReminders();
       break;
     case 'getRolePerms':
-      result = actionGetRolePerms(e.parameter.key);
+      result = actionGetRolePerms();
       break;
     case 'getRsvps':
     case 'getRSVPs':
@@ -291,13 +291,13 @@ function doPost(e) {
     } else if (body.action === 'updateGalleryStatus') {
       result = actionUpdateGalleryStatus(body);
     } else if (body.action === 'saveMembers') {
-      result = actionSaveMembers(body.members || [], body.key);
+      result = actionSaveMembers(body.members || []);
     } else if (body.action === 'saveReceipts') {
-      result = actionSaveReceipts(body.receipts || [], body.key);
+      result = actionSaveReceipts(body.receipts || []);
     } else if (body.action === 'saveReminders') {
-      result = actionSaveReminders(body.reminders || [], body.key);
+      result = actionSaveReminders(body.reminders || []);
     } else if (body.action === 'saveRolePerms') {
-      result = actionSaveRolePerms(body.perms || {}, body.key);
+      result = actionSaveRolePerms(body.perms || {});
     } else if (body.action === 'sendInvoiceEmail') {
       result = actionSendInvoiceEmail(body);
     } else if (body.action === 'submitRSVP') {
@@ -348,9 +348,7 @@ function actionList() {
 /* ══════════════════════════════════════════════════════════
    ACTION: List ALL contributions (admin only)
 ══════════════════════════════════════════════════════════ */
-function actionListAll(key) {
-  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
-  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+function actionListAll() {
 
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
   if (!sheet || sheet.getLastRow() < 2) return { all: [] };
@@ -1312,7 +1310,7 @@ function actionSendInvoiceEmail(params) {
    Roles: admin | treasurer | core_committee | volunteer_coordinator
    Edit directly in the sheet — changes are picked up instantly.
 ══════════════════════════════════════════════════════════ */
-function actionGetMembers(key) {
+function actionGetMembers() {
   const ss  = SpreadsheetApp.getActiveSpreadsheet();
   let   mem = ss.getSheetByName(SHEET_MEMBERS);
   // Auto-create the sheet if it doesn't exist yet
@@ -1338,9 +1336,7 @@ function actionGetMembers(key) {
   return { members };
 }
 
-function actionSaveMembers(members, key) {
-  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
-  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+function actionSaveMembers(members) {
   const ss  = SpreadsheetApp.getActiveSpreadsheet();
   let   mem = ss.getSheetByName(SHEET_MEMBERS);
   if (!mem) {
@@ -1371,7 +1367,7 @@ function actionSaveMembers(members, key) {
    Sheet columns: ID | Category | Vendor | Amount | Date | Link | Notes
    Edit rows directly in the sheet; changes are picked up on next load.
 ══════════════════════════════════════════════════════════ */
-function actionGetReceipts(key) {
+function actionGetReceipts() {
   const ss   = SpreadsheetApp.getActiveSpreadsheet();
   let   rcpt = ss.getSheetByName(SHEET_RECEIPTS);
   if (!rcpt) return { receipts: [] };
@@ -1392,9 +1388,7 @@ function actionGetReceipts(key) {
   return { receipts };
 }
 
-function actionSaveReceipts(receipts, key) {
-  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
-  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+function actionSaveReceipts(receipts) {
   const ss   = SpreadsheetApp.getActiveSpreadsheet();
   let   rcpt = ss.getSheetByName(SHEET_RECEIPTS);
   if (!rcpt) {
@@ -1417,16 +1411,12 @@ function actionSaveReceipts(receipts, key) {
    Reminders — stored in Script Properties (admin-only config)
    JSON array: [{date, template, note}]
 ══════════════════════════════════════════════════════════ */
-function actionGetReminders(key) {
-  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
-  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+function actionGetReminders() {
   const raw = PropertiesService.getScriptProperties().getProperty('PSOTS_REMINDERS');
   return { reminders: raw ? JSON.parse(raw) : [] };
 }
 
-function actionSaveReminders(reminders, key) {
-  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
-  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+function actionSaveReminders(reminders) {
   PropertiesService.getScriptProperties().setProperty('PSOTS_REMINDERS', JSON.stringify(reminders));
   return { ok: true };
 }
@@ -1450,9 +1440,7 @@ function _getRolePermsSheet(ss) {
   return sh;
 }
 
-function actionGetRolePerms(key) {
-  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
-  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+function actionGetRolePerms() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = _getRolePermsSheet(ss);
   const lastRow = sh.getLastRow();
@@ -1467,9 +1455,7 @@ function actionGetRolePerms(key) {
   return { perms: Object.keys(perms).length ? perms : null };
 }
 
-function actionSaveRolePerms(perms, key) {
-  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
-  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+function actionSaveRolePerms(perms) {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = _getRolePermsSheet(ss);
   const lastRow = sh.getLastRow();

@@ -1003,7 +1003,7 @@ async function loadRolePerms() {
   const url = getScriptUrl();
   if (!url) return;
   try {
-    const r = await fetch(url + '?action=getRolePerms&key=' + encodeURIComponent((window.PSOTS||{}).adminKey||''));
+    const r = await fetch(url + '?action=getRolePerms');
     const d = await r.json();
     if (d.perms && typeof d.perms === 'object') {
       PsotsCache.set('role_perms', d.perms, CACHE_TTL.role_perms);
@@ -1422,7 +1422,7 @@ async function loadAdminCon() {
   }
 
   try {
-    const res = await fetch(url + '?action=list_all&key=' + encodeURIComponent(C.adminKey || ''));
+    const res = await fetch(url + '?action=list_all');
     const data = await res.json();
     allConData = data.all || [];
     renderConTable(allConData);
@@ -2011,7 +2011,7 @@ async function lookupCmteResident(i) {
   // Search by name through all contributors
   if (nameInput) {
     try {
-      const res = await fetch(`${url}?action=list_all&key=${encodeURIComponent(C.adminKey||'')}`);
+      const res = await fetch(`${url}?action=list_all`);
       const d = await res.json();
       const match = (d.all||[]).find(r => r.name.toLowerCase().includes(nameInput.toLowerCase()));
       if (match) {
@@ -2119,7 +2119,7 @@ async function adminSaveMembers(members) {
   if (sync) sync.textContent = 'Saving to sheet…';
   try {
     await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'saveMembers', members, key: (window.PSOTS||{}).adminKey||'' }) });
+      body: JSON.stringify({ action:'saveMembers', members }) });
     if (sync) sync.textContent = 'Verifying…';
     await new Promise(r => setTimeout(r, 1200));
     await loadMembersAdmin();
@@ -2239,7 +2239,7 @@ async function saveRolePerms() {
   if (url) {
     try {
       await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ action:'saveRolePerms', perms, key: (window.PSOTS||{}).adminKey||'' }) });
+        body: JSON.stringify({ action:'saveRolePerms', perms }) });
     } catch(e) {}
   }
   toast('✅ Permissions saved', 'success');
@@ -2254,7 +2254,7 @@ async function resetRolePerms() {
   if (url) {
     try {
       await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ action:'saveRolePerms', perms: null, key: (window.PSOTS||{}).adminKey||'' }) });
+        body: JSON.stringify({ action:'saveRolePerms', perms: null }) });
     } catch(e) {}
   }
   toast('↩ Reset to defaults', '');
@@ -2746,7 +2746,7 @@ async function loadReminders() {
   const url = getScriptUrl();
   if (!url) return;
   try {
-    const r = await fetch(url + '?action=getReminders&key=' + encodeURIComponent((window.PSOTS||{}).adminKey||''));
+    const r = await fetch(url + '?action=getReminders');
     const d = await r.json();
     if (Array.isArray(d.reminders)) {
       PsotsCache.set('reminders', d.reminders, CACHE_TTL.reminders);
@@ -2765,7 +2765,7 @@ async function _saveReminders(reminders) {
   if (!url) return;
   try {
     await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'saveReminders', reminders, key: (window.PSOTS||{}).adminKey||'' }) });
+      body: JSON.stringify({ action:'saveReminders', reminders }) });
   } catch(e) {}
 }
 
@@ -3355,7 +3355,7 @@ async function saveReceipts() {
   if (url && !url.includes('YOUR_APPS')) {
     try {
       await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ action:'saveReceipts', receipts: allReceipts, key: (window.PSOTS||{}).adminKey }) });
+        body: JSON.stringify({ action:'saveReceipts', receipts: allReceipts }) });
       if (syncEl) syncEl.textContent = 'Verifying…';
       await new Promise(r => setTimeout(r, 1200));
       await loadReceipts();
