@@ -78,6 +78,9 @@
   .app-big-btn{display:flex;align-items:center;justify-content:center;gap:.52rem;padding:.82rem .5rem;border-radius:12px;font-size:.9rem;font-weight:700;text-decoration:none;font-family:'DM Sans',sans-serif;transition:transform .15s,box-shadow .15s;border:none;cursor:pointer}
   .app-big-btn:active{transform:scale(.96)}
   .app-btn-full{grid-column:1/-1;padding:.72rem}
+  .app-btn-gpay{background:#1a73e8;color:#fff;box-shadow:0 3px 14px rgba(26,115,232,.3)}
+  .app-btn-phonepe{background:#5f259f;color:#fff;box-shadow:0 3px 14px rgba(95,37,159,.3)}
+  .app-btn-paytm{background:#002970;color:#fff;box-shadow:0 3px 14px rgba(0,41,112,.3)}
   .app-btn-any{background:linear-gradient(135deg,var(--or),#c93800);color:#fff;box-shadow:0 3px 14px rgba(232,92,0,.3)}
   .app-sec-note{font-size:.7rem;color:#9b6b48;text-align:center;margin:.35rem 0 0;line-height:1.5}
 
@@ -192,17 +195,31 @@
     <!-- Pay panels — JS sets device layout on load -->
     <div class="pay-panels">
 
-      <!-- APP SECTION: primary on mobile, collapsed on desktop -->
-      <div id="appSection" class="pay-section">
+      <!-- APP SECTION: collapsed by default; optional shortcuts for specific apps -->
+      <div id="appSection" class="pay-section collapsed">
         <button class="pay-sec-hdr" onclick="toggleSec('appSection','appArrow')">
-          <span>📱 Open directly in UPI App</span>
-          <span class="sec-arrow" id="appArrow">▾</span>
+          <span>📱 Open in UPI App (optional shortcut)</span>
+          <span class="sec-arrow" id="appArrow">▸</span>
         </button>
         <div class="pay-sec-body">
-          <a class="app-big-btn app-btn-any app-btn-full" id="link-any" href="#" onclick="return handleAppLink(this,'any')">
-            📱 &nbsp;Pay with UPI
-          </a>
-          <p class="app-sec-note" id="appSecNote">Enter amount above — opens your UPI app with amount pre-filled</p>
+          <div class="app-grid">
+            <a class="app-big-btn app-btn-gpay" id="link-gpay" href="#" onclick="return handleAppLink(this,'gpay')">
+              <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 20v8.4h11.6c-.5 2.7-2 5-4.3 6.5l7 5.4C42 36.3 44 30.7 44 24c0-1.4-.1-2.7-.4-4H24z" fill="#fff" fill-opacity=".9"/><path d="M13.3 28.6 11.6 30l-6.2 4.8C7.9 39.4 12.5 43 18 44.7V37.4c-2.2-.6-4.1-1.9-5.4-3.6" fill="#fff" fill-opacity=".7"/><path d="M18 7.3C12.5 9 7.9 12.6 5.4 17.2l6.8 5.3c1.3-3.7 4.3-6.6 7.8-8.1V7.3z" fill="#fff" fill-opacity=".7"/><path d="M24 4C17 4 11 7.4 7 12.7l7.3 5.7C16.2 14.3 19.9 12 24 12c3.4 0 6.5 1.2 8.9 3.2l6.6-6.6C35.7 5.8 30.2 4 24 4z" fill="#fff" fill-opacity=".9"/></svg>
+              GPay
+            </a>
+            <a class="app-big-btn app-btn-phonepe" id="link-phonepe" href="#" onclick="return handleAppLink(this,'phonepe')">
+              <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="20" fill="#fff" fill-opacity=".15"/><text x="24" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#fff" font-family="sans-serif">Pe</text></svg>
+              PhonePe
+            </a>
+            <a class="app-big-btn app-btn-paytm" id="link-paytm" href="#" onclick="return handleAppLink(this,'paytm')">
+              <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="40" height="40" rx="8" fill="#00b9f1" fill-opacity=".8"/><text x="24" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff" font-family="sans-serif">Paytm</text></svg>
+              PayTM
+            </a>
+            <a class="app-big-btn app-btn-any" id="link-any" href="#" onclick="return handleAppLink(this,'any')">
+              📲 Any App
+            </a>
+          </div>
+          <p class="app-sec-note" id="appSecNote">Enter amount above · If app doesn't open → scan QR or copy UPI ID above</p>
         </div>
       </div>
 
@@ -488,18 +505,14 @@ window.addEventListener('DOMContentLoaded',()=>{
   }
 });
 
-// Device-adaptive layout: mobile → app buttons primary; desktop → QR primary
+// QR is primary on all devices — app shortcuts are optional and collapsed by default
 function initLayout(){
-  const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if(isMobile){
-    document.getElementById('qrSection').classList.add('collapsed');
-    document.getElementById('qrArrow').textContent='▸';
-    document.getElementById('cardSub').textContent='Tap your UPI app to pay instantly — amount is pre-filled automatically.';
-  } else {
-    document.getElementById('appSection').classList.add('collapsed');
-    document.getElementById('appArrow').textContent='▸';
-    document.getElementById('cardSub').textContent='Scan the QR code with any UPI app.';
-  }
+  // Both sections: app section always collapsed, QR always open
+  document.getElementById('appSection').classList.add('collapsed');
+  document.getElementById('appArrow').textContent='▸';
+  document.getElementById('qrSection').classList.remove('collapsed');
+  document.getElementById('qrArrow').textContent='▾';
+  document.getElementById('cardSub').textContent='Scan the QR code with any UPI app — or copy the UPI ID below.';
 }
 
 function toggleSec(sectionId,arrowId){
@@ -568,14 +581,26 @@ function updateAppLinks(amount){
   const pa=encodeURIComponent(C.upiId);
   const pn=encodeURIComponent(C.payeeName);
   const tn=encodeURIComponent('ChhathPuja2026');
-  const base=`pa=${pa}&pn=${pn}&am=${amt}&cu=INR&tn=${tn}`;
-  const link=document.getElementById('link-any');
+  const q=`pa=${pa}&pn=${pn}&am=${amt}&cu=INR&tn=${tn}`;
+  const isAndroid=/Android/i.test(navigator.userAgent);
+  const fbGpay=encodeURIComponent('https://pay.google.com/');
+  const fbPe=encodeURIComponent('https://www.phonepe.com/');
+  const fbPtm=encodeURIComponent('https://paytm.com/');
+  function intentUrl(pkg,fb){return`intent://pay?${q}#Intent;scheme=upi;package=${pkg};S.browser_fallback_url=${fb};end`;}
+  const urls={
+    gpay:  isAndroid?intentUrl('com.google.android.apps.nbu.paisa.user',fbGpay):`gpay://upi/pay?${q}`,
+    phonepe:isAndroid?intentUrl('com.phonepe.app',fbPe):`phonepe://pay?${q}`,
+    paytm: isAndroid?intentUrl('net.one97.paytm',fbPtm):`paytmmp://pay?${q}`,
+    any:   `upi://pay?${q}`
+  };
+  ['gpay','phonepe','paytm','any'].forEach(k=>{
+    const el=document.getElementById('link-'+k);
+    if(el) el.href=amt>=1?urls[k]:'#';
+  });
   if(amt>=1){
-    link.href=`upi://pay?${base}`;
-    document.getElementById('appSecNote').textContent='📱 Tap to open — ₹'+parseInt(amount).toLocaleString('en-IN')+' pre-filled';
+    document.getElementById('appSecNote').textContent='Tap to open — ₹'+parseInt(amount).toLocaleString('en-IN')+' pre-filled · If app doesn\'t open, scan QR above';
   } else {
-    link.href='#';
-    document.getElementById('appSecNote').textContent='Enter amount above — opens your UPI app with amount pre-filled';
+    document.getElementById('appSecNote').textContent='Enter amount above · If app doesn\'t open → scan QR or copy UPI ID above';
   }
 }
 
@@ -594,7 +619,9 @@ function toggleConfirm(){
 
 function handleAppLink(el,appKey){
   const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if(!isMobile){toast('📱 Open this page on your phone to use app links');return false;}
+  if(!isMobile){toast('📱 Open this page on your phone to use app shortcuts');return false;}
+  const amt=parseFloat(document.getElementById('payAmt').value);
+  if(!(amt>=1)){toast('Please enter an amount first');return false;}
   return true;
 }
 
