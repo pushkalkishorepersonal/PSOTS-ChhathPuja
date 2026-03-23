@@ -1075,21 +1075,6 @@ function logout() {
   location.reload();
 }
 
-function changePw() {
-  const cur = document.getElementById('pw-current').value;
-  const nw  = document.getElementById('pw-new').value;
-  const cnf = document.getElementById('pw-confirm').value;
-  const stored = localStorage.getItem('psots_admin_pw') || DEFAULT_PW_HASH;
-  if (btoa(cur) !== stored) return toast('❌ Current password incorrect', 'error');
-  if (nw.length < 8) return toast('Password must be at least 8 characters', 'error');
-  if (nw !== cnf) return toast('New passwords do not match', 'error');
-  localStorage.setItem('psots_admin_pw', btoa(nw));
-  toast('✅ Password updated successfully!', 'success');
-  document.getElementById('pw-current').value = '';
-  document.getElementById('pw-new').value = '';
-  document.getElementById('pw-confirm').value = '';
-}
-
 /* ═══════════════════════════════════════════════════
    INIT
 ═══════════════════════════════════════════════════ */
@@ -1913,7 +1898,7 @@ function exportAll() {
 }
 
 function clearLocalData() {
-  if (!confirm('Clear all locally cached data? (Settings and password will be preserved)')) return;
+  if (!confirm('Clear all locally cached data? (Settings will be preserved)')) return;
   ['psots_finance','psots_announcements','psots_timings'].forEach(k => localStorage.removeItem(k));
   toast('🗑 Cache cleared', 'error');
 }
