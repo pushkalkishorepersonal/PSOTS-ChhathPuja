@@ -221,6 +221,7 @@
     <button class="tab-btn" data-tab="broadcast"            onclick="switchTab('broadcast')">📲 Broadcast</button>
     <button class="tab-btn" data-tab="manual"               onclick="switchTab('manual')">✍️ Manual Entry</button>
     <button class="tab-btn" data-tab="volunteers"           onclick="switchTab('volunteers')">🤝 Volunteers</button>
+    <button class="tab-btn" data-tab="prasad"               onclick="switchTab('prasad')">🙏 Prasad List</button>
     <button class="tab-btn" data-tab="settings"             onclick="switchTab('settings')">⚙️ Settings</button>
     <button class="tab-btn" data-tab="directory"            onclick="switchTab('directory')">👥 Directory</button>
     <button class="tab-btn" data-tab="gallery"              onclick="switchTab('gallery')">📸 Gallery</button>
@@ -284,6 +285,24 @@
         <button class="btn-secondary" onclick="bulkVerifyVisible()">✅ Verify All Visible</button>
       </div>
     </div>
+
+    <!-- ── PAYMENT REMINDER BLAST ── -->
+    <div class="admin-card" style="border-left:3px solid #c0392b">
+      <div class="ac-title">📲 Payment Reminder Blast</div>
+      <div class="ac-sub">Send WhatsApp payment reminders to flats that haven't contributed yet. Select a tower to filter, then send individual or bulk reminders.</div>
+
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.9rem">
+        <span style="font-size:.72rem;color:var(--lbr);flex-shrink:0">Tower:</span>
+        <div id="reminderTowerFilters" style="display:flex;gap:.4rem;flex-wrap:wrap">
+          <div class="filter-chip active" onclick="filterReminderTower(null,this)">All</div>
+        </div>
+        <button class="btn-primary" style="margin-left:auto;background:linear-gradient(135deg,#c0392b,#a93226)" onclick="sendBulkReminder()">📲 Bulk Remind All</button>
+      </div>
+
+      <div id="reminderStats" style="font-size:.78rem;color:var(--lbr);margin-bottom:.7rem"></div>
+      <div id="reminderBlastList" style="display:grid;gap:.5rem;max-height:380px;overflow-y:auto"></div>
+      <button class="btn-secondary" onclick="loadReminderList()" style="margin-top:.7rem">🔄 Refresh Non-Contributors</button>
+    </div>
   </div>
 
   <!-- ═══ FINANCE TAB ═══ -->
@@ -330,6 +349,41 @@
         <button class="btn-secondary" onclick="exportFinancePDF()">📄 Export PDF Report</button>
       </div>
       <div id="finance-total" style="margin-top:1rem;font-family:'DM Sans',sans-serif;font-size:1.1rem;font-weight:700;color:var(--or);display:none"></div>
+    </div>
+
+    <!-- ── EXPENSE RECEIPTS ── -->
+    <div class="admin-card" style="border-left:3px solid #2e7d32">
+      <div class="ac-title">🧾 Expense Receipts</div>
+      <div class="ac-sub">Log receipts for every expense category. Add vendor name, actual amount, date, and a Google Drive link to the scanned receipt photo.</div>
+
+      <div style="margin-bottom:.9rem">
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-bottom:.6rem">
+          <div class="ff">
+            <label>Category</label>
+            <select id="rcpt-cat" style="padding:.58rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;background:var(--warm);outline:none">
+              <option value="tent">🏕️ Tent & Decoration</option>
+              <option value="kharna">🍽️ Kharna Prasad</option>
+              <option value="thekua">🪔 Thekua Prasad</option>
+              <option value="av">🎵 Audio & Visuals</option>
+              <option value="cultural">🎭 Cultural Activities</option>
+              <option value="misc">📦 Miscellaneous</option>
+            </select>
+          </div>
+          <div class="ff"><label>Vendor / Payee</label><input type="text" id="rcpt-vendor" placeholder="e.g. Sharma Tent House" style="padding:.58rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;background:var(--warm);outline:none"/></div>
+          <div class="ff"><label>Amount (₹)</label><input type="number" id="rcpt-amount" placeholder="0" style="padding:.58rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;background:var(--warm);outline:none"/></div>
+          <div class="ff"><label>Date</label><input type="date" id="rcpt-date" style="padding:.58rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;background:var(--warm);outline:none"/></div>
+        </div>
+        <div class="ff" style="margin-bottom:.6rem"><label>Google Drive Link (receipt photo)</label><input type="url" id="rcpt-link" placeholder="https://drive.google.com/…" style="padding:.58rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;background:var(--warm);outline:none;width:100%"/></div>
+        <div class="ff" style="margin-bottom:.8rem"><label>Notes (optional)</label><input type="text" id="rcpt-notes" placeholder="Any additional info" style="padding:.58rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;background:var(--warm);outline:none;width:100%"/></div>
+        <button class="btn-primary" onclick="addReceipt()" style="background:linear-gradient(135deg,#2e7d32,#1b5e20)">＋ Add Receipt</button>
+      </div>
+
+      <div id="receiptList" style="display:flex;flex-direction:column;gap:.5rem;max-height:320px;overflow-y:auto"></div>
+      <div style="margin-top:.7rem;display:flex;gap:.6rem">
+        <button class="btn-secondary" onclick="saveReceipts()">💾 Save Receipts</button>
+        <button class="btn-secondary" onclick="exportReceiptsPDF()">📄 Export PDF</button>
+      </div>
+      <div id="rcptSync" style="font-size:.72rem;color:#c8a880;margin-top:.4rem"></div>
     </div>
 
     <div class="admin-card">
@@ -608,6 +662,39 @@
     </div>
   </div>
 
+  <!-- ═══ PRASAD LIST TAB ═══ -->
+  <div class="tab-panel" id="tab-prasad">
+    <div class="admin-card">
+      <div class="ac-title">🙏 Prasad Distribution List</div>
+      <div class="ac-sub">Auto-generated from verified contributions + Vrati registrations. Use on event day for prasad distribution. Filter by tower or Vrati status, then print.</div>
+
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.8rem">
+        <span style="font-size:.72rem;color:var(--lbr);flex-shrink:0">Tower:</span>
+        <div id="prasadTowerFilters" style="display:flex;gap:.4rem;flex-wrap:wrap">
+          <div class="filter-chip active" onclick="filterPrasadTower(null,this)">All</div>
+        </div>
+        <div style="margin-left:auto;display:flex;gap:.4rem;flex-wrap:wrap">
+          <div class="filter-chip" onclick="togglePrasadVrati(this)">🕉️ Vratis Only</div>
+        </div>
+      </div>
+
+      <div id="prasadStats" style="font-size:.78rem;color:var(--lbr);margin-bottom:.8rem"></div>
+
+      <div style="overflow-x:auto">
+        <table class="con-table">
+          <thead><tr><th>#</th><th>Name(s)</th><th>Flat</th><th>Tower</th><th>Amount</th><th>Vrati</th><th>Prasad</th></tr></thead>
+          <tbody id="prasadTableBody"><tr><td colspan="7" class="loading-state">Click Refresh to load list…</td></tr></tbody>
+        </table>
+      </div>
+
+      <div style="margin-top:.8rem;display:flex;gap:.7rem;flex-wrap:wrap">
+        <button class="btn-primary" onclick="loadPrasadList()">🔄 Refresh List</button>
+        <button class="btn-secondary" onclick="printPrasadList()">🖨️ Print List</button>
+        <button class="btn-secondary" onclick="exportPrasadCSV()">📥 Export CSV</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ SETTINGS TAB ═══ -->
   <div class="tab-panel" id="tab-settings">
     <div class="admin-card">
@@ -838,11 +925,11 @@ const ROLE_META = {
 
 // Default tab access per role. Admins always see Settings.
 const DEFAULT_ROLE_PERMS = {
-  admin:                 ['dashboard','contributors','finance','announcements','timings','broadcast','manual','volunteers','settings','directory','gallery'],
+  admin:                 ['dashboard','contributors','finance','announcements','timings','broadcast','manual','volunteers','prasad','settings','directory','gallery'],
   treasurer:             ['dashboard','contributors','finance','manual'],
   announcements_manager: ['dashboard','announcements','broadcast'],
-  event_coordinator:     ['dashboard','volunteers','timings','gallery'],
-  resident_coordinator:  ['dashboard','contributors','directory'],
+  event_coordinator:     ['dashboard','volunteers','timings','gallery','prasad'],
+  resident_coordinator:  ['dashboard','contributors','directory','prasad'],
   volunteer:             ['dashboard','volunteers'],
 };
 
@@ -1106,6 +1193,9 @@ function switchTab(id) {
   event.target.classList.add('active');
   if (id === 'directory') loadDirectory();
   if (id === 'volunteers') loadVolunteers();
+  if (id === 'prasad') loadPrasadList();
+  if (id === 'finance') loadReceipts();
+  if (id === 'contributors') setTimeout(loadReminderList, 400);
   if (id === 'settings') { loadCmteRoles(); renderAmList(); renderPermMatrix(); loadMembersAdmin(); }
 }
 
@@ -2877,6 +2967,337 @@ async function admUploadAll() {
 
   // Refresh the review grid if it's on Approved
   if (document.getElementById('galStatusFilter').value === 'Approved') loadGallerySubmissions();
+}
+
+/* ═══════════════════════════════════════════════════
+   PRASAD LIST
+═══════════════════════════════════════════════════ */
+let allPrasadData = [];
+let prasadVratiOnly = false;
+let prasadTowerFilter = null;
+
+function loadPrasadList() {
+  const tbody = document.getElementById('prasadTableBody');
+  tbody.innerHTML = '<tr><td colspan="7" class="loading-state">Loading…</td></tr>';
+
+  // Build from allContributions (loaded in contributors tab) and history data
+  const contribs = allContributions || [];
+  const members  = JSON.parse(localStorage.getItem('psots_members') || '[]');
+
+  // Build a flat-keyed map from verified contributions
+  const flatMap = {};
+  contribs.filter(c => c.status === 'Verified').forEach(c => {
+    const flat = (c.flat || '').toString().trim();
+    if (!flat) return;
+    if (!flatMap[flat]) {
+      flatMap[flat] = { flat, names: [], amount: 0, vrati: false, tower: flat.replace(/\d+/,'').trim() || flat[0] };
+    }
+    if (c.name && !flatMap[flat].names.includes(c.name)) flatMap[flat].names.push(c.name);
+    flatMap[flat].amount += parseInt(c.amount || 0);
+    if (c.vrati) flatMap[flat].vrati = true;
+  });
+
+  // Also include history data for names
+  const hist = JSON.parse(localStorage.getItem('psots_resident_history') || '{}');
+  Object.entries(hist).forEach(([flat, h]) => {
+    if (!flatMap[flat]) return;
+    if (h.names && h.names.length) {
+      h.names.forEach(n => { if (!flatMap[flat].names.includes(n)) flatMap[flat].names.push(n); });
+    }
+    if (h.vrati) flatMap[flat].vrati = true;
+  });
+
+  // Vrati registrations from portal (psots_volunteers can include vrati flag)
+  const vratiList = JSON.parse(localStorage.getItem('psots_vrati_list') || '[]');
+  vratiList.forEach(v => {
+    const flat = (v.flat || '').toString().trim();
+    if (flatMap[flat]) { flatMap[flat].vrati = true; if (v.name && !flatMap[flat].names.includes(v.name)) flatMap[flat].names.push(v.name); }
+    else if (flat) {
+      flatMap[flat] = { flat, names: v.name ? [v.name] : [], amount: 0, vrati: true, tower: flat.replace(/\d+/,'').trim() || flat[0] };
+    }
+  });
+
+  allPrasadData = Object.values(flatMap).sort((a,b) => a.flat.localeCompare(b.flat, undefined, { numeric: true }));
+
+  // Build tower filter chips
+  const towers = [...new Set(allPrasadData.map(x => x.tower))].filter(Boolean).sort();
+  const towerFilters = document.getElementById('prasadTowerFilters');
+  if (towerFilters) {
+    towerFilters.innerHTML = '<div class="filter-chip active" onclick="filterPrasadTower(null,this)">All</div>'
+      + towers.map(t => `<div class="filter-chip" onclick="filterPrasadTower('${t}',this)">${t}</div>`).join('');
+  }
+
+  renderPrasadTable();
+}
+
+function renderPrasadTable() {
+  const tbody = document.getElementById('prasadTableBody');
+  let data = allPrasadData;
+  if (prasadTowerFilter) data = data.filter(x => x.tower === prasadTowerFilter);
+  if (prasadVratiOnly)   data = data.filter(x => x.vrati);
+
+  const statsEl = document.getElementById('prasadStats');
+  if (statsEl) statsEl.textContent = `Showing ${data.length} flats · ${data.filter(x=>x.vrati).length} Vratis · Total ₹${data.reduce((s,x)=>s+x.amount,0).toLocaleString('en-IN')}`;
+
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:2rem;color:var(--lbr)">No entries found. Refresh contributions first.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = data.map((x, i) => `
+    <tr>
+      <td>${i+1}</td>
+      <td style="font-weight:600">${x.names.join(', ') || '—'}</td>
+      <td>${x.flat}</td>
+      <td>${x.tower || '—'}</td>
+      <td>₹${x.amount.toLocaleString('en-IN')}</td>
+      <td style="text-align:center">${x.vrati ? '<span style="color:#e85c00;font-size:1rem">🕉️</span>' : '—'}</td>
+      <td><span style="font-size:.72rem;background:#f0fff4;color:#2e7d32;border-radius:50px;padding:.1rem .5rem;font-weight:600">✅ Eligible</span></td>
+    </tr>`).join('');
+}
+
+function filterPrasadTower(tower, el) {
+  prasadTowerFilter = tower;
+  document.querySelectorAll('#prasadTowerFilters .filter-chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderPrasadTable();
+}
+
+function togglePrasadVrati(el) {
+  prasadVratiOnly = !prasadVratiOnly;
+  el.classList.toggle('active', prasadVratiOnly);
+  renderPrasadTable();
+}
+
+function printPrasadList() {
+  let data = allPrasadData;
+  if (prasadTowerFilter) data = data.filter(x => x.tower === prasadTowerFilter);
+  if (prasadVratiOnly)   data = data.filter(x => x.vrati);
+  const rows = data.map((x,i) => `<tr><td>${i+1}</td><td>${x.names.join(', ')||'—'}</td><td>${x.flat}</td><td>${x.tower||'—'}</td><td>₹${x.amount.toLocaleString('en-IN')}</td><td>${x.vrati?'🕉️ Vrati':''}</td></tr>`).join('');
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Prasad List — PSOTS Chhath 2026</title>
+  <style>body{font-family:Arial,sans-serif;padding:20px}h2{color:#e85c00}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:6px 10px;font-size:13px}th{background:#fff8f0}@media print{button{display:none}}</style></head>
+  <body><h2>🙏 Prasad List — PSOTS Chhath 2026</h2>
+  <p>Total: ${data.length} flats · Vratis: ${data.filter(x=>x.vrati).length}</p>
+  <button onclick="window.print()" style="margin-bottom:12px;padding:6px 14px;background:#e85c00;color:#fff;border:none;border-radius:6px;cursor:pointer">🖨️ Print</button>
+  <table><thead><tr><th>#</th><th>Name(s)</th><th>Flat</th><th>Tower</th><th>Amount</th><th>Status</th></tr></thead>
+  <tbody>${rows}</tbody></table></body></html>`);
+  win.document.close();
+}
+
+function exportPrasadCSV() {
+  let data = allPrasadData;
+  if (prasadTowerFilter) data = data.filter(x => x.tower === prasadTowerFilter);
+  if (prasadVratiOnly)   data = data.filter(x => x.vrati);
+  const rows = [['#','Names','Flat','Tower','Amount','Vrati']].concat(
+    data.map((x,i) => [i+1, x.names.join(' & '), x.flat, x.tower, x.amount, x.vrati ? 'Yes' : 'No'])
+  );
+  const csv = rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'prasad-list-2026.csv';
+  a.click();
+}
+
+/* ═══════════════════════════════════════════════════
+   PAYMENT REMINDER BLAST
+═══════════════════════════════════════════════════ */
+let reminderTowerFilter = null;
+let allReminderData = [];
+
+function loadReminderList() {
+  // Build list of flats that haven't contributed (from directory vs verified contributors)
+  const contribs = allContributions || [];
+  const verifiedFlats = new Set(contribs.filter(c => c.status === 'Verified').map(c => (c.flat||'').toString().trim()).filter(Boolean));
+  const hist = JSON.parse(localStorage.getItem('psots_resident_history') || '{}');
+
+  // Use directory residents (history) as "all residents"
+  allReminderData = Object.entries(hist)
+    .filter(([flat]) => !verifiedFlats.has(flat.trim()))
+    .map(([flat, h]) => ({
+      flat,
+      names: h.names || [],
+      tower: flat.replace(/\d+/,'').trim() || flat[0],
+      mobile: h.mobile || '',
+      lastYear: h.years ? Math.max(...h.years.filter(Number)) : null
+    }))
+    .sort((a,b) => a.flat.localeCompare(b.flat, undefined, { numeric: true }));
+
+  // Build tower chips
+  const towers = [...new Set(allReminderData.map(x => x.tower))].filter(Boolean).sort();
+  const towerFilters = document.getElementById('reminderTowerFilters');
+  if (towerFilters) {
+    towerFilters.innerHTML = '<div class="filter-chip active" onclick="filterReminderTower(null,this)">All</div>'
+      + towers.map(t => `<div class="filter-chip" onclick="filterReminderTower('${t}',this)">${t}</div>`).join('');
+  }
+
+  renderReminderList();
+}
+
+function renderReminderList() {
+  let data = allReminderData;
+  if (reminderTowerFilter) data = data.filter(x => x.tower === reminderTowerFilter);
+
+  const statsEl = document.getElementById('reminderStats');
+  if (statsEl) statsEl.textContent = `${data.length} flats haven't contributed yet`;
+
+  const el = document.getElementById('reminderBlastList');
+  if (!data.length) {
+    el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:#2e7d32;font-size:.85rem">🎉 All flats have contributed! Amazing!</div>';
+    return;
+  }
+
+  el.innerHTML = data.map(x => {
+    const name = x.names[0] || 'Resident';
+    const mobile = x.mobile;
+    const msg = encodeURIComponent(`🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\nनमस्ते ${name} ji 🙏\n\nThis is a gentle reminder to contribute for *PSOTS Chhath Puja 2026* before the deadline of *25th October 2026*.\n\n💰 UPI: 9482088904-3@ybl\n📱 Or visit: https://chhath.psots.in/pages/payment.html\n\nYour contribution of ₹1,001+ makes you eligible for prasad! 🙏\n\nजय छठी मैया! 🌅\n— PSOTS Chhath Committee`);
+    const waLink = mobile ? `whatsapp://send?phone=91${mobile}&text=${msg}` : '';
+    return `
+    <div style="display:flex;align-items:center;gap:.6rem;background:var(--warm);border:1px solid #f0d5b8;border-radius:10px;padding:.55rem .8rem">
+      <div style="flex:1;min-width:0">
+        <div style="font-weight:600;font-size:.82rem">${x.flat}</div>
+        <div style="font-size:.72rem;color:var(--lbr)">${x.names.join(', ') || '—'} ${x.lastYear ? '· Last paid: '+x.lastYear : ''}</div>
+      </div>
+      ${waLink ? `<a href="${waLink}" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border-radius:8px;padding:.4rem .75rem;font-size:.75rem;font-weight:600;text-decoration:none;white-space:nowrap;flex-shrink:0">📲 Remind</a>` : '<span style="font-size:.72rem;color:#c8a880">No mobile</span>'}
+    </div>`;
+  }).join('');
+}
+
+function filterReminderTower(tower, el) {
+  reminderTowerFilter = tower;
+  document.querySelectorAll('#reminderTowerFilters .filter-chip').forEach(c => c.classList.remove('active'));
+  if (el) el.classList.add('active');
+  renderReminderList();
+}
+
+function sendBulkReminder() {
+  let data = allReminderData;
+  if (reminderTowerFilter) data = data.filter(x => x.tower === reminderTowerFilter);
+  const withMobile = data.filter(x => x.mobile);
+  if (!withMobile.length) { toast('No contacts with mobile numbers to remind', 'error'); return; }
+  const msg = encodeURIComponent(`🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\nनमस्ते 🙏\n\nKindly contribute before *25th October 2026* to be included in the prasad list.\n\n💰 UPI: 9482088904-3@ybl\n📱 Visit: https://chhath.psots.in/pages/payment.html\n\nजय छठी मैया! 🌅\n— PSOTS Chhath Committee`);
+  // Open each WA link one by one (browsers may block multiple popups; guide user)
+  toast(`Opening ${withMobile.length} WhatsApp messages…`, 'success');
+  withMobile.forEach((x, i) => {
+    setTimeout(() => {
+      window.open(`https://wa.me/91${x.mobile}?text=${msg}`, '_blank');
+    }, i * 800);
+  });
+}
+
+/* ═══════════════════════════════════════════════════
+   EXPENSE RECEIPTS
+═══════════════════════════════════════════════════ */
+let allReceipts = [];
+
+const RCPT_CAT_LABELS = {
+  tent: '🏕️ Tent & Decoration', kharna: '🍽️ Kharna Prasad',
+  thekua: '🪔 Thekua Prasad', av: '🎵 Audio & Visuals',
+  cultural: '🎭 Cultural Activities', misc: '📦 Miscellaneous'
+};
+
+function loadReceipts() {
+  allReceipts = JSON.parse(localStorage.getItem('psots_receipts') || '[]');
+  renderReceiptList();
+  // Also try server
+  const url = getScriptUrl();
+  if (url && !url.includes('YOUR_APPS')) {
+    fetch(url + '?action=getReceipts').then(r => r.json()).then(d => {
+      if (d.receipts && d.receipts.length) {
+        allReceipts = d.receipts;
+        localStorage.setItem('psots_receipts', JSON.stringify(allReceipts));
+        renderReceiptList();
+      }
+    }).catch(() => {});
+  }
+}
+
+function addReceipt() {
+  const cat    = document.getElementById('rcpt-cat').value;
+  const vendor = document.getElementById('rcpt-vendor').value.trim();
+  const amount = parseInt(document.getElementById('rcpt-amount').value) || 0;
+  const date   = document.getElementById('rcpt-date').value;
+  const link   = document.getElementById('rcpt-link').value.trim();
+  const notes  = document.getElementById('rcpt-notes').value.trim();
+
+  if (!vendor) { toast('Enter vendor / payee name', 'error'); return; }
+  if (!amount) { toast('Enter a valid amount', 'error'); return; }
+  if (!date)   { toast('Select the date', 'error'); return; }
+
+  allReceipts.push({ id: Date.now(), cat, vendor, amount, date, link, notes });
+  renderReceiptList();
+  // Clear fields
+  ['rcpt-vendor','rcpt-amount','rcpt-link','rcpt-notes'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+  toast('Receipt added — click Save to persist', 'success');
+}
+
+function removeReceipt(id) {
+  allReceipts = allReceipts.filter(r => r.id !== id);
+  renderReceiptList();
+}
+
+function renderReceiptList() {
+  const el = document.getElementById('receiptList');
+  if (!allReceipts.length) {
+    el.innerHTML = '<div style="text-align:center;padding:1rem;color:var(--lbr);font-size:.82rem">No receipts logged yet.</div>';
+    return;
+  }
+  // Group by category
+  const grouped = {};
+  allReceipts.forEach(r => { if (!grouped[r.cat]) grouped[r.cat] = []; grouped[r.cat].push(r); });
+
+  el.innerHTML = Object.entries(grouped).map(([cat, rcpts]) => {
+    const catTotal = rcpts.reduce((s,r) => s+r.amount, 0);
+    return `
+    <div style="border:1px solid #f0d5b8;border-radius:10px;overflow:hidden">
+      <div style="background:#fff8f0;padding:.5rem .9rem;font-weight:700;font-size:.8rem;display:flex;justify-content:space-between">
+        <span>${RCPT_CAT_LABELS[cat]||cat}</span>
+        <span style="color:var(--or)">₹${catTotal.toLocaleString('en-IN')}</span>
+      </div>
+      ${rcpts.map(r => `
+      <div style="display:flex;align-items:flex-start;gap:.6rem;padding:.5rem .9rem;border-top:1px solid #f0d5b8;background:#fff">
+        <div style="flex:1;min-width:0">
+          <div style="font-size:.82rem;font-weight:600">${r.vendor}</div>
+          <div style="font-size:.72rem;color:var(--lbr)">${r.date} · ₹${r.amount.toLocaleString('en-IN')}${r.notes ? ' · '+r.notes : ''}</div>
+          ${r.link ? `<a href="${r.link}" target="_blank" style="font-size:.72rem;color:var(--or)">🔗 Receipt</a>` : ''}
+        </div>
+        <button onclick="removeReceipt(${r.id})" style="background:none;border:none;cursor:pointer;color:#c0392b;font-size:.8rem;padding:.2rem .4rem;flex-shrink:0">✕</button>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+}
+
+async function saveReceipts() {
+  localStorage.setItem('psots_receipts', JSON.stringify(allReceipts));
+  const url = getScriptUrl();
+  const syncEl = document.getElementById('rcptSync');
+  if (syncEl) syncEl.textContent = 'Saving…';
+  if (url && !url.includes('YOUR_APPS')) {
+    try {
+      await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'saveReceipts', receipts: allReceipts, key: (window.PSOTS||{}).adminKey }) });
+      if (syncEl) syncEl.textContent = '✅ Saved to server ' + new Date().toLocaleTimeString();
+    } catch(e) {
+      if (syncEl) syncEl.textContent = '⚠️ Saved locally only';
+    }
+  } else {
+    if (syncEl) syncEl.textContent = '✅ Saved locally';
+  }
+  toast('Receipts saved!', 'success');
+}
+
+function exportReceiptsPDF() {
+  const total = allReceipts.reduce((s,r) => s+r.amount, 0);
+  const rows = allReceipts.map((r,i) => `<tr><td>${i+1}</td><td>${RCPT_CAT_LABELS[r.cat]||r.cat}</td><td>${r.vendor}</td><td>₹${r.amount.toLocaleString('en-IN')}</td><td>${r.date}</td><td>${r.notes||'—'}</td><td>${r.link?'<a href="'+r.link+'">View</a>':'—'}</td></tr>`).join('');
+  const win = window.open('', '_blank');
+  win.document.write(`<!DOCTYPE html><html><head><title>Expense Receipts — PSOTS Chhath 2026</title>
+  <style>body{font-family:Arial,sans-serif;padding:20px}h2{color:#e85c00}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ccc;padding:6px 8px;font-size:12px}th{background:#fff8f0}.total{font-weight:700;color:#e85c00}@media print{button{display:none}}</style></head>
+  <body><h2>🧾 Expense Receipts — PSOTS Chhath 2026</h2>
+  <p>Total Receipts: ${allReceipts.length} · Grand Total: <strong>₹${total.toLocaleString('en-IN')}</strong></p>
+  <button onclick="window.print()" style="margin-bottom:12px;padding:6px 14px;background:#e85c00;color:#fff;border:none;border-radius:6px;cursor:pointer">🖨️ Print / Save PDF</button>
+  <table><thead><tr><th>#</th><th>Category</th><th>Vendor</th><th>Amount</th><th>Date</th><th>Notes</th><th>Receipt</th></tr></thead>
+  <tbody>${rows}<tr class="total"><td colspan="3">Grand Total</td><td>₹${total.toLocaleString('en-IN')}</td><td colspan="3"></td></tr></tbody></table></body></html>`);
+  win.document.close();
 }
 </script>
 </body>

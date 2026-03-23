@@ -534,14 +534,22 @@
 
   <!-- ═══ VOLUNTEER TAB ═══ -->
   <div class="portal-panel" id="tab-volunteer">
+    <!-- Status Banner -->
     <div class="pcard">
       <div class="pcard-title">🤝 My Volunteer Status</div>
-
-      <div class="vol-status not-registered" id="volStatusBanner">
+      <div id="volStatusBanner" style="display:flex;align-items:center;gap:.9rem;background:var(--warm);border:1.5px solid #f0d5b8;border-radius:12px;padding:.85rem 1rem;margin-bottom:1rem">
+        <div style="font-size:2rem" id="volStatusIcon">🙋</div>
         <div>
           <div style="font-weight:600;font-size:.88rem;color:var(--ink)" id="volStatusText">You haven't signed up as a volunteer yet</div>
           <div style="font-size:.75rem;color:var(--lbr);margin-top:.15rem" id="volStatusSub">Help make the 5th year grand!</div>
         </div>
+      </div>
+
+      <!-- Assigned task card — shown when task is assigned -->
+      <div id="volAssignedTask" style="display:none;background:linear-gradient(135deg,#fff8f0,#fff0e0);border:1.5px solid #f0d5b8;border-radius:12px;padding:1rem 1.2rem;margin-bottom:1rem">
+        <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--lbr);margin-bottom:.3rem">Your Assigned Task</div>
+        <div style="font-size:1.1rem;font-weight:800;color:var(--or)" id="volTaskName">—</div>
+        <div style="font-size:.78rem;color:var(--lbr);margin-top:.3rem" id="volTaskDays">—</div>
       </div>
 
       <div id="volTaskList">
@@ -552,11 +560,48 @@
       </div>
     </div>
 
+    <!-- Event Day Check-In — always shown for registered volunteers -->
     <div class="pcard" id="volCheckinCard" style="display:none">
       <div class="pcard-title">📍 Event Day Check-In</div>
-      <div class="pcard-sub">Mark yourself as arrived on event day. The committee can see real-time volunteer attendance.</div>
-      <button class="vol-checkin-btn" onclick="volunteerCheckin()" id="volCheckinBtn">📍 I'm Here — Check In</button>
-      <div id="volCheckinStatus" style="display:none;margin-top:.8rem;padding:.7rem 1rem;background:#f0fff4;border:1px solid #a5d6a7;border-radius:10px;font-size:.85rem;color:var(--green)">✅ Checked in! The committee knows you're here. Thank you!</div>
+      <div class="pcard-sub">Tap the button when you arrive at the venue on event day. The committee tracks volunteer attendance in real time.</div>
+
+      <!-- Event schedule quick-ref -->
+      <div style="background:linear-gradient(135deg,#fff8f0,#fff0e0);border:1.5px solid #f0d5b8;border-radius:12px;padding:.85rem 1rem;margin-bottom:1rem">
+        <div style="font-size:.65rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--lbr);margin-bottom:.5rem">Event Day Schedule</div>
+        <div style="display:grid;gap:.4rem">
+          <div style="display:flex;justify-content:space-between;font-size:.8rem"><span>🍚 Kharna Prasad</span><span style="color:var(--or);font-weight:600">Nov 2 · 7:00 PM</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:.8rem"><span>🌇 Sandhya Arghya</span><span style="color:var(--or);font-weight:600">Nov 3 · 5:45 PM</span></div>
+          <div style="display:flex;justify-content:space-between;font-size:.8rem"><span>🌅 Usha Arghya</span><span style="color:var(--or);font-weight:600">Nov 4 · 6:15 AM</span></div>
+        </div>
+        <div style="font-size:.7rem;color:var(--lbr);margin-top:.5rem">📍 Society Ghat — Prestige Song of the South</div>
+      </div>
+
+      <button id="volCheckinBtn" onclick="volunteerCheckin()"
+        style="width:100%;padding:1rem;background:linear-gradient(135deg,#2e7d32,#1b5e20);color:#fff;border:none;border-radius:14px;font-family:'DM Sans',sans-serif;font-size:1rem;font-weight:700;cursor:pointer;letter-spacing:.03em;box-shadow:0 4px 16px rgba(46,125,50,.35);transition:transform .15s"
+        onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform=''">
+        📍 I'm Here — Check In Now
+      </button>
+      <div id="volCheckinStatus" style="display:none;margin-top:.8rem;padding:.75rem 1rem;background:#f0fff4;border:1.5px solid #a5d6a7;border-radius:12px;text-align:center">
+        <div style="font-size:1.3rem;margin-bottom:.2rem">✅</div>
+        <div style="font-weight:700;color:#2e7d32;font-size:.88rem">Checked In!</div>
+        <div style="font-size:.75rem;color:#388e3c;margin-top:.2rem" id="volCheckinTime">The committee knows you're here. Thank you!</div>
+      </div>
+    </div>
+
+    <!-- Volunteer tips -->
+    <div class="pcard" style="background:linear-gradient(135deg,#fff8f0,#fdf5e0)">
+      <div class="pcard-title" style="font-size:.95rem">💡 Volunteer Tips</div>
+      <div style="display:flex;flex-direction:column;gap:.55rem;font-size:.82rem;color:var(--lbr)">
+        <div>🕐 Report 30 minutes before your session start time</div>
+        <div>👕 Wear traditional attire if possible — salwar/kurta preferred</div>
+        <div>🍱 Meals provided for all volunteers on event day</div>
+        <div>📱 Keep your phone charged — WhatsApp updates sent throughout</div>
+        <div>🙏 Questions? WhatsApp the committee directly</div>
+      </div>
+      <a href="whatsapp://send?phone=919482088904&text=Hi%2C%20I%20have%20a%20question%20about%20volunteering%20for%20PSOTS%20Chhath%202026"
+        style="display:inline-block;margin-top:.9rem;text-decoration:none">
+        <button class="btn-secondary" style="font-size:.8rem;padding:.5rem 1rem">📲 WhatsApp Committee</button>
+      </a>
     </div>
   </div>
 
@@ -1820,44 +1865,58 @@ function loadVolunteerStatus() {
   const checkinCard = document.getElementById('volCheckinCard');
 
   if (myVol) {
-    banner.className = 'vol-status registered';
-    document.getElementById('volStatusText').textContent = '✅ You\'re registered as a volunteer!';
     const assignedTask = myVol.assignedTask || '';
+    const statusIcon = document.getElementById('volStatusIcon');
+    if (statusIcon) statusIcon.textContent = myVol.status === 'Confirmed' ? '✅' : '🤝';
+
+    document.getElementById('volStatusText').textContent = myVol.status === 'Confirmed'
+      ? '✅ Confirmed Volunteer!' : '🤝 Registered as Volunteer';
     document.getElementById('volStatusSub').textContent = assignedTask
-      ? `Assigned: ${assignedTask} · Days: ${myVol.days || 'TBD'}`
+      ? `Task: ${assignedTask} · Days: ${myVol.days || 'TBD'}`
       : `Days: ${myVol.days || 'TBD'} · Preferred: ${myVol.tasks || 'TBD'}`;
+
+    // Show assigned task prominently
+    const taskCard = document.getElementById('volAssignedTask');
+    if (taskCard && assignedTask) {
+      taskCard.style.display = 'block';
+      const el = document.getElementById('volTaskName');
+      if (el) el.textContent = assignedTask;
+      const daysEl = document.getElementById('volTaskDays');
+      if (daysEl) daysEl.textContent = '📅 ' + (myVol.days || 'Days TBD') + ' · Please report 30 min before';
+    }
 
     const tasks = (myVol.tasks || '').split(', ').filter(Boolean);
     const days = (myVol.days || '').split(', ').filter(Boolean);
     taskList.innerHTML = `
-      ${assignedTask ? `<div style="background:linear-gradient(135deg,rgba(46,125,50,.08),rgba(46,125,50,.04));border:1px solid rgba(46,125,50,.2);border-radius:12px;padding:1rem;margin-bottom:1rem">
-        <div style="font-size:.72rem;color:var(--green);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.4rem">📋 Assigned Task</div>
-        <div style="font-weight:900;font-size:1.1rem;color:var(--ink)">${assignedTask}</div>
-        <div style="font-size:.78rem;color:var(--br);margin-top:.25rem">Status: ${myVol.status || 'Registered'}</div>
-      </div>` : ''}
-      <div style="font-size:.72rem;color:var(--lbr);font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">${assignedTask ? 'Schedule' : 'Your Volunteer Days'}</div>
-      ${days.map(d => `
+      <div style="font-size:.72rem;color:var(--lbr);font-weight:600;letter-spacing:.1em;text-transform:uppercase;margin-bottom:.6rem">Your Volunteer Days</div>
+      ${days.length ? days.map(d => `
         <div class="vol-task-card assigned">
           <div style="font-weight:700;font-size:.88rem;color:var(--or);margin-bottom:.3rem">📅 ${d}</div>
-          <div style="font-size:.8rem;color:var(--br)">${assignedTask || tasks.join(' · ')}</div>
-          <div style="font-size:.7rem;color:var(--lbr);margin-top:.3rem">Contact committee for reporting time</div>
+          <div style="font-size:.8rem;color:var(--br)">${assignedTask || tasks.join(' · ') || 'Task TBD'}</div>
         </div>
-      `).join('')}
-      <p style="font-size:.75rem;color:var(--lbr);margin-top:.8rem">The committee will WhatsApp you reporting time and specific instructions before the event.</p>`;
+      `).join('') : '<div style="font-size:.82rem;color:var(--lbr);padding:.5rem 0">Days TBD — check back closer to the event.</div>'}
+      <p style="font-size:.75rem;color:var(--lbr);margin-top:.8rem">The committee will WhatsApp you specific reporting time and instructions before the event.</p>`;
 
-    // Show check-in on event days
+    // Always show check-in card for registered volunteers (with event day restriction)
+    checkinCard.style.display = 'block';
     const now = new Date();
-    if (now.getFullYear() === 2026 && now.getMonth() === 10 && now.getDate() >= 1 && now.getDate() <= 4) {
-      checkinCard.style.display = 'block';
-      const checked = localStorage.getItem('psots_vol_checkin_' + now.getDate());
-      if (checked) {
-        document.getElementById('volCheckinBtn').disabled = true;
-        document.getElementById('volCheckinBtn').textContent = '✅ Checked In';
-        document.getElementById('volCheckinStatus').style.display = 'block';
+    const isEventDay = now.getFullYear() === 2026 && now.getMonth() === 10 && now.getDate() >= 1 && now.getDate() <= 4;
+    const checkinBtn = document.getElementById('volCheckinBtn');
+    const checkinStatus = document.getElementById('volCheckinStatus');
+    const checked = localStorage.getItem('psots_vol_checkin_' + now.getDate());
+    if (checked) {
+      if (checkinBtn) { checkinBtn.disabled = true; checkinBtn.textContent = '✅ Already Checked In Today'; }
+      if (checkinStatus) {
+        checkinStatus.style.display = 'block';
+        const timeEl = document.getElementById('volCheckinTime');
+        if (timeEl) timeEl.textContent = 'Checked in at ' + new Date(checked).toLocaleTimeString() + '. Thank you!';
       }
+    } else if (!isEventDay) {
+      if (checkinBtn) { checkinBtn.disabled = true; checkinBtn.style.opacity = '.5'; checkinBtn.title = 'Available Nov 1–4, 2026'; checkinBtn.textContent = '📍 Check-In (Available Nov 1–4)'; }
     }
   } else {
-    banner.className = 'vol-status not-registered';
+    const statusIcon = document.getElementById('volStatusIcon');
+    if (statusIcon) statusIcon.textContent = '🙋';
     document.getElementById('volStatusText').textContent = 'You haven\'t signed up as a volunteer yet';
     document.getElementById('volStatusSub').textContent = 'Help make the 5th year grand!';
     taskList.innerHTML = `
@@ -1872,13 +1931,15 @@ async function volunteerCheckin() {
   const btn = document.getElementById('volCheckinBtn');
   btn.disabled = true; btn.textContent = 'Checking in…';
 
-  const day = new Date().getDate();
+  const now = new Date();
+  const day = now.getDate();
+  const ts  = now.toISOString();
   const data = {
     action: 'volunteerCheckin',
     name: userProfile.name || currentUser?.name,
     flat: userProfile.flat,
     day: 'Nov ' + day,
-    timestamp: new Date().toISOString()
+    timestamp: ts
   };
 
   const su = C.scriptUrl;
@@ -1886,9 +1947,12 @@ async function volunteerCheckin() {
     try { await fetch(su, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) }); } catch(e) {}
   }
 
-  localStorage.setItem('psots_vol_checkin_' + day, 'true');
-  btn.textContent = '✅ Checked In';
-  document.getElementById('volCheckinStatus').style.display = 'block';
+  localStorage.setItem('psots_vol_checkin_' + day, ts);
+  btn.textContent = '✅ Already Checked In Today';
+  const statusEl = document.getElementById('volCheckinStatus');
+  if (statusEl) statusEl.style.display = 'block';
+  const timeEl = document.getElementById('volCheckinTime');
+  if (timeEl) timeEl.textContent = 'Checked in at ' + now.toLocaleTimeString() + '. Thank you!';
   toast('📍 Checked in! Thank you, volunteer!', 'success');
 }
 

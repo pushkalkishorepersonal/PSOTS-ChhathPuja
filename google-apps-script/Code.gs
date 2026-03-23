@@ -186,6 +186,9 @@ function doGet(e) {
     case 'getMembers':
       result = actionGetMembers(e.parameter.key);
       break;
+    case 'getReceipts':
+      result = actionGetReceipts(e.parameter.key);
+      break;
     case 'getRsvps':
     case 'ping':
       result = { ok: true, message: 'PSOTS Backend is running!' };
@@ -240,6 +243,8 @@ function doPost(e) {
       result = actionUpdateGalleryStatus(body);
     } else if (body.action === 'saveMembers') {
       result = actionSaveMembers(body.members || [], body.key);
+    } else if (body.action === 'saveReceipts') {
+      result = actionSaveReceipts(body.receipts || [], body.key);
     } else if (body.action === 'sendInvoiceEmail') {
       result = actionSendInvoiceEmail(body);
     } else {
@@ -1257,6 +1262,21 @@ function actionSaveMembers(members, key) {
   const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
   if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
   PropertiesService.getScriptProperties().setProperty('PSOTS_MEMBERS', JSON.stringify(members));
+  return { ok: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   Expense Receipts — stored in Script Properties
+══════════════════════════════════════════════════════════ */
+function actionGetReceipts(key) {
+  const raw = PropertiesService.getScriptProperties().getProperty('PSOTS_RECEIPTS');
+  return { receipts: raw ? JSON.parse(raw) : [] };
+}
+
+function actionSaveReceipts(receipts, key) {
+  const adminKey = PropertiesService.getScriptProperties().getProperty('ADMIN_KEY');
+  if (adminKey && key !== adminKey) return { error: 'Unauthorized' };
+  PropertiesService.getScriptProperties().setProperty('PSOTS_RECEIPTS', JSON.stringify(receipts));
   return { ok: true };
 }
 
