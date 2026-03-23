@@ -58,10 +58,6 @@ window.PSOTS = {
   /* ── ADMIN EMAILS ─────────────── */
   adminEmails: ['pushkalkishore@gmail.com'],
 
-  /* ── ADMIN API KEY ────────────── */
-  /* Set the same value in Google Apps Script → Project Settings → Script Properties: ADMIN_KEY */
-  adminKey: 'psots-admin-2026',
-
   /* ══ FILL THESE AFTER SETUP ══════
      See README.md for exact steps.   */
   scriptUrl:      'https://script.google.com/macros/s/AKfycbzt0Dgs3P0gnV-6mLeYE-TdpLjUpNuWoB1_eGvppsPhnDsVSNQBwSvGaTH5Dx7qGk-3/exec',
