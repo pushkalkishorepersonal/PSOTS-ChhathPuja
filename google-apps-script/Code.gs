@@ -254,6 +254,9 @@ function doGet(e) {
     case 'sendInvoiceEmail':
       result = actionSendInvoiceEmail(e.parameter);
       break;
+    case 'getFonnteStatus':
+      result = actionGetFonnteStatus();
+      break;
     default:
       result = { error: 'Unknown action: ' + action };
   }
@@ -304,6 +307,8 @@ function doPost(e) {
       result = actionSubmitRsvp(body);
     } else if (body.action === 'submitVolunteer') {
       result = actionSubmitVolunteer(body);
+    } else if (body.action === 'sendFonnteMessage') {
+      result = actionSendFonnteMessage(body);
     } else {
       // Default: new contribution
       result = actionAddContribution(body);
@@ -1074,6 +1079,13 @@ function actionFindByFlat(flat) {
    Setup: fonnte.com → add device → scan QR with your WhatsApp
           → Script Properties: FONNTE_TOKEN
 ══════════════════════════════════════════════════════════ */
+/* Run this ONCE to grant Apps Script permission to make external HTTP calls.
+   After running it successfully, all Fonnte/WhatsApp features will work. */
+function authorizeExternalRequests() {
+  UrlFetchApp.fetch('https://api.fonnte.com/');
+  Logger.log('Authorization granted — external requests are now allowed.');
+}
+
 function sendContributorWhatsApp(p) {
   const token = PropertiesService.getScriptProperties().getProperty('FONNTE_TOKEN');
   if (!token) return; // not configured — skip silently
@@ -1113,6 +1125,62 @@ function sendContributorWhatsApp(p) {
     });
   } catch(e) {
     Logger.log('Fonnte WhatsApp failed: ' + e.message);
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Check whether FONNTE_TOKEN is set
+══════════════════════════════════════════════════════════ */
+function actionGetFonnteStatus() {
+  const token = PropertiesService.getScriptProperties().getProperty('FONNTE_TOKEN');
+  return { ok: true, configured: !!token };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Send WhatsApp message(s) via Fonnte API
+   Body: { targets: ['phone1','phone2',...], message: '...' }
+   - targets are normalised to E.164 (91xxxxxxxxxx)
+   - Fonnte /send accepts comma-separated targets for bulk
+══════════════════════════════════════════════════════════ */
+function actionSendFonnteMessage(body) {
+  const token = PropertiesService.getScriptProperties().getProperty('FONNTE_TOKEN');
+  if (!token) return { ok: false, msg: 'Fonnte not configured — add FONNTE_TOKEN to Script Properties' };
+
+  const rawTargets = Array.isArray(body.targets) ? body.targets : [body.targets];
+  const message    = String(body.message || '').trim();
+  if (!message) return { ok: false, msg: 'No message provided' };
+
+  // Normalise: strip non-digits, remove leading 0, add 91 prefix
+  const targets = rawTargets.map(function(t) {
+    var p = String(t || '').replace(/\D/g, '');
+    if (!p) return null;
+    if (p.startsWith('0')) p = p.slice(1);
+    if (!p.startsWith('91')) p = '91' + p;
+    return p.length >= 12 ? p : null;          // must be at least 91 + 10 digits
+  }).filter(Boolean);
+
+  if (!targets.length) return { ok: false, msg: 'No valid phone numbers after normalisation' };
+
+  try {
+    var resp = UrlFetchApp.fetch('https://api.fonnte.com/send', {
+      method:  'post',
+      headers: { 'Authorization': token },
+      payload: {
+        target:      targets.join(','),
+        message:     message,
+        countryCode: '91'
+      },
+      muteHttpExceptions: true
+    });
+    var parsed = JSON.parse(resp.getContentText());
+    Logger.log('Fonnte sendFonnteMessage → ' + JSON.stringify(parsed));
+    if (parsed.status === false) {
+      return { ok: false, msg: parsed.reason || 'Fonnte rejected the request', detail: parsed };
+    }
+    return { ok: true, sent: targets.length, detail: parsed };
+  } catch(e) {
+    Logger.log('Fonnte sendFonnteMessage error: ' + e.message);
+    return { ok: false, msg: 'Network error: ' + e.message };
   }
 }
 

@@ -296,8 +296,9 @@
         <div id="reminderTowerFilters" style="display:flex;gap:.4rem;flex-wrap:wrap">
           <div class="filter-chip active" onclick="filterReminderTower(null,this)">All</div>
         </div>
-        <button class="btn-primary" style="margin-left:auto;background:linear-gradient(135deg,#c0392b,#a93226)" onclick="sendBulkReminder()">📲 Bulk Remind All</button>
+        <button class="btn-primary" id="bulkReminderBtn" style="margin-left:auto;background:linear-gradient(135deg,#c0392b,#a93226)" onclick="sendBulkReminder()">📲 Bulk Remind All via Fonnte</button>
       </div>
+      <div id="bulkReminderStatus" style="font-size:.78rem;color:var(--lbr);margin-bottom:.4rem"></div>
 
       <div id="reminderStats" style="font-size:.78rem;color:var(--lbr);margin-bottom:.7rem"></div>
       <div id="reminderBlastList" style="display:grid;gap:.5rem;max-height:380px;overflow-y:auto"></div>
@@ -485,8 +486,18 @@
         <label>Message Preview (as WhatsApp)</label>
         <div class="broadcast-preview" id="broadPreview">Your message will appear here…</div>
       </div>
-      <button class="btn-primary" onclick="sendBroadcast()" style="font-size:.95rem;padding:.75rem 1.5rem">📲 Open in WhatsApp to Send</button>
-      <p style="font-size:.7rem;color:var(--lbr);margin-top:.6rem">This opens WhatsApp with the message ready. Select your "PSOTS Chhath 2026" broadcast list and tap send.</p>
+      <div style="display:flex;gap:.65rem;flex-wrap:wrap;align-items:center;margin-bottom:.5rem">
+        <button class="btn-primary" id="fonnteBroadcastBtn" onclick="sendFonnteBlast()" style="font-size:.92rem;padding:.72rem 1.4rem;background:linear-gradient(135deg,#25d366,#128c7e)">
+          📲 Send via Fonnte to All Subscribers
+        </button>
+        <button class="btn-secondary" onclick="sendBroadcastManual()" style="font-size:.8rem">
+          🔗 Open in WhatsApp (manual)
+        </button>
+      </div>
+      <div id="fonnteBroadcastStatus" style="font-size:.8rem;color:var(--lbr);margin-top:.4rem"></div>
+      <p style="font-size:.7rem;color:var(--lbr);margin-top:.35rem">
+        "Send via Fonnte" delivers directly to all opted-in subscribers — no manual steps needed. Requires Fonnte token in Script Properties.
+      </p>
     </div>
 
     <div class="admin-card">
@@ -718,6 +729,22 @@
         <button class="btn-secondary" onclick="addCmteRole()">＋ Add Role</button>
         <button class="btn-primary" onclick="saveCmteRoles()">💾 Save All Roles</button>
       </div>
+    </div>
+
+    <div class="admin-card" style="border-left:3px solid #25d366">
+      <div class="ac-title">📲 Fonnte WhatsApp API</div>
+      <div class="ac-sub">Fonnte powers automated WhatsApp messages — payment confirmations, broadcast blasts, and payment reminders — without you having to manually open WhatsApp.</div>
+      <div id="fonnteStatusBadge" style="display:inline-flex;align-items:center;gap:.45rem;padding:.38rem .85rem;border-radius:50px;font-size:.78rem;font-weight:600;margin-bottom:1rem;background:#f0f0f0;color:#666">
+        ⏳ Not checked yet
+      </div>
+      <div style="background:#f0fff4;border:1px solid #a5d6a7;border-radius:12px;padding:1rem 1.1rem;font-size:.8rem;color:#1a3a1a;line-height:1.7;margin-bottom:1rem">
+        <strong>Setup (one-time, done in Apps Script):</strong><br/>
+        1. Go to <strong>script.google.com</strong> → open your project → <strong>Project Settings → Script Properties</strong><br/>
+        2. Add a property: <strong>Name =</strong> <code>FONNTE_TOKEN</code> &nbsp;<strong>Value =</strong> your Fonnte API token<br/>
+        3. Get your token at <strong>fonnte.com</strong> → add device → scan QR with your WhatsApp → copy the token<br/>
+        4. Run <code>authorizeExternalRequests()</code> once to grant HTTP permission
+      </div>
+      <button class="btn-secondary" onclick="checkFonnteStatus()" style="font-size:.82rem">🔄 Check Fonnte Status</button>
     </div>
 
     <div class="admin-card">
@@ -1159,6 +1186,8 @@ function initAdmin() {
   loadReminders();
   updateAdminCountdown();
   setInterval(updateAdminCountdown, 60000);
+  // Check Fonnte status in background (non-blocking)
+  checkFonnteStatus().catch(() => {});
   // Override localStorage with live data from Apps Script
   loadAllFromSheet();
 }
@@ -1545,13 +1574,34 @@ async function updateStatus(idx, newStatus) {
   }
 }
 
-function sendWAConfirm(name, flat, amount, mobile) {
+async function sendWAConfirm(name, flat, amount, mobile) {
+  if (!mobile) return toast('No mobile number for this contributor', 'error');
   const fp = parseFlatNumber(flat);
   const towerLine = fp.tower ? `Tower ${fp.tower}, Floor ${fp.floor}, Unit ${fp.unit}` : '';
-  const msg = encodeURIComponent(
-    `*जय छठी मैया!* ✨\n\nनमस्ते, *${name}* जी 🙏\n\nआपका योगदान *₹${parseInt(amount).toLocaleString('en-IN')}* PSOTS Chhath Puja 2026 के लिए committee द्वारा *verified* ✅ हो गया है!\n\nFlat: ${flat}${towerLine ? `  (${towerLine})` : ''}\nAmount: ₹${parseInt(amount).toLocaleString('en-IN')}\n\nEvent: Nov 1–4, 2026\nKharna: Nov 2  |  Thekua: Nov 4\n\nआपके योगदान के लिए हृदय से धन्यवाद!\n— PSOTS Chhath Committee`
-  );
-  window.open(`https://wa.me/91${mobile}?text=${msg}`, '_blank');
+  const plainMsg =
+    `*जय छठी मैया!* ✨\n\n` +
+    `नमस्ते, *${name}* जी 🙏\n\n` +
+    `आपका योगदान *₹${parseInt(amount).toLocaleString('en-IN')}* PSOTS Chhath Puja 2026 के लिए committee द्वारा *verified* ✅ हो गया है!\n\n` +
+    `Flat: ${flat}${towerLine ? `  (${towerLine})` : ''}\n` +
+    `Amount: ₹${parseInt(amount).toLocaleString('en-IN')}\n\n` +
+    `Event: Nov 1–4, 2026\nKharna: Nov 2  |  Thekua: Nov 4\n\n` +
+    `आपके योगदान के लिए हृदय से धन्यवाद!\n— PSOTS Chhath Committee`;
+
+  // Try Fonnte first; fall back to wa.me if not configured
+  try {
+    const d = await _fonntePost([mobile], plainMsg);
+    if (d.ok) {
+      toast(`✅ WA confirmation sent to ${name} via Fonnte!`, 'success');
+      return;
+    }
+    // Fonnte failed or not configured — fall through to manual
+    console.warn('Fonnte WA confirm failed:', d.msg);
+  } catch(e) {
+    console.warn('Fonnte not reachable, using wa.me fallback:', e.message);
+  }
+
+  // Fallback: open WhatsApp manually
+  window.open(`https://wa.me/91${mobile}?text=${encodeURIComponent(plainMsg)}`, '_blank');
 }
 
 function deleteEntry(idx) {
@@ -1904,13 +1954,103 @@ function updatePreview() {
   document.getElementById('charCount').textContent = msg.length;
 }
 
-function sendBroadcast() {
+/* ─── Fonnte helpers ─── */
+function _scriptUrl() {
+  return localStorage.getItem('psots_script_url') || (window.PSOTS && window.PSOTS.scriptUrl) || '';
+}
+
+async function checkFonnteStatus() {
+  const su = _scriptUrl();
+  const badge = document.getElementById('fonnteStatusBadge');
+  if (!su || su.includes('YOUR_APPS')) {
+    if (badge) { badge.style.background='#fdecea'; badge.style.color='#c0392b'; badge.textContent='❌ Script URL not set in Settings'; }
+    return false;
+  }
+  if (badge) { badge.style.background='#f0f0f0'; badge.style.color='#666'; badge.textContent='⏳ Checking…'; }
+  try {
+    const d = await fetch(su + '?action=getFonnteStatus').then(r => r.json());
+    if (d.configured) {
+      if (badge) { badge.style.background='#e8f5e9'; badge.style.color='#2e7d32'; badge.textContent='✅ Fonnte connected'; }
+      return true;
+    } else {
+      if (badge) { badge.style.background='#fff8e1'; badge.style.color='#e65100'; badge.textContent='⚠️ FONNTE_TOKEN not set in Script Properties'; }
+      return false;
+    }
+  } catch(e) {
+    if (badge) { badge.style.background='#fdecea'; badge.style.color='#c0392b'; badge.textContent='❌ Could not reach backend'; }
+    return false;
+  }
+}
+
+/* Call Apps Script to send via Fonnte.
+   targets: array of phone strings (raw — backend normalises them)
+   message: plain WhatsApp text (bold with *asterisks*)
+   Returns { ok, sent, msg } */
+async function _fonntePost(targets, message) {
+  const su = _scriptUrl();
+  if (!su || su.includes('YOUR_APPS')) throw new Error('Script URL not configured');
+  const resp = await fetch(su, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'sendFonnteMessage', targets, message })
+  });
+  return resp.json();
+}
+
+/* Broadcast to all opted-in subscribers via Fonnte */
+async function sendFonnteBlast() {
+  const msg = document.getElementById('broadMsg').value.trim();
+  if (!msg) return toast('Please type a message first', 'error');
+
+  const statusEl = document.getElementById('fonnteBroadcastStatus');
+  const btn = document.getElementById('fonnteBroadcastBtn');
+
+  // Load subscribers if not already loaded
+  if (!window._subscribers) {
+    if (statusEl) statusEl.textContent = 'Loading subscribers…';
+    await loadSubscribers();
+  }
+  const subs = (window._subscribers || []).filter(s => s.mobile);
+  if (!subs.length) {
+    toast('No subscribers with mobile numbers found', 'error');
+    if (statusEl) statusEl.textContent = '';
+    return;
+  }
+
+  if (!confirm(`Send this message via Fonnte to ${subs.length} subscriber${subs.length !== 1 ? 's' : ''}?\n\nThis will deliver directly to their WhatsApp.`)) return;
+
+  btn.disabled = true;
+  if (statusEl) statusEl.innerHTML = `⏳ Sending to ${subs.length} subscribers…`;
+
+  try {
+    const targets = subs.map(s => s.mobile);
+    const d = await _fonntePost(targets, msg);
+    if (d.ok) {
+      toast(`✅ Sent to ${d.sent} subscribers via Fonnte!`, 'success');
+      if (statusEl) statusEl.innerHTML = `✅ Delivered to <strong>${d.sent}</strong> subscriber${d.sent !== 1 ? 's' : ''} at ${new Date().toLocaleTimeString()}`;
+    } else {
+      toast('Fonnte error: ' + (d.msg || 'Unknown error'), 'error');
+      if (statusEl) statusEl.textContent = '❌ ' + (d.msg || 'Send failed');
+    }
+  } catch(e) {
+    toast('Network error: ' + e.message, 'error');
+    if (statusEl) statusEl.textContent = '❌ Network error';
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* Manual fallback — opens wa.me link so admin can forward to broadcast list */
+function sendBroadcastManual() {
   const msg = document.getElementById('broadMsg').value.trim();
   if (!msg) return toast('Please type a message first', 'error');
   const wa = localStorage.getItem('psots_waOrg') || '919482088904';
   window.open(`https://wa.me/${wa}?text=${encodeURIComponent(msg)}`, '_blank');
   toast('📲 Opening WhatsApp…', 'success');
 }
+
+// Keep legacy name so any old callers still work
+function sendBroadcast() { sendFonnteBlast(); }
 
 /* ═══════════════════════════════════════════════════
    SAVE ALL
@@ -3230,15 +3370,19 @@ function renderReminderList() {
   el.innerHTML = data.map(x => {
     const name = x.names[0] || 'Resident';
     const mobile = x.mobile;
-    const msg = encodeURIComponent(`🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\nनमस्ते ${name} ji 🙏\n\nThis is a gentle reminder to contribute for *PSOTS Chhath Puja 2026* before the deadline of *25th October 2026*.\n\n💰 UPI: 9482088904@sbi\n📱 Or visit: https://chhath.psots.in/pages/payment.html\n\nYour contribution of ₹1,001+ makes you eligible for prasad! 🙏\n\nजय छठी मैया! 🌅\n— PSOTS Chhath Committee`);
-    const waLink = mobile ? `whatsapp://send?phone=91${mobile}&text=${msg}` : '';
+    const reminderBtn = mobile
+      ? `<button onclick="sendFonnteReminder('${mobile}','${name.replace(/'/g,"\\'")}','${x.flat}')"
+           style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;border-radius:8px;padding:.4rem .75rem;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">
+           📲 Remind
+         </button>`
+      : '<span style="font-size:.72rem;color:#c8a880">No mobile</span>';
     return `
     <div style="display:flex;align-items:center;gap:.6rem;background:var(--warm);border:1px solid #f0d5b8;border-radius:10px;padding:.55rem .8rem">
       <div style="flex:1;min-width:0">
         <div style="font-weight:600;font-size:.82rem">${x.flat}</div>
         <div style="font-size:.72rem;color:var(--lbr)">${x.names.join(', ') || '—'} ${x.lastYear ? '· Last paid: '+x.lastYear : ''}</div>
       </div>
-      ${waLink ? `<a href="${waLink}" style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border-radius:8px;padding:.4rem .75rem;font-size:.75rem;font-weight:600;text-decoration:none;white-space:nowrap;flex-shrink:0">📲 Remind</a>` : '<span style="font-size:.72rem;color:#c8a880">No mobile</span>'}
+      ${reminderBtn}
     </div>`;
   }).join('');
 }
@@ -3250,19 +3394,70 @@ function filterReminderTower(tower, el) {
   renderReminderList();
 }
 
-function sendBulkReminder() {
+async function sendBulkReminder() {
   let data = allReminderData;
   if (reminderTowerFilter) data = data.filter(x => x.tower === reminderTowerFilter);
   const withMobile = data.filter(x => x.mobile);
   if (!withMobile.length) { toast('No contacts with mobile numbers to remind', 'error'); return; }
-  const msg = encodeURIComponent(`🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\nनमस्ते 🙏\n\nKindly contribute before *25th October 2026* to be included in the prasad list.\n\n💰 UPI: 9482088904@sbi\n📱 Visit: https://chhath.psots.in/pages/payment.html\n\nजय छठी मैया! 🌅\n— PSOTS Chhath Committee`);
-  // Open each WA link one by one (browsers may block multiple popups; guide user)
-  toast(`Opening ${withMobile.length} WhatsApp messages…`, 'success');
-  withMobile.forEach((x, i) => {
-    setTimeout(() => {
-      window.open(`https://wa.me/91${x.mobile}?text=${msg}`, '_blank');
-    }, i * 800);
-  });
+
+  const statusEl = document.getElementById('bulkReminderStatus');
+  const btn = document.getElementById('bulkReminderBtn');
+  const reminderMsg =
+    `🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\n` +
+    `नमस्ते 🙏\n\n` +
+    `Kindly contribute before *25th October 2026* to be included in the prasad list.\n\n` +
+    `💰 UPI: 9482088904@sbi\n` +
+    `📱 Visit: https://chhath.psots.in/pages/payment.html\n\n` +
+    `जय छठी मैया! 🌅\n— PSOTS Chhath Committee`;
+
+  if (!confirm(`Send payment reminder via Fonnte to ${withMobile.length} flat${withMobile.length !== 1 ? 's' : ''} that haven't contributed yet?`)) return;
+
+  btn.disabled = true;
+  if (statusEl) statusEl.textContent = `⏳ Sending reminders to ${withMobile.length} contacts…`;
+
+  try {
+    const targets = withMobile.map(x => x.mobile);
+    const d = await _fonntePost(targets, reminderMsg);
+    if (d.ok) {
+      toast(`✅ Reminders sent to ${d.sent} flats via Fonnte!`, 'success');
+      if (statusEl) statusEl.textContent = `✅ Sent to ${d.sent} contacts at ${new Date().toLocaleTimeString()}`;
+    } else {
+      // Fonnte failed — fall back to opening wa.me links
+      toast('Fonnte failed, falling back to WhatsApp links…', 'error');
+      if (statusEl) statusEl.textContent = '⚠️ Fonnte failed: ' + (d.msg || 'unknown') + ' — opening WhatsApp links instead';
+      const msgEnc = encodeURIComponent(reminderMsg);
+      withMobile.forEach((x, i) => {
+        setTimeout(() => window.open(`https://wa.me/91${x.mobile}?text=${msgEnc}`, '_blank'), i * 900);
+      });
+    }
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+    if (statusEl) statusEl.textContent = '❌ ' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+/* Send a personalised reminder to a single flat via Fonnte (with wa.me fallback) */
+async function sendFonnteReminder(mobile, name, flat) {
+  const msg =
+    `🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\n` +
+    `नमस्ते ${name} ji 🙏\n\n` +
+    `This is a gentle reminder to contribute for *PSOTS Chhath Puja 2026* before the deadline of *25th October 2026*.\n\n` +
+    `💰 UPI: 9482088904@sbi\n` +
+    `📱 Or visit: https://chhath.psots.in/pages/payment.html\n\n` +
+    `Your contribution of ₹1,001+ makes you eligible for prasad! 🙏\n\n` +
+    `जय छठी मैया! 🌅\n— PSOTS Chhath Committee`;
+
+  try {
+    const d = await _fonntePost([mobile], msg);
+    if (d.ok) { toast(`✅ Reminder sent to ${name} (Flat ${flat}) via Fonnte!`, 'success'); return; }
+    console.warn('Fonnte reminder failed:', d.msg);
+  } catch(e) {
+    console.warn('Fonnte not reachable, using wa.me fallback');
+  }
+  // Fallback
+  window.open(`https://wa.me/91${mobile}?text=${encodeURIComponent(msg)}`, '_blank');
 }
 
 /* ═══════════════════════════════════════════════════
