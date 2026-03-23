@@ -701,7 +701,7 @@
       <div class="ac-title">⚙️ Site Configuration</div>
       <div class="fg">
         <div class="ff"><label>Apps Script URL</label><input type="text" id="s-scriptUrl" placeholder="https://script.google.com/macros/s/…/exec"/><div class="note">Paste your Google Apps Script deployment URL here</div></div>
-        <div class="ff"><label>UPI ID</label><input type="text" id="s-upiId" value="9482088904-3@ybl"/></div>
+        <div class="ff"><label>UPI ID</label><input type="text" id="s-upiId" value="9482088904@sbi"/></div>
         <div class="ff"><label>Primary WhatsApp</label><input type="text" id="s-waOrg" value="919482088904"/></div>
         <div class="ff"><label>Second Contact</label><input type="text" id="s-waOrg2" value="919902837002"/></div>
         <div class="ff"><label>Event Start Date</label><input type="date" id="s-eventDate" value="2026-11-01"/></div>
@@ -1778,7 +1778,7 @@ async function saveTimings() {
    BROADCAST
 ═══════════════════════════════════════════════════ */
 const TEMPLATES = {
-  reminder: `🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\nनमस्ते 🙏\n\nKindly contribute before *25th October 2026* to be included in the prasad list.\n\n💰 Pay via UPI: Visit psots.in\n📱 UPI: 9482088904-3@ybl\n\nDue dates:\n• Kharna Prasad: Nov 2\n• Thekua Prasad: Nov 4\n\nजय छठी मैया! 🌅`,
+  reminder: `🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\nनमस्ते 🙏\n\nKindly contribute before *25th October 2026* to be included in the prasad list.\n\n💰 Pay via UPI: Visit psots.in\n📱 UPI: 9482088904@sbi\n\nDue dates:\n• Kharna Prasad: Nov 2\n• Thekua Prasad: Nov 4\n\nजय छठी मैया! 🌅`,
   timing:   `🌇🌅 *PSOTS Chhath Puja 2026 — Arghya Timings*\n\n📅 Schedule:\n\n🌊 Nov 1 — Nahay Khay: 5:30 AM\n🍚 Nov 2 — Kharna Prasad: 7:00 PM\n🌇 Nov 3 — *Sandhya Arghya: 5:45 PM*\n🌅 Nov 4 — *Usha Arghya: 6:15 AM*\n\nVenue: Society Ghat — Prestige Song of the South\n\nजय छठी मैया! 🙏`,
   prasad:   `🙏 *PSOTS Chhath Puja 2026 — Prasad Update*\n\nप्रसाद की व्यवस्था:\n\n🍚 *खरना प्रसाद* — Nov 2, 7:00 PM\n(Community Hall)\n\n🪄 *ठेकुआ प्रसाद* — Nov 4, After Arghya\n(Society Ghat)\n\nसभी PSOTS निवासियों का स्वागत है 🙏\nजय छठी मैया! 🌅`,
   thankyou: `🎉🌅 *PSOTS Chhath Puja 2026 — Thank You!*\n\nप्रिय निवासी जी,\n\nहमारा छठ पूजा 2026 का पंच वर्ष महोत्सव आपके सहयोग से सफल रहा!\n\nThank you for your contribution and participation. May Chhathi Maiya bless you and your family with health, happiness and prosperity. 🙏\n\nजय छठी मैया! 🌅\n— PSOTS Chhath Committee`
@@ -3135,7 +3135,7 @@ function renderReminderList() {
   el.innerHTML = data.map(x => {
     const name = x.names[0] || 'Resident';
     const mobile = x.mobile;
-    const msg = encodeURIComponent(`🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\nनमस्ते ${name} ji 🙏\n\nThis is a gentle reminder to contribute for *PSOTS Chhath Puja 2026* before the deadline of *25th October 2026*.\n\n💰 UPI: 9482088904-3@ybl\n📱 Or visit: https://chhath.psots.in/pages/payment.html\n\nYour contribution of ₹1,001+ makes you eligible for prasad! 🙏\n\nजय छठी मैया! 🌅\n— PSOTS Chhath Committee`);
+    const msg = encodeURIComponent(`🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\nनमस्ते ${name} ji 🙏\n\nThis is a gentle reminder to contribute for *PSOTS Chhath Puja 2026* before the deadline of *25th October 2026*.\n\n💰 UPI: 9482088904@sbi\n📱 Or visit: https://chhath.psots.in/pages/payment.html\n\nYour contribution of ₹1,001+ makes you eligible for prasad! 🙏\n\nजय छठी मैया! 🌅\n— PSOTS Chhath Committee`);
     const waLink = mobile ? `whatsapp://send?phone=91${mobile}&text=${msg}` : '';
     return `
     <div style="display:flex;align-items:center;gap:.6rem;background:var(--warm);border:1px solid #f0d5b8;border-radius:10px;padding:.55rem .8rem">
@@ -3160,7 +3160,7 @@ function sendBulkReminder() {
   if (reminderTowerFilter) data = data.filter(x => x.tower === reminderTowerFilter);
   const withMobile = data.filter(x => x.mobile);
   if (!withMobile.length) { toast('No contacts with mobile numbers to remind', 'error'); return; }
-  const msg = encodeURIComponent(`🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\nनमस्ते 🙏\n\nKindly contribute before *25th October 2026* to be included in the prasad list.\n\n💰 UPI: 9482088904-3@ybl\n📱 Visit: https://chhath.psots.in/pages/payment.html\n\nजय छठी मैया! 🌅\n— PSOTS Chhath Committee`);
+  const msg = encodeURIComponent(`🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\nनमस्ते 🙏\n\nKindly contribute before *25th October 2026* to be included in the prasad list.\n\n💰 UPI: 9482088904@sbi\n📱 Visit: https://chhath.psots.in/pages/payment.html\n\nजय छठी मैया! 🌅\n— PSOTS Chhath Committee`);
   // Open each WA link one by one (browsers may block multiple popups; guide user)
   toast(`Opening ${withMobile.length} WhatsApp messages…`, 'success');
   withMobile.forEach((x, i) => {
