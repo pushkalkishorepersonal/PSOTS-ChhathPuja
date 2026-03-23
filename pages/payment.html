@@ -283,6 +283,7 @@
       <h4>जय छठी मैया!</h4>
       <p id="successTxt">Your contribution has been recorded. The committee will verify and confirm within 24 hours.</p>
       <button class="btn-wa btn-block" onclick="sendReceipt()">📲 Send Receipt to My WhatsApp</button>
+      <a href="../portal.html" style="display:block;margin-top:.75rem;font-size:.82rem;color:var(--or);text-decoration:none;font-weight:600">View my contributions in Portal →</a>
     </div>
   </div><!-- /conf-body -->
   </div>
@@ -464,9 +465,9 @@ function setMode(m){
   document.getElementById('user-confirm-only').style.display='none';
   document.getElementById('extra-fields').style.display='grid';
   if(isUser){
-    document.getElementById('confirmSub').textContent='Your details are pre-filled. Just confirm the amount — payment done!';
+    document.getElementById('confHdrSub').textContent='Your details are pre-filled. Just confirm the amount — payment done!';
   }else{
-    document.getElementById('confirmSub').textContent='After UPI payment, fill these 3 details. Quick and simple.';
+    document.getElementById('confHdrSub').textContent='After UPI payment, fill these 3 details. Quick and simple.';
     if(!currentUser){document.getElementById('upName').textContent='Not signed in';document.getElementById('upFlat').innerHTML='<a href="../portal.html" style="color:var(--or)">Sign in for quick pay →</a>';}
   }
 }

@@ -798,10 +798,6 @@ function demoLogin() {
   toast('👋 Demo mode — set up Google Client ID for real login', '');
 }
 
-function guestMode() {
-  window.location.href = 'admin.html';
-}
-
 /* ── Email OTP login ── */
 async function sendOtp() {
   const email = document.getElementById('otpEmail').value.trim();
