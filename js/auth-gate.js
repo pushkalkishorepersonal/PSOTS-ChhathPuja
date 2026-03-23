@@ -10,10 +10,17 @@
 
   // ── 1. Check session ─────────────────────────────────
   function getUser() {
-    try { return JSON.parse(localStorage.getItem('psots_user') || 'null'); } catch (e) { return null; }
+    try {
+      // Accept resident session OR admin session (admin signs in via admin.html Google button)
+      var u = JSON.parse(localStorage.getItem('psots_user') || 'null');
+      if (u && u.id) return u;
+      var a = JSON.parse(localStorage.getItem('psots_admin_user') || 'null');
+      if (a && (a.id || a.email)) return a;
+      return null;
+    } catch (e) { return null; }
   }
   var user = getUser();
-  if (user && user.id) return; // ✅ already signed in
+  if (user && (user.id || user.email)) return; // ✅ already signed in
 
   // ── 2. Immediately hide page body until gate resolves ─
   var hideStyle = document.createElement('style');

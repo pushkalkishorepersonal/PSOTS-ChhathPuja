@@ -382,7 +382,8 @@ window.addEventListener('DOMContentLoaded',()=>{
   if(_badge){_badge.textContent=_payuMode;_badge.style.background=_payuMode==='LIVE'?'#2e7d32':'#ff9800';}
   const _pb=document.getElementById('payuPayBtn');
   if(_pb){_pb.disabled=true;_pb.style.opacity='.6';}
-  const u=localStorage.getItem('psots_user');
+  // Accept either resident session (psots_user) or admin session (psots_admin_user)
+  const u=localStorage.getItem('psots_user') || localStorage.getItem('psots_admin_user');
   if(u){
     currentUser=JSON.parse(u);
     const p=localStorage.getItem('psots_profile_'+currentUser.id);
@@ -437,14 +438,20 @@ function toggleSec(sectionId,arrowId){
 function loadUserMode(){
   if(!currentUser){setMode('guest');return;}
   setMode('user');
-  const initials=(userProfile.name||currentUser.name||'?').charAt(0).toUpperCase();
+  // Merge profile data with currentUser so Google-only sign-in still shows name
+  const displayName = userProfile.name || currentUser.name || '';
+  const displayFlat = userProfile.flat || '';
+  const displayMobile = userProfile.mobile || '';
+  const initials = (displayName||'?').charAt(0).toUpperCase();
   document.getElementById('upAv').textContent=initials;
-  document.getElementById('upName').textContent=userProfile.name||currentUser.name;
-  document.getElementById('upFlat').textContent=userProfile.flat?'Flat '+userProfile.flat:'Set flat in profile';
-  // Prefill guest fields too
-  if(userProfile.name){document.getElementById('f-name').value=userProfile.name;document.getElementById('pn-name').style.display='block'}
-  if(userProfile.flat){document.getElementById('f-flat').value=userProfile.flat;document.getElementById('pn-flat').style.display='block'}
-  if(userProfile.mobile){document.getElementById('f-mobile').value=userProfile.mobile;document.getElementById('pn-mobile').style.display='block'}
+  document.getElementById('upName').textContent=displayName||'Signed in';
+  document.getElementById('upFlat').textContent=displayFlat?'Flat '+displayFlat:(displayMobile?'Mobile: '+displayMobile:'Set flat in your profile →');
+  // Pre-fill confirmation form fields
+  const nm=document.getElementById('f-name');
+  const pnName=document.getElementById('pn-name');
+  if(displayName&&nm){nm.value=displayName;if(pnName)pnName.style.display='block';}
+  if(displayFlat){const fl=document.getElementById('f-flat');const pnFlat=document.getElementById('pn-flat');if(fl)fl.value=displayFlat;if(pnFlat)pnFlat.style.display='block';}
+  if(displayMobile){const mob=document.getElementById('f-mobile');const pnMob=document.getElementById('pn-mobile');if(mob)mob.value=displayMobile;if(pnMob)pnMob.style.display='block';}
 }
 
 function setMode(m){
