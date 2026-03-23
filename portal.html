@@ -191,6 +191,25 @@
   #toast.success{background:var(--green)}
   #toast.error{background:var(--red)}
 
+  /* Profile Nudge Bar */
+  #profileNudge{
+    position:fixed;bottom:0;left:0;right:0;z-index:9000;
+    background:linear-gradient(135deg,#1a0800 0%,#3d1200 100%);
+    border-top:1.5px solid rgba(255,194,0,.3);
+    padding:.75rem 1.2rem;
+    display:flex;align-items:center;gap:.8rem;
+    transform:translateY(100%);transition:transform .4s cubic-bezier(.4,0,.2,1);
+    box-shadow:0 -4px 24px rgba(0,0,0,.35);
+  }
+  #profileNudge.visible{transform:translateY(0)}
+  .pn-icon{font-size:1.6rem;flex-shrink:0;line-height:1}
+  .pn-body{flex:1;min-width:0}
+  .pn-title{font-weight:700;font-size:.82rem;color:var(--gold);line-height:1.2}
+  .pn-sub{font-size:.72rem;color:rgba(255,220,120,.6);margin-top:.15rem;line-height:1.3}
+  .pn-cta{background:linear-gradient(135deg,var(--or),#c93800);color:#fff;border:none;border-radius:50px;padding:.45rem 1rem;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
+  .pn-dismiss{background:none;border:none;color:rgba(255,220,120,.4);font-size:1.1rem;cursor:pointer;padding:.2rem .4rem;flex-shrink:0;line-height:1}
+  .pn-dismiss:hover{color:rgba(255,220,120,.7)}
+
   /* Sign-out farewell overlay */
   #signoutOverlay{position:fixed;inset:0;background:rgba(18,12,6,.82);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:99999;display:flex;align-items:center;justify-content:center;opacity:0;pointer-events:none;transition:opacity .4s ease}
   #signoutOverlay.visible{opacity:1;pointer-events:all}
@@ -362,9 +381,6 @@
 
   <!-- ═══ PROFILE TAB ═══ -->
   <div class="portal-panel" id="tab-profile">
-    <div id="profileIncompleteBanner" style="display:none;background:#fff8e1;border:1px solid #ffe082;border-radius:12px;padding:.85rem 1.1rem;margin-bottom:1rem;font-size:.82rem;color:#7a5000;line-height:1.6">
-      📱 <strong>One-time setup on this device</strong> — Your name syncs via Google automatically. Please add your <strong>Flat number</strong> and <strong>WhatsApp number</strong> below and tap Save — takes 10 seconds.
-    </div>
     <div class="pcard">
       <div class="pcard-title">👤 My Profile</div>
       <div class="pcard-sub">Your personal details are private — only you and committee admins can see them. They're used to pre-fill your payment form and send you confirmations.</div>
@@ -642,6 +658,17 @@
 </div><!-- end portalApp -->
 
 <div id="toast"></div>
+
+<!-- ── Profile Completion Nudge Bar ── -->
+<div id="profileNudge" role="alert" aria-live="polite">
+  <div class="pn-icon" id="pnIcon">🙏</div>
+  <div class="pn-body">
+    <div class="pn-title" id="pnTitle">Complete your profile for prasad</div>
+    <div class="pn-sub" id="pnSub">Share your flat number so we know where to deliver prasad</div>
+  </div>
+  <button class="pn-cta" onclick="nudgeGoFix()" id="pnCta">Complete →</button>
+  <button class="pn-dismiss" onclick="dismissNudge()" title="Remind me later">×</button>
+</div>
 
 <!-- Sign-out farewell overlay -->
 <div id="signoutOverlay">
@@ -1098,10 +1125,6 @@ function fillProfileUI() {
   if (p.family)  document.getElementById('p-family').value  = p.family;
   if (p.vrati)   document.getElementById('p-vrati').value   = p.vrati;
 
-  // Show banner if flat/mobile not yet set on this device
-  const banner = document.getElementById('profileIncompleteBanner');
-  if (banner) banner.style.display = (!p.flat || !p.mobile) ? 'block' : 'none';
-
   // Profile email + avatar
   document.getElementById('profileEmail').textContent = currentUser?.email || '';
   const bigAv = document.getElementById('profileAvatar');
@@ -1118,6 +1141,112 @@ function fillProfileUI() {
 
   // Badge
   if (p.vrati === 'yes') document.getElementById('wbBadge').textContent = '🙏 Vrati';
+
+  // Check whether to show the profile nudge bar
+  checkProfileNudge();
+}
+
+/* ═══════════════════════════════════════════════════
+   SMART PROFILE NUDGE BAR
+   Priority: flat → vrati → mobile
+   Logic: show unless snoozed, hide forever once complete
+═══════════════════════════════════════════════════ */
+function checkProfileNudge() {
+  const p      = userProfile;
+  const nudge  = document.getElementById('profileNudge');
+  if (!nudge) return;
+
+  // Determine what's missing — in priority order
+  const missingFlat   = !p.flat;
+  const missingVrati  = !p.vrati;           // 'yes'|'no' both valid, undefined = never set
+  const missingMobile = !p.mobile;
+
+  // If nothing critical is missing, hide permanently
+  if (!missingFlat && !missingVrati && !missingMobile) {
+    nudge.classList.remove('visible');
+    localStorage.removeItem('psots_nudge_snooze_v1'); // clean up
+    return;
+  }
+
+  // Check snooze — key stores ISO timestamp of last dismiss
+  const snoozeKey = 'psots_nudge_snooze_v1';
+  const snooze    = localStorage.getItem(snoozeKey);
+  if (snooze) {
+    const snoozeUntil = parseInt(snooze, 10);
+    if (Date.now() < snoozeUntil) {
+      nudge.classList.remove('visible');
+      return;
+    }
+    localStorage.removeItem(snoozeKey); // snooze expired
+  }
+
+  // Decide which field to highlight and what to say
+  let icon, title, sub, ctaLabel, focusId;
+  if (missingFlat) {
+    icon     = '📍';
+    title    = 'Share your flat number for prasad';
+    sub      = 'We need your flat to include you in the distribution list for Chhath 2026';
+    ctaLabel = 'Add Flat →';
+    focusId  = 'p-flat';
+  } else if (missingVrati) {
+    icon     = '🕉️';
+    title    = 'Are you observing the Chhath fast?';
+    sub      = 'Tell us if anyone in your family is a Vrati — helps us plan prasad quantities';
+    ctaLabel = 'Update →';
+    focusId  = 'p-vrati';
+  } else {
+    icon     = '📱';
+    title    = 'Add WhatsApp for event reminders';
+    sub      = 'Your flat is set! Add a number to receive timing updates and check-in alerts';
+    ctaLabel = 'Add Number →';
+    focusId  = 'p-mobile';
+  }
+
+  document.getElementById('pnIcon').textContent  = icon;
+  document.getElementById('pnTitle').textContent  = title;
+  document.getElementById('pnSub').textContent    = sub;
+  document.getElementById('pnCta').textContent    = ctaLabel;
+  nudge._focusId = focusId;   // store target for the CTA
+
+  // Show with a short delay so the page settles first
+  setTimeout(() => nudge.classList.add('visible'), 900);
+}
+
+function nudgeGoFix() {
+  const nudge = document.getElementById('profileNudge');
+  const focusId = nudge && nudge._focusId;
+
+  // Navigate to Profile tab
+  switchTab('profile');
+
+  // Scroll to & focus the specific field
+  setTimeout(() => {
+    const el = focusId && document.getElementById(focusId);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      el.focus();
+      // Subtle highlight flash
+      el.style.borderColor = 'var(--or)';
+      el.style.boxShadow   = '0 0 0 3px rgba(232,92,0,.2)';
+      setTimeout(() => { el.style.borderColor = ''; el.style.boxShadow = ''; }, 2000);
+    }
+  }, 200);
+
+  // Dismiss bar so it doesn't distract while editing
+  if (nudge) nudge.classList.remove('visible');
+}
+
+function dismissNudge() {
+  const nudge  = document.getElementById('profileNudge');
+  if (nudge) nudge.classList.remove('visible');
+
+  // Snooze duration depends on what's missing
+  const p = userProfile;
+  const missingFlat = !p.flat;
+  // Flat missing = 7-day snooze (important); other fields = 30 days
+  const days = missingFlat ? 7 : 30;
+  const until = Date.now() + days * 24 * 60 * 60 * 1000;
+  localStorage.setItem('psots_nudge_snooze_v1', String(until));
 }
 
 async function fetchProfileFromSheet() {
