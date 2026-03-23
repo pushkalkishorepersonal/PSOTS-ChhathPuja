@@ -2240,13 +2240,35 @@ function downloadReceipt() {
   const card = document.getElementById('receiptCard');
   if (!card) return toast('No receipt to download', 'error');
 
-  // Extract data from the receipt card
-  const name = card.querySelector('.rc-name')?.textContent || '';
-  const flat = card.querySelector('.rc-flat')?.textContent || '';
-  const amount = card.querySelector('.rc-amount')?.textContent || '';
-  const label = card.querySelector('.rc-label')?.textContent || '';
+  // Read all text directly from the rendered card DOM (always correct for any year)
+  const name      = card.querySelector('.rc-name')?.textContent    || '';
+  const flat      = card.querySelector('.rc-flat')?.textContent    || '';
+  const amount    = card.querySelector('.rc-amount')?.textContent  || '';
+  const label     = card.querySelector('.rc-label')?.textContent   || '';
+  const titleText = card.querySelector('.rc-title')?.textContent   || 'PSOTS Chhath Puja';
+  const subText   = card.querySelector('.rc-sub')?.textContent     || '';
+  const yearRaw   = card.dataset.year || '2026';
+  // Footer line — strip the Hindi text from rc-year, keep first line only
+  const yearEl    = card.querySelector('.rc-year');
+  const footerLine = yearEl
+    ? yearEl.innerHTML.replace(/<br\/?>/gi, '\n').replace(/<[^>]+>/g, '').split('\n')[0].trim()
+    : `Nov 1–4, ${yearRaw} · Society Ghat · Bengaluru`;
 
-  // Draw receipt on canvas
+  // Canvas rounded-rect polyfill (Safari <15.4 lacks ctx.roundRect)
+  function fillRoundRect(ctx, x, y, w, h, r) {
+    ctx.beginPath();
+    ctx.moveTo(x + r, y);
+    ctx.lineTo(x + w - r, y);
+    ctx.arcTo(x + w, y, x + w, y + r, r);
+    ctx.lineTo(x + w, y + h - r);
+    ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+    ctx.lineTo(x + r, y + h);
+    ctx.arcTo(x, y + h, x, y + h - r, r);
+    ctx.lineTo(x, y + r);
+    ctx.arcTo(x, y, x + r, y, r);
+    ctx.closePath();
+  }
+
   const W = 600, H = 800;
   const cvs = document.createElement('canvas');
   cvs.width = W; cvs.height = H;
@@ -2257,36 +2279,35 @@ function downloadReceipt() {
   bg.addColorStop(0, '#1a0800');
   bg.addColorStop(1, '#3d1200');
   ctx.fillStyle = bg;
-  ctx.roundRect(0, 0, W, H, 20);
+  fillRoundRect(ctx, 0, 0, W, H, 20);
   ctx.fill();
 
-  // Glow circle at top
+  // Glow at top
   const glow = ctx.createRadialGradient(W/2, 100, 0, W/2, 100, 200);
   glow.addColorStop(0, 'rgba(255,194,0,0.12)');
   glow.addColorStop(1, 'transparent');
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, W, 300);
 
-  // Soop/sunrise icon
+  // Icon
   ctx.font = '48px serif';
   ctx.textAlign = 'center';
   ctx.fillText('🌅', W/2, 100);
 
-  // Title
+  // Title — read from card, so it's always the correct year
   ctx.font = '900 26px "DM Sans", sans-serif';
   ctx.fillStyle = '#ffc200';
-  ctx.fillText('PSOTS Chhath Puja 2026', W/2, 160);
+  ctx.fillText(titleText, W/2, 160);
 
   // Subtitle
   ctx.font = '13px "DM Sans", sans-serif';
   ctx.fillStyle = 'rgba(255,220,120,0.7)';
-  ctx.fillText('पंच वर्ष महोत्सव · Thank You Certificate', W/2, 188);
+  ctx.fillText(subText, W/2, 188);
 
   // Verified badge
   ctx.fillStyle = 'rgba(46,125,50,0.25)';
   const badgeW = 180, badgeH = 28;
-  ctx.beginPath();
-  ctx.roundRect(W/2 - badgeW/2, 215, badgeW, badgeH, 14);
+  fillRoundRect(ctx, W/2 - badgeW/2, 215, badgeW, badgeH, 14);
   ctx.fill();
   ctx.strokeStyle = 'rgba(46,125,50,0.4)';
   ctx.lineWidth = 1;
@@ -2310,12 +2331,12 @@ function downloadReceipt() {
   ctx.fillStyle = '#ffffff';
   ctx.fillText(amount, W/2, 430);
 
-  // Payment label
+  // Label
   ctx.font = '13px "DM Sans", sans-serif';
   ctx.fillStyle = 'rgba(255,220,120,0.65)';
   ctx.fillText(label, W/2, 460);
 
-  // Divider line
+  // Divider
   ctx.strokeStyle = 'rgba(255,194,0,0.15)';
   ctx.lineWidth = 1;
   ctx.beginPath();
@@ -2323,10 +2344,10 @@ function downloadReceipt() {
   ctx.lineTo(W - 80, 510);
   ctx.stroke();
 
-  // Footer text
+  // Footer — read from card, so it matches the selected year
   ctx.font = '14px "DM Sans", sans-serif';
   ctx.fillStyle = 'rgba(255,220,120,0.5)';
-  ctx.fillText('Nov 1–4, 2026 · Society Ghat · Bengaluru', W/2, 545);
+  ctx.fillText(footerLine, W/2, 545);
   ctx.fillText('Prestige Song of the South', W/2, 568);
   ctx.font = '20px "Yatra One", serif';
   ctx.fillStyle = 'rgba(255,194,0,0.7)';
@@ -2337,9 +2358,9 @@ function downloadReceipt() {
   ctx.fillStyle = 'rgba(255,220,120,0.4)';
   ctx.fillText('chhath.psots.in', W/2, 750);
 
-  // Download as PNG
+  // Download
   const link = document.createElement('a');
-  link.download = `Chhath_2026_Receipt_${name.replace(/\s+/g,'_')}.png`;
+  link.download = `Chhath_${yearRaw}_Receipt_${name.replace(/\s+/g,'_')}.png`;
   link.href = cvs.toDataURL('image/png');
   link.click();
   toast('📸 Receipt saved as image!', 'success');

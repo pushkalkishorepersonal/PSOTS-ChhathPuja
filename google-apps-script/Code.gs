@@ -889,8 +889,14 @@ function actionSaveVolunteers(records) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_VOLUNTEERS);
   if (!sheet) return { error: 'Volunteers sheet not found. Run setupSheets() first.' };
 
-  // Clear existing data rows
+  // Snapshot existing data to detect status/task changes
+  const prevMap = {};
   if (sheet.getLastRow() > 1) {
+    const prev = sheet.getRange(2, 1, sheet.getLastRow() - 1, VOL_HEADERS.length).getValues();
+    for (const r of prev) {
+      const key = String(r[2]).trim() || String(r[1]).toLowerCase(); // flat or name
+      prevMap[key] = { assignedTask: String(r[6] || ''), status: String(r[7] || '') };
+    }
     sheet.getRange(2, 1, sheet.getLastRow() - 1, VOL_HEADERS.length).clearContent();
   }
 
@@ -913,15 +919,53 @@ function actionSaveVolunteers(records) {
 
   sheet.getRange(2, 1, rows.length, VOL_HEADERS.length).setValues(rows);
 
-  // Highlight confirmed rows in green
+  // Highlight rows and send WA where something meaningful changed
   for (let i = 0; i < rows.length; i++) {
-    const status = rows[i][7];
+    const status       = rows[i][7];
+    const assignedTask = rows[i][6];
+    const mobile       = rows[i][3];
+    const name         = rows[i][1];
+    const flat         = rows[i][2];
+    const days         = rows[i][4];
+
     if (status === 'Confirmed') {
       sheet.getRange(i + 2, 1, 1, VOL_HEADERS.length).setBackground('#E8F5E9');
-    } else if (rows[i][9] === 'true') { // checked in
+    } else if (rows[i][9] === 'true') {
       sheet.getRange(i + 2, 1, 1, VOL_HEADERS.length).setBackground('#E3F2FD');
     } else {
       sheet.getRange(i + 2, 1, 1, VOL_HEADERS.length).setBackground(null);
+    }
+
+    if (!mobile) continue;
+    const key  = String(flat).trim() || String(name).toLowerCase();
+    const prev = prevMap[key] || {};
+
+    // Task newly assigned or changed
+    if (assignedTask && assignedTask !== prev.assignedTask) {
+      sendWA(mobile,
+        '🌅 *PSOTS Chhath Puja 2026 — Task Assigned* 🛠️\n\n' +
+        'नमस्ते ' + name + ' जी 🙏\n\n' +
+        'The committee has assigned you a task:\n\n' +
+        '🛠️ *' + assignedTask + '*\n' +
+        '📅 Days: ' + (days || 'TBD') + '\n' +
+        '🏠 Flat: ' + flat + '\n\n' +
+        'Please confirm your availability by replying to this message.\n' +
+        '📞 9482088904\n\n' +
+        'जय छठी मैया! 🌅'
+      );
+    }
+    // Status changed to Confirmed
+    else if (status === 'Confirmed' && prev.status !== 'Confirmed') {
+      sendWA(mobile,
+        '🌅 *PSOTS Chhath Puja 2026 — Volunteer Confirmed* ✅\n\n' +
+        'नमस्ते ' + name + ' जी 🙏\n\n' +
+        'Your volunteer registration is *confirmed*!\n\n' +
+        '📅 Days: ' + (days || 'TBD') + '\n' +
+        (assignedTask ? '🛠️ Task: ' + assignedTask + '\n' : '') +
+        '🏠 Flat: ' + flat + '\n\n' +
+        'We\'ll see you at the event. Thank you for serving!\n\n' +
+        'जय छठी मैया! 🌅'
+      );
     }
   }
 
@@ -947,6 +991,18 @@ function actionVolunteerCheckin(body) {
       sheet.getRange(i + 2, 10).setValue('true');       // CheckedIn
       sheet.getRange(i + 2, 11).setValue(now);           // CheckinTime
       sheet.getRange(i + 2, 1, 1, VOL_HEADERS.length).setBackground('#E3F2FD');
+
+      // Notify committee of check-in
+      const volName     = data[i][1] || '';
+      const volFlat     = data[i][2] || '';
+      const assignedTask = data[i][6] || data[i][5] || 'Not assigned yet';
+      notifyCommittee(
+        '✅ *Volunteer Checked In — Chhath 2026*\n' +
+        '👤 ' + volName + ' · Flat ' + volFlat + '\n' +
+        '📅 ' + (body.day || 'Event day') + '\n' +
+        '🛠️ Task: ' + assignedTask + '\n' +
+        '🕐 ' + now
+      );
       return { success: true, name: data[i][1], day: body.day };
     }
   }
@@ -965,6 +1021,14 @@ function actionVolunteerCheckin(body) {
     'true',
     now
   ]);
+
+  // Notify committee of walk-in
+  notifyCommittee(
+    '🚶 *Walk-in Volunteer — Chhath 2026*\n' +
+    '👤 ' + (body.name || '?') + ' · Flat ' + (body.flat || '?') + '\n' +
+    '📅 Day: ' + (body.day || 'Event day') + '\n' +
+    '⚠️ Not pre-registered — checked in on arrival'
+  );
   return { success: true, walkin: true };
 }
 
@@ -1196,17 +1260,8 @@ function authorizeExternalRequests() {
 }
 
 function sendContributorWhatsApp(p) {
-  const token = PropertiesService.getScriptProperties().getProperty('FONNTE_TOKEN');
-  if (!token) return; // not configured — skip silently
-
-  // Normalise phone: strip leading 0, add 91
-  let phone = String(p.phone || '').replace(/\D/g, '');
-  if (!phone) return;
-  if (phone.startsWith('0')) phone = phone.slice(1);
-  if (!phone.startsWith('91')) phone = '91' + phone;
-
-  const amt  = p.amount ? '₹' + parseFloat(p.amount).toLocaleString('en-IN') : '';
-  const ref  = p.txnid  ? '\n🔖 Ref: ' + p.txnid : '';
+  const amt = p.amount ? '₹' + parseFloat(p.amount).toLocaleString('en-IN') : '';
+  const ref = p.txnid  ? '\n🔖 Ref: ' + p.txnid : '';
 
   const msg =
     '🌅 *PSOTS Chhath Puja 2026*\n' +
@@ -1221,20 +1276,7 @@ function sendContributorWhatsApp(p) {
     '👉 View receipt: chhath.psots.in/portal.html\n\n' +
     'जय छठी मैया! 🙏';
 
-  try {
-    UrlFetchApp.fetch('https://api.fonnte.com/send', {
-      method:  'post',
-      headers: { 'Authorization': token },
-      payload: {
-        target:      phone,
-        message:     msg,
-        countryCode: '91'
-      },
-      muteHttpExceptions: true
-    });
-  } catch(e) {
-    Logger.log('Fonnte WhatsApp failed: ' + e.message);
-  }
+  sendWA(p.phone, msg);
 }
 
 /* ══════════════════════════════════════════════════════════
