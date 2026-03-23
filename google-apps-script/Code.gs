@@ -339,6 +339,8 @@ function actionMyContribs(flat, mobile) {
   });
 
   const contributions = mine.map(r => ({
+    ts:     String(r[0]),
+    name:   String(r[1]),
     year:   Number(r[10]) || extractYear(String(r[6])) || new Date().getFullYear(),
     amount: Number(r[4]) || 0,
     method: String(r[5]),
@@ -346,8 +348,8 @@ function actionMyContribs(flat, mobile) {
     status: String(r[7])
   }));
 
-  // Sort by year descending
-  contributions.sort((a, b) => b.year - a.year);
+  // Sort by submitted timestamp descending (latest first)
+  contributions.sort((a, b) => new Date(b.ts) - new Date(a.ts));
 
   return { contributions };
 }
