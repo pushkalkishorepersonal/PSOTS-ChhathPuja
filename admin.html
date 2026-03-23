@@ -974,7 +974,7 @@ async function loadMembersToCache() {
   try {
     const r = await fetch(url + '?action=getMembers');
     const d = await r.json();
-    if (d.members) localStorage.setItem('psots_members', JSON.stringify(d.members));
+    if (Array.isArray(d.members) && d.members.length > 0) localStorage.setItem('psots_members', JSON.stringify(d.members));
   } catch(e) {}
 }
 
@@ -2037,9 +2037,14 @@ async function loadMembersAdmin() {
   try {
     const r = await fetch(url + '?action=getMembers');
     const d = await r.json();
-    if (d.members) {
-      localStorage.setItem('psots_members', JSON.stringify(d.members));
-      document.getElementById('amSync').textContent = '✅ Loaded from server';
+    if (Array.isArray(d.members)) {
+      // Only overwrite local cache if server actually has members, or local is also empty.
+      // This prevents a failed/delayed server-save from wiping locally-added members.
+      const local = JSON.parse(localStorage.getItem('psots_members') || '[]');
+      if (d.members.length > 0 || local.length === 0) {
+        localStorage.setItem('psots_members', JSON.stringify(d.members));
+      }
+      document.getElementById('amSync').textContent = d.members.length > 0 ? '✅ Loaded from server' : '✅ Synced (0 members)';
       setTimeout(()=>{ const el=document.getElementById('amSync'); if(el) el.textContent=''; }, 2500);
     }
   } catch(e) {
