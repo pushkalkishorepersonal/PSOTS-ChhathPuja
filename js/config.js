@@ -62,17 +62,6 @@ window.PSOTS = {
   /* Set the same value in Google Apps Script → Project Settings → Script Properties: ADMIN_KEY */
   adminKey: 'psots-admin-2026',
 
-  /* ── PAYU PAYMENT GATEWAY ─────────
-     TEST credentials — safe for client-side.
-     ⚠️  When going LIVE, move payuSalt to Apps Script (server-side only)
-         and generate the hash there — never expose LIVE salt in frontend JS.
-     surl = success return URL  |  furl = failure return URL               */
-  payuMerchantKey:  'XX9JSF',
-  payuSalt:         'QhvwoJ3RmrqOrOg6rRc3cbjLpQPzwAxa',
-  payuMode:         'TEST',                      // 'TEST' or 'LIVE'
-  payuSurl:         'https://chhath.psots.in/payu-handler',
-  payuFurl:         'https://chhath.psots.in/payu-handler',
-
   /* ══ FILL THESE AFTER SETUP ══════
      See README.md for exact steps.   */
   scriptUrl:      'https://script.google.com/macros/s/AKfycbzt0Dgs3P0gnV-6mLeYE-TdpLjUpNuWoB1_eGvppsPhnDsVSNQBwSvGaTH5Dx7qGk-3/exec',
