@@ -423,23 +423,24 @@ async function fetchLastSheetEntry(){
     if(mobile) params.append('mobile',mobile);
     const r=await fetch(C.scriptUrl+'?'+params.toString());
     const d=await r.json();
-    const list=d.contributions||[];
+    const currentYear=new Date().getFullYear();
+    const list=(d.contributions||[]).filter(c=>c.year===currentYear);
     const txt=document.getElementById('lastEntryTxt');
     const meta=document.getElementById('lastEntryMeta');
     if(!list.length){
-      txt.textContent='No previous contributions found in our records for your flat/mobile.';
+      txt.textContent='No contributions found for '+currentYear+' yet. Be the first from your flat!';
       return;
     }
     const last=list[0]; // already sorted latest-first
     const statusColor=last.status&&last.status.includes('Received')?'#2e7d32':'#c06000';
-    txt.textContent='Here\'s what we have on record — make sure this matches before submitting again.';
+    txt.textContent='Here\'s what we have on record for '+currentYear+' — make sure this matches before submitting again.';
     meta.innerHTML=[
       last.name?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">👤 ${last.name}</span>`:'',
       last.amount?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">💰 ₹${parseInt(last.amount).toLocaleString('en-IN')}</span>`:'',
       last.date&&last.date!=='null'?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">📅 ${last.date}</span>`:'',
       last.method&&last.method!=='null'?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">📲 ${last.method}</span>`:'',
       last.status?`<span class="asb-chip" style="border-color:${statusColor};color:${statusColor}">${last.status}</span>`:'',
-      list.length>1?`<span class="asb-chip" style="border-color:#f0d5b8;color:#9b6030">+${list.length-1} more entr${list.length-1===1?'y':'ies'}</span>`:''
+      list.length>1?`<span class="asb-chip" style="border-color:#f0d5b8;color:#9b6030">+${list.length-1} more entr${list.length-1===1?'y':'ies'} this year</span>`:''
     ].join('');
   }catch(e){
     // Network error — silently hide, don't alarm the user
