@@ -2583,9 +2583,12 @@ const origSwitch = switchTab;
 ═══════════════════════════════════════════════════ */
 function checkDuplicates() {
   const el = document.getElementById('dupAlert');
+  const currentYear = new Date().getFullYear();
+  // Only check current year — past years legitimately share mobile/flat
+  const thisYearData = allConData.filter(r => Number(r.year) === currentYear);
   const byMobile = {};
   const byFlat = {};
-  allConData.forEach(r => {
+  thisYearData.forEach(r => {
     if (r.mobile && r.mobile.length >= 10) {
       if (!byMobile[r.mobile]) byMobile[r.mobile] = [];
       byMobile[r.mobile].push(r);
@@ -2605,7 +2608,7 @@ function checkDuplicates() {
   });
   if (dups.length > 0) {
     el.style.display = 'block';
-    el.innerHTML = `<strong>⚠️ Possible Duplicates Found (${dups.length})</strong><br/><div style="margin-top:.4rem;font-size:.78rem;line-height:1.7">${dups.join('<br/>')}</div>`;
+    el.innerHTML = `<strong>⚠️ Possible Duplicates Found (${dups.length}) — ${currentYear} only</strong><br/><div style="margin-top:.4rem;font-size:.78rem;line-height:1.7">${dups.join('<br/>')}</div>`;
   } else {
     el.style.display = 'none';
   }
