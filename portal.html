@@ -142,9 +142,15 @@
   .fg{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;margin-bottom:.9rem}
   @media(max-width:480px){.fg{grid-template-columns:1fr}}
   .ff{display:flex;flex-direction:column}
+  .ff.full{grid-column:1/-1}
   .ff label{font-size:.62rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:#b08060;margin-bottom:.34rem}
   .ff input,.ff select,.ff textarea{padding:.68rem .95rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--ink);background:var(--warm);outline:none;transition:border-color .2s}
   .ff input:focus,.ff select:focus,.ff textarea:focus{border-color:var(--or)}
+  .ff input::placeholder{color:#c8a070;font-size:.82rem}
+  /* Profile section headers */
+  .prof-sec{margin-bottom:1.4rem}
+  .prof-sec-label{font-size:.63rem;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:rgba(160,88,40,.55);padding-bottom:.4rem;border-bottom:1px solid #f0d5b8;margin-bottom:.75rem}
+  .opt-tag{font-weight:400;color:#b09070;font-size:.74rem;text-transform:none;letter-spacing:0}
   .ff input::placeholder{color:#c8a880}
   .ff textarea{resize:vertical;min-height:90px}
   .ff .note{font-size:.65rem;color:#c8a880;margin-top:.2rem}
@@ -426,21 +432,87 @@
         <div style="font-family:'DM Sans',sans-serif;font-size:.85rem;color:var(--lbr)" id="profileEmail">Signed in with Google</div>
       </div>
 
-      <div class="fg">
-        <div class="ff"><label>Full Name</label><input type="text" id="p-name" placeholder="Your full name"/></div>
-        <div class="ff"><label>Flat / Unit No.</label><input type="text" id="p-flat" placeholder="e.g. B-204"/></div>
-        <div class="ff"><label>UPI / Primary Mobile</label><input type="tel" id="p-mobile" placeholder="10-digit number" maxlength="10" inputmode="numeric"/><div class="note">The number linked to your UPI — helps us match your payment to your profile</div></div>
-        <div class="ff"><label>Alternate WhatsApp <span style="font-weight:400;color:#a06030;font-size:.78rem">(optional)</span></label><input type="tel" id="p-altmobile" placeholder="If you want updates on a different number" maxlength="10" inputmode="numeric"/><div class="note">Puja reminders &amp; updates will be sent here if provided, otherwise to your primary number</div></div>
-        <div class="ff"><label>Tower / Block</label><input type="text" id="p-tower" placeholder="e.g. Tower B"/></div>
-        <div class="ff"><label>Family Members</label><input type="number" id="p-family" placeholder="e.g. 4" min="1"/></div>
-        <div class="ff"><label>Vrati in Family?</label>
-          <select id="p-vrati"><option value="no">No</option><option value="yes">Yes</option></select>
+      <!-- ── Section 1: Personal Identity ── -->
+      <div class="prof-sec">
+        <div class="prof-sec-label">Personal Details</div>
+        <div class="fg">
+          <div class="ff full">
+            <label>Full Name</label>
+            <input type="text" id="p-name" name="name" autocomplete="name"
+              placeholder="Your name as registered in society records"/>
+          </div>
         </div>
       </div>
+
+      <!-- ── Section 2: Residence ── -->
+      <div class="prof-sec">
+        <div class="prof-sec-label">Your Home at PSOTS</div>
+        <div class="fg">
+          <div class="ff">
+            <label>Flat Number</label>
+            <input type="text" id="p-flat" name="p-flat" autocomplete="off"
+              placeholder="Your flat / unit number"/>
+            <div class="note">Used for payment records and resident coordination</div>
+          </div>
+          <div class="ff">
+            <label>Block / Tower</label>
+            <input type="text" id="p-tower" name="p-tower" autocomplete="off"
+              placeholder="Block or tower name, if applicable"/>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Section 3: Contact Numbers ── -->
+      <div class="prof-sec">
+        <div class="prof-sec-label">Contact Numbers</div>
+        <div class="fg">
+          <div class="ff">
+            <label>UPI-Linked Mobile</label>
+            <input type="tel" id="p-mobile" name="tel" autocomplete="tel"
+              placeholder="Number used for UPI payments" maxlength="10" inputmode="numeric"/>
+            <div class="note">Must match the number you pay from — used to match your UPI transaction to your profile</div>
+          </div>
+          <div class="ff">
+            <label>WhatsApp for Updates <span class="opt-tag">(optional)</span></label>
+            <input type="tel" id="p-altmobile" name="p-altmobile" autocomplete="off"
+              placeholder="Different number for puja alerts" maxlength="10" inputmode="numeric"/>
+            <div class="note">Event reminders and arghya timings will be sent here if provided — otherwise your UPI number is used</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Section 4: Family & Participation ── -->
+      <div class="prof-sec">
+        <div class="prof-sec-label">Family &amp; Chhath Participation</div>
+        <div class="fg">
+          <div class="ff">
+            <label>Total Family Members</label>
+            <input type="number" id="p-family" autocomplete="off"
+              placeholder="No. of people in your household" min="1" max="20"/>
+            <div class="note">Helps us plan the overall prasad and arrangements</div>
+          </div>
+          <div class="ff">
+            <label>Vrati in Family?</label>
+            <select id="p-vrati" onchange="toggleVratiCount()">
+              <option value="">— Please select —</option>
+              <option value="no">No, not this year</option>
+              <option value="yes">Yes, we have a Vrati</option>
+            </select>
+            <div class="note">A Vrati observes the Chhath fast — helps us plan thekua &amp; special prasad</div>
+          </div>
+          <div class="ff" id="ff-vraticount" style="display:none">
+            <label>Number of Vratis</label>
+            <input type="number" id="p-vraticount" autocomplete="off"
+              placeholder="How many Vratis in your family?" min="1" max="10"/>
+            <div class="note">Needed to ensure every Vrati receives the correct prasad quantity</div>
+          </div>
+        </div>
+      </div>
+
       <button class="btn-primary" onclick="saveProfile()">💾 Save Profile</button>
 
       <div class="privacy-note">
-        🔒 <strong>Privacy:</strong> Your name, flat number, and mobile are stored linked to your Google account. They are <strong>never shared publicly</strong>. They appear in the admin panel only when you make a contribution — and only for committee members to verify payment. You can delete your account data at any time.
+        🔒 <strong>Privacy:</strong> Your details are stored linked to your account and are <strong>never shared publicly</strong>. They appear in the admin panel only when you make a contribution — visible solely to committee members for payment verification. You can delete your data at any time from this page.
       </div>
     </div>
 
@@ -988,10 +1060,15 @@ function confirmSignOut() {
     label:  'UPI / Primary Mobile',
     detail: "This is the number linked to your UPI account — we use it to match your payment to your profile for accurate records."
   });
-  if (!p.vrati)  missing.push({
+  if (!p.vrati) missing.push({
     icon:   '🙏',
-    label:  'Vrati preference',
-    detail: 'Lets us honour your fast with special prasad arrangements — your devotion matters deeply to us.'
+    label:  'Vrati in family',
+    detail: 'Lets us plan thekua and special prasad quantities — even a "no" helps us prepare accurately.'
+  });
+  if (p.vrati === 'yes' && !p.vratiCount) missing.push({
+    icon:   '🔢',
+    label:  'Number of Vratis',
+    detail: 'Helps us ensure every Vrati in your family receives the correct amount of prasad with our blessings.'
   });
   if (!p.family) missing.push({
     icon:   '👨‍👩‍👧',
@@ -1261,12 +1338,13 @@ function fillProfileUI() {
 
   // Profile form — name/email always from Google, rest from saved profile
   document.getElementById('p-name').value   = p.name  || currentUser?.name  || '';
-  if (p.flat)      document.getElementById('p-flat').value      = p.flat;
-  if (p.mobile)    document.getElementById('p-mobile').value    = p.mobile;
-  if (p.altMobile) document.getElementById('p-altmobile').value = p.altMobile;
-  if (p.tower)     document.getElementById('p-tower').value     = p.tower;
-  if (p.family)  document.getElementById('p-family').value  = p.family;
-  if (p.vrati)   document.getElementById('p-vrati').value   = p.vrati;
+  if (p.flat)        document.getElementById('p-flat').value        = p.flat;
+  if (p.mobile)      document.getElementById('p-mobile').value      = p.mobile;
+  if (p.altMobile)   document.getElementById('p-altmobile').value   = p.altMobile;
+  if (p.tower)       document.getElementById('p-tower').value       = p.tower;
+  if (p.family)      document.getElementById('p-family').value      = p.family;
+  if (p.vrati)     { document.getElementById('p-vrati').value       = p.vrati; toggleVratiCount(); }
+  if (p.vratiCount)  document.getElementById('p-vraticount').value  = p.vratiCount;
 
   // Profile email + avatar
   document.getElementById('profileEmail').textContent = currentUser?.email || '';
@@ -1450,17 +1528,26 @@ async function fetchProfileFromSheet() {
   } catch(e) {}
 }
 
+function toggleVratiCount() {
+  const v  = document.getElementById('p-vrati').value;
+  const el = document.getElementById('ff-vraticount');
+  if (el) el.style.display = v === 'yes' ? 'flex' : 'none';
+}
+
 async function saveProfile() {
   userProfile = {
     uid:    currentUser.id,
     email:  currentUser.email,
     name:   document.getElementById('p-name').value.trim(),
     flat:   document.getElementById('p-flat').value.trim(),
-    mobile:    document.getElementById('p-mobile').value.trim(),
-    altMobile: document.getElementById('p-altmobile').value.trim(),
-    tower:     document.getElementById('p-tower').value.trim(),
-    family: document.getElementById('p-family').value,
-    vrati:  document.getElementById('p-vrati').value,
+    mobile:     document.getElementById('p-mobile').value.trim(),
+    altMobile:  document.getElementById('p-altmobile').value.trim(),
+    tower:      document.getElementById('p-tower').value.trim(),
+    family:     document.getElementById('p-family').value,
+    vrati:      document.getElementById('p-vrati').value,
+    vratiCount: document.getElementById('p-vrati').value === 'yes'
+                  ? (document.getElementById('p-vraticount').value || '')
+                  : '',
   };
 
   const key = 'psots_profile_' + currentUser.id;
