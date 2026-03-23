@@ -934,20 +934,26 @@ const DEFAULT_ROLE_PERMS = {
 };
 
 let currentAdminUser = null; // set in enterAdmin()
+let _rolePermsCache  = null; // loaded from server; null means use defaults
 
 function getRolePerms() {
+  return _rolePermsCache || DEFAULT_ROLE_PERMS;
+}
+
+async function loadRolePerms() {
+  const url = getScriptUrl();
+  if (!url) return;
   try {
-    const saved = localStorage.getItem('psots_role_perms');
-    return saved ? JSON.parse(saved) : DEFAULT_ROLE_PERMS;
-  } catch(e) { return DEFAULT_ROLE_PERMS; }
+    const r = await fetch(url + '?action=getRolePerms&key=' + encodeURIComponent((window.PSOTS||{}).adminKey||''));
+    const d = await r.json();
+    if (d.perms && typeof d.perms === 'object') _rolePermsCache = d.perms;
+  } catch(e) {}
 }
 
 function getMemberRole(email) {
   if (!email) return 'admin';
   const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
   if (base.includes(email.toLowerCase())) return 'admin';
-  const legacy = JSON.parse(localStorage.getItem('psots_admins') || '[]');
-  if (legacy.includes(email.toLowerCase())) return 'admin';
   const m = _membersCache.find(x => x.email.toLowerCase() === email.toLowerCase());
   return m ? m.role : 'admin'; // default admin for unrecognised (legacy)
 }
@@ -1061,10 +1067,10 @@ function enterAdmin(u) {
 
   initAdmin();
 
-  // Refresh members from server (so role assignments are always up to date)
-  loadMembersToCache().then(() => {
+  // Refresh members + role perms from server (so assignments/permissions are always up to date)
+  Promise.all([loadMembersToCache(), loadRolePerms()]).then(() => {
     const freshRole = getMemberRole(u.email);
-    if (freshRole !== role) applyRoleFilter(freshRole); // re-apply if role changed
+    applyRoleFilter(freshRole);
   });
 }
 
@@ -1180,7 +1186,7 @@ function switchTab(id) {
   if (id === 'prasad') loadPrasadList();
   if (id === 'finance') loadReceipts();
   if (id === 'contributors') setTimeout(loadReminderList, 400);
-  if (id === 'settings') { loadCmteRoles(); renderAmList(); renderPermMatrix(); loadMembersAdmin(); }
+  if (id === 'settings') { loadCmteRoles(); renderAmList(); loadMembersAdmin(); loadRolePerms().then(renderPermMatrix); }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -2170,24 +2176,36 @@ function renderPermMatrix() {
   </table>`;
 }
 
-function saveRolePerms() {
+async function saveRolePerms() {
   const perms = getRolePerms();
   // Admin always gets everything — only update non-admin roles
   ['treasurer','announcements_manager','event_coordinator','resident_coordinator','volunteer'].forEach(role => {
     perms[role] = Array.from(document.querySelectorAll(`input[data-role="${role}"]:checked`)).map(cb => cb.getAttribute('data-tab'));
-    // Settings always included so they can get back to this screen
     if (!perms[role].includes('settings')) perms[role].push('settings');
   });
-  localStorage.setItem('psots_role_perms', JSON.stringify(perms));
-  // Re-apply filter for current user
+  _rolePermsCache = perms;
   if (currentAdminUser) applyRoleFilter(getMemberRole(currentAdminUser.email));
+  const url = getScriptUrl();
+  if (url) {
+    try {
+      await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'saveRolePerms', perms, key: (window.PSOTS||{}).adminKey||'' }) });
+    } catch(e) {}
+  }
   toast('✅ Permissions saved', 'success');
 }
 
-function resetRolePerms() {
-  localStorage.removeItem('psots_role_perms');
+async function resetRolePerms() {
+  _rolePermsCache = null;
   renderPermMatrix();
   if (currentAdminUser) applyRoleFilter(getMemberRole(currentAdminUser.email));
+  const url = getScriptUrl();
+  if (url) {
+    try {
+      await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ action:'saveRolePerms', perms: null, key: (window.PSOTS||{}).adminKey||'' }) });
+    } catch(e) {}
+  }
   toast('↩ Reset to defaults', '');
 }
 
@@ -2669,10 +2687,30 @@ function renderRSVPs(rsvps) {
 /* ═══════════════════════════════════════════════════
    REMINDER SCHEDULER
 ═══════════════════════════════════════════════════ */
-function loadReminders() {
-  const reminders = JSON.parse(localStorage.getItem('psots_reminders') || '[]');
+let _remindersCache = [];
+
+async function loadReminders() {
+  const url = getScriptUrl();
+  if (url) {
+    try {
+      const r = await fetch(url + '?action=getReminders&key=' + encodeURIComponent((window.PSOTS||{}).adminKey||''));
+      const d = await r.json();
+      if (Array.isArray(d.reminders)) _remindersCache = d.reminders;
+    } catch(e) {}
+  }
+  renderReminders(_remindersCache);
+  checkDueReminders(_remindersCache);
+}
+
+async function _saveReminders(reminders) {
+  _remindersCache = reminders;
   renderReminders(reminders);
-  checkDueReminders(reminders);
+  const url = getScriptUrl();
+  if (!url) return;
+  try {
+    await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'saveReminders', reminders, key: (window.PSOTS||{}).adminKey||'' }) });
+  } catch(e) {}
 }
 
 function renderReminders(reminders) {
@@ -2701,21 +2739,15 @@ function addReminder() {
   const template = document.getElementById('rem-template').selectedOptions[0].textContent;
   const note = document.getElementById('rem-note').value.trim();
   if (!date) return toast('Please select a date', 'error');
-  const reminders = JSON.parse(localStorage.getItem('psots_reminders') || '[]');
-  reminders.push({ date, template, note });
-  reminders.sort((a,b) => a.date.localeCompare(b.date));
-  localStorage.setItem('psots_reminders', JSON.stringify(reminders));
-  renderReminders(reminders);
+  const updated = [..._remindersCache, { date, template, note }].sort((a,b) => a.date.localeCompare(b.date));
   document.getElementById('rem-date').value = '';
   document.getElementById('rem-note').value = '';
+  _saveReminders(updated);
   toast('✅ Reminder added for ' + date, 'success');
 }
 
 function removeReminder(i) {
-  const reminders = JSON.parse(localStorage.getItem('psots_reminders') || '[]');
-  reminders.splice(i, 1);
-  localStorage.setItem('psots_reminders', JSON.stringify(reminders));
-  renderReminders(reminders);
+  _saveReminders(_remindersCache.filter((_, idx) => idx !== i));
 }
 
 function checkDueReminders(reminders) {
@@ -3188,20 +3220,16 @@ const RCPT_CAT_LABELS = {
   cultural: '🎭 Cultural Activities', misc: '📦 Miscellaneous'
 };
 
-function loadReceipts() {
-  allReceipts = JSON.parse(localStorage.getItem('psots_receipts') || '[]');
-  renderReceiptList();
-  // Also try server
+async function loadReceipts() {
   const url = getScriptUrl();
   if (url && !url.includes('YOUR_APPS')) {
-    fetch(url + '?action=getReceipts').then(r => r.json()).then(d => {
-      if (d.receipts && d.receipts.length) {
-        allReceipts = d.receipts;
-        localStorage.setItem('psots_receipts', JSON.stringify(allReceipts));
-        renderReceiptList();
-      }
-    }).catch(() => {});
+    try {
+      const r = await fetch(url + '?action=getReceipts');
+      const d = await r.json();
+      if (Array.isArray(d.receipts)) allReceipts = d.receipts;
+    } catch(e) {}
   }
+  renderReceiptList();
 }
 
 function addReceipt() {
@@ -3260,20 +3288,25 @@ function renderReceiptList() {
 }
 
 async function saveReceipts() {
-  localStorage.setItem('psots_receipts', JSON.stringify(allReceipts));
-  const url = getScriptUrl();
+  const url    = getScriptUrl();
   const syncEl = document.getElementById('rcptSync');
-  if (syncEl) syncEl.textContent = 'Saving…';
+  if (syncEl) syncEl.textContent = 'Saving to sheet…';
   if (url && !url.includes('YOUR_APPS')) {
     try {
       await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
         body: JSON.stringify({ action:'saveReceipts', receipts: allReceipts, key: (window.PSOTS||{}).adminKey }) });
-      if (syncEl) syncEl.textContent = '✅ Saved to server ' + new Date().toLocaleTimeString();
+      // Re-fetch to confirm what the sheet has
+      if (syncEl) syncEl.textContent = 'Verifying…';
+      await new Promise(r => setTimeout(r, 1200));
+      await loadReceipts();
+      if (syncEl) syncEl.textContent = '✅ Saved to sheet ' + new Date().toLocaleTimeString();
+      setTimeout(()=>{ const el=document.getElementById('rcptSync'); if(el) el.textContent=''; }, 3000);
     } catch(e) {
-      if (syncEl) syncEl.textContent = '⚠️ Saved locally only';
+      if (syncEl) syncEl.textContent = '⚠️ Save failed — edit Receipts sheet directly';
+      setTimeout(()=>{ const el=document.getElementById('rcptSync'); if(el) el.textContent=''; }, 5000);
     }
   } else {
-    if (syncEl) syncEl.textContent = '✅ Saved locally';
+    if (syncEl) syncEl.textContent = '⚠️ Script URL not configured';
   }
   toast('Receipts saved!', 'success');
 }
