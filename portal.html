@@ -1914,7 +1914,7 @@ function toggleWASub() {
   const key = 'psots_wa_' + currentUser.id;
   const cur = localStorage.getItem(key) === 'true';
   if (!cur) {
-    if (!userProfile.mobile && !userProfile.whatsapp) {
+    if (!userProfile.mobile && !userProfile.altMobile) {
       toast('⚠️ Add your WhatsApp number in Profile first', 'error');
       return;
     }
@@ -2028,7 +2028,7 @@ function qpLaunch(app) {
   const p = `pa=${encodeURIComponent(C.upiId)}&pn=${encodeURIComponent(C.payeeName)}&am=${amt}&cu=INR&tn=ChhathPuja2026`;
   const links = { gpay:`gpay://upi/pay?${p}`, phonepe:`phonepe://pay?${p}`, paytm:`paytmmp://pay?${p}`, bhim:`upi://pay?${p}`, any:`upi://pay?${p}` };
   const isMobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
-  if (!isMobile) { alert(`Desktop: open your UPI app → Send Money → 9482088904\nAmount: ₹${parseInt(amt).toLocaleString('en-IN')}`); return false; }
+  if (!isMobile) { showUpiQr(amt); return false; }
   window.location.href = links[app];
 
   // Auto-record payment after UPI app opens
@@ -2495,6 +2495,33 @@ function dismissStorageNotice() {
   const el = document.getElementById('storageNotice');
   if (el) { el.classList.remove('visible'); }
 }
+
+/* ── Desktop UPI QR Modal ── */
+function showUpiQr(amt) {
+  const upiStr = `upi://pay?pa=${encodeURIComponent(C.upiId)}&pn=${encodeURIComponent(C.payeeName)}&am=${amt}&cu=INR&tn=ChhathPuja2026`;
+  const qrUrl = `https://chart.googleapis.com/chart?chs=260x260&cht=qr&chl=${encodeURIComponent(upiStr)}&choe=UTF-8`;
+  document.getElementById('upiQrImg').src = qrUrl;
+  document.getElementById('upiQrAmt').textContent = `₹${parseInt(amt).toLocaleString('en-IN')}`;
+  document.getElementById('upiQrId').textContent = C.upiId;
+  document.getElementById('upiQrModal').style.display = 'flex';
+}
+function closeUpiQr() {
+  document.getElementById('upiQrModal').style.display = 'none';
+}
 </script>
+
+<!-- Desktop UPI QR Modal -->
+<div id="upiQrModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:1rem;padding:2rem;max-width:320px;width:90%;text-align:center;position:relative">
+    <button onclick="closeUpiQr()" style="position:absolute;top:.75rem;right:.75rem;background:none;border:none;font-size:1.4rem;cursor:pointer;color:#666">&times;</button>
+    <div style="font-size:1.1rem;font-weight:700;color:#7c3a00;margin-bottom:.25rem">Scan &amp; Pay</div>
+    <div style="font-size:.8rem;color:#888;margin-bottom:1rem">Open any UPI app and scan this QR</div>
+    <img id="upiQrImg" src="" alt="UPI QR Code" style="width:260px;height:260px;border:1px solid #eee;border-radius:.5rem"/>
+    <div style="margin-top:1rem;font-size:1.2rem;font-weight:700;color:#c0392b">Amount: <span id="upiQrAmt"></span></div>
+    <div style="font-size:.75rem;color:#888;margin-top:.25rem">UPI ID: <span id="upiQrId" style="font-weight:600;color:#444"></span></div>
+    <div style="font-size:.72rem;color:#aaa;margin-top:.75rem">After paying, come back and WhatsApp the committee to confirm.</div>
+  </div>
+</div>
+
 </body>
 </html>
