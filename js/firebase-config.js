@@ -14,10 +14,10 @@
  * ════════════════════════════════════════════════════
  */
 window.PSOTS_FIREBASE_CONFIG = {
-  apiKey:            'FILL_IN',
-  authDomain:        'FILL_IN.firebaseapp.com',
-  projectId:         'FILL_IN',
-  storageBucket:     'FILL_IN.firebasestorage.app',
-  messagingSenderId: 'FILL_IN',
-  appId:             'FILL_IN',
+  apiKey:            'AIzaSyAvD-6yoDN5x8vMT8LgIFi7WDjKX2uoIZY',
+  authDomain:        'psots-chhath.firebaseapp.com',
+  projectId:         'psots-chhath',
+  storageBucket:     'psots-chhath.firebasestorage.app',
+  messagingSenderId: '379285397692',
+  appId:             '1:379285397692:web:dbd36403ee0b5e076eb0b9',
 };
