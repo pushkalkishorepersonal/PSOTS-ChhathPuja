@@ -1707,21 +1707,23 @@ async function loadDirectory() {
   if (residents.length) PsotsCache.set('dir_residents', residents, CACHE_TTL.directory);
   if (history.length)   PsotsCache.set('dir_history',   history,   CACHE_TTL.directory);
 
-  // If allConData not yet loaded (Contributors tab not visited), fetch it now
+  // If allConData not yet loaded (Contributors tab not visited), load from Firestore first
   if (!allConData.length) {
-    const url = getScriptUrl();
-    if (url) {
-      try {
-        const res  = await fetch(url + '?action=list_all');
-        const data = await res.json();
-        allConData = data.all || [];
-      } catch(e) {
-        // Fallback to cached history if server unreachable
-        allConData = history.map(r => ({
-          ts: r.date||'', name: r.name||'', flat: r.flat||'',
-          mobile: r.mobile||'', amount: r.amount||0, method: r.method||'',
-          date: r.date||'', status: r.status||'✅ Received', year: r.year||2025
-        }));
+    try {
+      if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+        const rows = await PSOTS_DB.getAllContributions();
+        if (rows && rows.length) { allConData = rows.map(_mapConRow); }
+      }
+    } catch(e) {}
+    // Apps Script fallback
+    if (!allConData.length) {
+      const url = getScriptUrl();
+      if (url) {
+        try {
+          const res  = await fetch(url + '?action=list_all');
+          const data = await res.json();
+          allConData = data.all || [];
+        } catch(e) {}
       }
     }
   }
