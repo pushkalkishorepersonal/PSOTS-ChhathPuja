@@ -100,6 +100,7 @@
   /* ── FORM ELEMENTS ────────────────── */
   .fg { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
   @media(max-width:520px) { .fg { grid-template-columns: 1fr; } }
+  @media(max-width:700px) { .settings-row { grid-template-columns: 1fr !important; } }
   .fg3 { grid-template-columns: 1fr 1fr 1fr; }
   @media(max-width:600px) { .fg3 { grid-template-columns: 1fr 1fr; } }
   .ff { display: flex; flex-direction: column; }
@@ -945,96 +946,97 @@
 
   <!-- ═══ SETTINGS TAB ═══ -->
   <div class="tab-panel" id="tab-settings">
-    <div class="admin-card">
-      <div class="ac-title">⚙️ Site Configuration</div>
-      <div class="fg">
-        <div class="ff"><label>Apps Script URL</label><input type="text" id="s-scriptUrl" placeholder="https://script.google.com/macros/s/…/exec"/><div class="note">Paste your Google Apps Script deployment URL here</div></div>
-        <div class="ff"><label>UPI ID</label><input type="text" id="s-upiId" value="9482088904@sbi"/></div>
-        <div class="ff"><label>Primary WhatsApp</label><input type="text" id="s-waOrg" value="919482088904"/></div>
-        <div class="ff"><label>Second Contact</label><input type="text" id="s-waOrg2" value="919902837002"/></div>
-        <div class="ff"><label>Event Start Date</label><input type="date" id="s-eventDate" value="2026-11-01"/></div>
-        <div class="ff"><label>Contribution Deadline</label><input type="date" id="s-deadline" value="2026-10-25"/></div>
-      </div>
-      <button class="btn-primary" onclick="saveSettings()">💾 Save Settings</button>
-    </div>
 
-    <div class="admin-card" id="cmteRoleCard">
-      <div class="ac-title">🎭 Committee Role Assignment</div>
-      <div class="ac-sub">Enter flat number — name auto-fills from DB. Shown on the committee page.</div>
-      <div id="cmteRoleList" style="display:flex;flex-direction:column;gap:.9rem;margin-top:1rem"></div>
-      <div style="display:flex;gap:.7rem;margin-top:1rem;flex-wrap:wrap;align-items:center">
-        <button class="btn-secondary" onclick="addCmteRole()">＋ Add Role</button>
-        <button class="btn-primary" onclick="saveCmteRoles()">💾 Save All Roles</button>
-      </div>
-    </div>
+    <!-- Site Config + Fonnte side-by-side -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start" class="settings-row">
 
-    <div class="admin-card" style="border-left:3px solid #25d366">
-      <div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap">
-        <div class="ac-title" style="margin:0">📲 Fonnte WhatsApp API</div>
-        <div id="fonnteStatusBadge" style="display:inline-flex;align-items:center;gap:.45rem;padding:.3rem .75rem;border-radius:50px;font-size:.75rem;font-weight:600;background:#f0f0f0;color:#666">
-          ⏳ Not checked yet
+      <div class="admin-card" style="margin:0">
+        <div class="ac-title">⚙️ Configuration</div>
+        <div class="fg" style="margin-top:.7rem">
+          <div class="ff"><label>Apps Script URL</label><input type="text" id="s-scriptUrl" placeholder="https://script.google.com/macros/s/…/exec"/></div>
+          <div class="ff"><label>UPI ID</label><input type="text" id="s-upiId" value="9482088904@sbi"/></div>
+          <div class="ff"><label>Primary WhatsApp</label><input type="text" id="s-waOrg" value="919482088904"/></div>
+          <div class="ff"><label>Second Contact</label><input type="text" id="s-waOrg2" value="919902837002"/></div>
+          <div class="ff"><label>Event Start Date</label><input type="date" id="s-eventDate" value="2026-11-01"/></div>
+          <div class="ff"><label>Contribution Deadline</label><input type="date" id="s-deadline" value="2026-10-25"/></div>
+        </div>
+        <button class="btn-primary" style="margin-top:.8rem" onclick="saveSettings()">💾 Save</button>
+      </div>
+
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <!-- Fonnte -->
+        <div class="admin-card" style="margin:0;border-left:3px solid #25d366">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap">
+            <div class="ac-title" style="margin:0">📲 Fonnte</div>
+            <div id="fonnteStatusBadge" style="display:inline-flex;align-items:center;gap:.45rem;padding:.28rem .7rem;border-radius:50px;font-size:.72rem;font-weight:600;background:#f0f0f0;color:#666">⏳ Not checked</div>
+          </div>
+          <div style="margin-top:.65rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+            <button class="btn-secondary" onclick="checkFonnteStatus()" style="font-size:.8rem">🔄 Check</button>
+            <span style="font-size:.72rem;color:var(--lbr);cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">▸ Setup guide</span>
+            <div style="display:none;width:100%;background:#f0fff4;border:1px solid #a5d6a7;border-radius:8px;padding:.65rem .85rem;font-size:.76rem;color:#1a3a1a;line-height:1.6;margin-top:.35rem">
+              1. script.google.com → Project Settings → Script Properties<br/>
+              2. Add: <code>FONNTE_TOKEN</code> = your token<br/>
+              3. fonnte.com → add device → scan QR<br/>
+              4. Run <code>authorizeExternalRequests()</code> once
+            </div>
+          </div>
+        </div>
+
+        <!-- Data Management -->
+        <div class="admin-card" style="margin:0">
+          <div class="ac-title">🗄 Data</div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem">
+            <button class="btn-secondary" onclick="exportAll()" style="font-size:.8rem">📥 Export JSON</button>
+            <button class="btn-secondary" onclick="exportCSV()" style="font-size:.8rem">📊 Export CSV</button>
+            <button class="btn-danger" onclick="clearLocalData()" style="font-size:.8rem">🗑 Clear Cache</button>
+          </div>
         </div>
       </div>
-      <div style="margin-top:.7rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
-        <button class="btn-secondary" onclick="checkFonnteStatus()" style="font-size:.82rem">🔄 Check Status</button>
-        <span style="font-size:.75rem;color:var(--lbr);cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">▸ Setup instructions</span>
-        <div style="display:none;width:100%;background:#f0fff4;border:1px solid #a5d6a7;border-radius:10px;padding:.8rem 1rem;font-size:.78rem;color:#1a3a1a;line-height:1.65;margin-top:.4rem">
-          1. <strong>script.google.com</strong> → Project Settings → Script Properties<br/>
-          2. Add property: <code>FONNTE_TOKEN</code> = your Fonnte API token<br/>
-          3. Get token at <strong>fonnte.com</strong> → add device → scan QR<br/>
-          4. Run <code>authorizeExternalRequests()</code> once
-        </div>
-      </div>
     </div>
 
-    <div class="admin-card">
-      <div class="ac-title">🗄 Data Management</div>
-      <div style="display:flex;gap:.7rem;flex-wrap:wrap">
-        <button class="btn-secondary" onclick="exportAll()">📥 Export All Data (JSON)</button>
-        <button class="btn-secondary" onclick="exportCSV()">📊 Export Contributors CSV</button>
-        <button class="btn-danger" onclick="clearLocalData()">🗑 Clear Local Cache</button>
-      </div>
-    </div>
-
-    <!-- ── TEAM MEMBERS ── -->
-    <div class="admin-card" id="teamMembersCard">
-      <div class="ac-title">👥 Team Members &amp; Roles</div>
-      <div class="ac-sub">Members are saved to the server — they persist across all devices and logins. Members sign in with their Google account and see only their allowed tabs.</div>
-
-      <div style="display:grid;gap:.5rem;margin-top:1rem">
+    <!-- Team Members -->
+    <div class="admin-card" id="teamMembersCard" style="margin-top:1rem">
+      <div class="ac-title">👥 Team Members</div>
+      <div style="display:flex;gap:.5rem;margin-top:.8rem;flex-wrap:wrap">
         <input id="am-email" type="email" placeholder="Gmail address"
-          style="padding:.65rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;width:100%;box-sizing:border-box"/>
+          style="flex:2;min-width:160px;padding:.6rem .85rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.83rem;outline:none"/>
         <input id="am-name" type="text" placeholder="Display name (optional)"
-          style="padding:.65rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;width:100%;box-sizing:border-box"/>
-        <div style="display:flex;gap:.5rem">
-          <select id="am-role"
-            style="flex:1;padding:.65rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;background:#fff8f0">
-            <option value="admin">🔑 Admin</option>
-            <option value="treasurer">💰 Treasurer</option>
-            <option value="announcements_manager">📢 Announcements Manager</option>
-            <option value="event_coordinator" selected>🎨 Event Coordinator</option>
-            <option value="resident_coordinator">👥 Resident Coordinator</option>
-            <option value="volunteer">🤝 Volunteer</option>
-          </select>
-          <button class="btn-primary" onclick="adminAddMember()" style="white-space:nowrap;padding:.65rem 1.1rem">＋ Add</button>
-        </div>
+          style="flex:1;min-width:120px;padding:.6rem .85rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.83rem;outline:none"/>
+        <select id="am-role"
+          style="flex:1;min-width:140px;padding:.6rem .85rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.83rem;outline:none;background:#fff8f0">
+          <option value="admin">🔑 Admin</option>
+          <option value="treasurer">💰 Treasurer</option>
+          <option value="announcements_manager">📢 Announcements</option>
+          <option value="event_coordinator" selected>🎨 Event Coordinator</option>
+          <option value="resident_coordinator">👥 Resident Coordinator</option>
+          <option value="volunteer">🤝 Volunteer</option>
+        </select>
+        <button class="btn-primary" onclick="adminAddMember()" style="white-space:nowrap;padding:.6rem 1rem">＋ Add</button>
       </div>
-
-      <div id="amList" style="margin-top:1.1rem"></div>
-      <div style="margin-top:.6rem;display:flex;gap:.6rem;align-items:center">
-        <span id="amSync" style="font-size:.72rem;color:#c8a880"></span>
-        <button class="btn-secondary" onclick="loadMembersAdmin()" style="font-size:.72rem;padding:.3rem .75rem">🔄 Refresh from Server</button>
+      <div id="amList" style="margin-top:.9rem"></div>
+      <div style="margin-top:.5rem;display:flex;gap:.6rem;align-items:center">
+        <span id="amSync" style="font-size:.7rem;color:#c8a880"></span>
+        <button class="btn-secondary" onclick="loadMembersAdmin()" style="font-size:.72rem;padding:.28rem .65rem">🔄 Refresh</button>
       </div>
     </div>
 
-    <!-- ── PERMISSION MATRIX ── -->
-    <div class="admin-card" id="permMatrixCard">
+    <!-- Committee Role Assignment -->
+    <div class="admin-card" id="cmteRoleCard" style="margin-top:1rem">
+      <div class="ac-title">🎭 Committee Roles</div>
+      <div id="cmteRoleList" style="display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem"></div>
+      <div style="display:flex;gap:.6rem;margin-top:.8rem">
+        <button class="btn-secondary" onclick="addCmteRole()">＋ Add Role</button>
+        <button class="btn-primary" onclick="saveCmteRoles()">💾 Save</button>
+      </div>
+    </div>
+
+    <!-- Permission Matrix -->
+    <div class="admin-card" id="permMatrixCard" style="margin-top:1rem">
       <div class="ac-title">🔐 Role Permissions</div>
-      <div class="ac-sub">Control which tabs each role can access. Admin always has full access.</div>
-      <div id="permMatrix" style="margin-top:1rem;overflow-x:auto"></div>
-      <div style="margin-top:.85rem;display:flex;gap:.6rem">
-        <button class="btn-primary" onclick="saveRolePerms()">💾 Save Permissions</button>
-        <button class="btn-secondary" onclick="resetRolePerms()">↩ Reset Defaults</button>
+      <div id="permMatrix" style="margin-top:.8rem;overflow-x:auto"></div>
+      <div style="margin-top:.75rem;display:flex;gap:.6rem">
+        <button class="btn-primary" onclick="saveRolePerms()">💾 Save</button>
+        <button class="btn-secondary" onclick="resetRolePerms()">↩ Reset</button>
       </div>
     </div>
   </div>
