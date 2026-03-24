@@ -678,7 +678,7 @@
   <div class="tab-panel" id="tab-contributors">
     <div class="admin-card">
       <div class="ac-title">🙏 All Contributors</div>
-      <div class="ac-sub">Mark payments as verified (✅) once you confirm the UPI transfer in your PhonePe/GPay app. Only verified entries show on the public website.</div>
+      <div class="ac-sub">Mark payments as verified (✅) once you confirm the UPI transfer in your PhonePe/GPay app. Data loads from Firestore — no Google Sheets dependency.</div>
       <input class="con-search-bar" type="text" id="conSearchAdmin" placeholder="🔍  Search by name, flat or UTR…" oninput="filterAdminCon()"/>
       <div class="con-filter-row">
         <span style="font-size:.72rem;color:var(--lbr)">Filter:</span>
@@ -1925,7 +1925,7 @@ function _mapConRow(r) {
   return {
     ts: r.ts || r.date || '', name: r.name || '', flat: r.flat || '',
     mobile: r.mobile || '', amount: r.amount || 0, method: r.method || '',
-    date: r.date || '', status: r.status || '', year: r.year || 2026
+    date: r.date || '', status: r.status || '', year: r.year || new Date().getFullYear()
   };
 }
 
@@ -1957,23 +1957,34 @@ async function loadAdminCon() {
     } catch(e) { console.warn('Firestore contributors load failed:', e); }
   }
 
-  container.innerHTML = '<div style="text-align:center;padding:2rem;color:#c03000;font-size:.88rem">⚠️ Could not load contributors. Check Firestore connection in Settings.</div>';
-}
-
-async function _loadAdminConLegacy() {
-  const url = getScriptUrl();
-  const container = document.getElementById('conCardList');
-  if (!url) return;
+  // 2. Local history.json — bundled static data
   try {
-    const res = await fetch(url + '?action=list_all');
-    const data = await res.json();
-    allConData = data.all || [];
-    PsotsCache.set('contributors_all', allConData, CACHE_TTL.contributors);
-    renderConTable(allConData);
-    updateDashStats();
-  } catch(e) {
-    container.innerHTML = '<div style="text-align:center;padding:2rem;color:#c03000;font-size:.88rem">⚠️ Could not connect to Apps Script. Check URL in Settings.</div>';
+    const gRes = await fetch('data/history.json');
+    if (gRes.ok) {
+      const g = await gRes.json();
+      allConData = (g.history || []).map(_mapConRow);
+      PsotsCache.set('contributors_all', allConData, CACHE_TTL.contributors);
+      renderConTable(allConData);
+      updateDashStats();
+      return;
+    }
+  } catch(e) {}
+
+  // 3. Apps Script — last resort
+  const url = getScriptUrl();
+  if (url) {
+    try {
+      const res  = await fetch(url + '?action=list_all');
+      const data = await res.json();
+      allConData = (data.all || []).map(_mapConRow);
+      PsotsCache.set('contributors_all', allConData, CACHE_TTL.contributors);
+      renderConTable(allConData);
+      updateDashStats();
+      return;
+    } catch(e) {}
   }
+
+  container.innerHTML = '<div style="text-align:center;padding:2rem;color:#c03000;font-size:.88rem">⚠️ Could not load contributors. Check Firestore connection or Apps Script URL in Settings.</div>';
 }
 
 const AV_COLORS_ADM = ['#e85c00','#c93800','#8b2800','#1a5276','#1a7a4e','#7b1fa2','#c62828'];
