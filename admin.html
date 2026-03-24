@@ -338,24 +338,32 @@
     <!-- ── PAYMENT REMINDER BLAST ── -->
     <div class="admin-card" style="border-left:3px solid #c0392b">
       <div class="ac-title">📲 Payment Reminder Blast</div>
-      <div class="ac-sub">Send WhatsApp payment reminders to flats that haven't contributed yet. Select a tower to filter, then send individual or bulk reminders.</div>
+      <div class="ac-sub">Select a tower to see paid vs remaining, compose your message, then send to all or selected flats.</div>
 
-      <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.9rem">
-        <span style="font-size:.72rem;color:var(--lbr);flex-shrink:0">Tower:</span>
-        <div id="reminderTowerFilters" style="display:flex;gap:.4rem;flex-wrap:wrap">
-          <div class="filter-chip active" onclick="filterReminderTower(null,this)">All</div>
-        </div>
-        <button class="btn-primary" id="bulkReminderBtn" style="margin-left:auto;background:linear-gradient(135deg,#c0392b,#a93226)" onclick="sendBulkReminder()">📲 Remind All via Fonnte</button>
+      <!-- Tower stat cards -->
+      <div id="reminderTowerCards" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1rem"></div>
+
+      <!-- Editable message -->
+      <div style="margin-bottom:.8rem">
+        <div style="font-size:.72rem;font-weight:600;color:var(--lbr);margin-bottom:.35rem">Message (edit before sending):</div>
+        <textarea id="reminderMsgText" rows="7"
+          style="width:100%;font-size:.78rem;border:1.5px solid #f0d5b8;border-radius:10px;padding:.65rem .8rem;font-family:inherit;resize:vertical;background:#fffdf9;color:var(--ink);line-height:1.55"></textarea>
       </div>
-      <div id="bulkReminderStatus" style="font-size:.78rem;color:var(--lbr);margin-bottom:.4rem"></div>
 
-      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;flex-wrap:wrap">
+      <!-- Action bar -->
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:.6rem">
+        <button onclick="selectAllReminders()" id="selectAllBtn" style="display:none;font-size:.72rem;background:var(--warm);border:1px solid #f0d5b8;border-radius:8px;padding:.3rem .8rem;cursor:pointer;color:var(--lbr)">☑ Select All</button>
+        <button onclick="sendSelectedReminders()" id="sendSelectedBtn" style="display:none;font-size:.78rem;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;border-radius:8px;padding:.35rem .9rem;cursor:pointer;font-weight:600">📲 Remind Selected (0)</button>
+        <button class="btn-primary" id="bulkReminderBtn" style="margin-left:auto;background:linear-gradient(135deg,#c0392b,#a93226);font-size:.78rem" onclick="sendBulkReminder()">📲 Remind All via Fonnte</button>
+      </div>
+      <div id="bulkReminderStatus" style="font-size:.75rem;color:var(--lbr);margin-bottom:.4rem"></div>
+
+      <!-- Flat list -->
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem;flex-wrap:wrap">
         <div id="reminderStats" style="font-size:.78rem;color:var(--lbr);flex:1"></div>
-        <button onclick="selectAllReminders()" id="selectAllBtn" style="display:none;font-size:.72rem;background:var(--warm);border:1px solid #f0d5b8;border-radius:8px;padding:.25rem .7rem;cursor:pointer;color:var(--lbr)">☑ Select All</button>
-        <button onclick="sendSelectedReminders()" id="sendSelectedBtn" style="display:none;font-size:.72rem;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;border-radius:8px;padding:.28rem .8rem;cursor:pointer;font-weight:600">📲 Remind Selected (0)</button>
       </div>
-      <div id="reminderBlastList" style="display:grid;gap:.5rem;max-height:400px;overflow-y:auto"></div>
-      <button class="btn-secondary" onclick="loadReminderList()" style="margin-top:.7rem">🔄 Refresh Non-Contributors</button>
+      <div id="reminderBlastList" style="display:grid;gap:.45rem;max-height:400px;overflow-y:auto"></div>
+      <button class="btn-secondary" onclick="loadReminderList()" style="margin-top:.7rem">🔄 Refresh</button>
     </div>
   </div>
 
@@ -3675,6 +3683,20 @@ function exportPrasadCSV() {
 ═══════════════════════════════════════════════════ */
 let reminderTowerFilter = null;
 let allReminderData = [];
+let _allReminderResidents = []; // full list incl. those who already paid
+
+const REMINDER_MSG_DEFAULT =
+`🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*
+
+नमस्ते 🙏
+
+This is a gentle reminder to contribute for *PSOTS Chhath Puja 2026* before the deadline of *25th October 2026*.
+
+💰 UPI: 9482088904@sbi
+📱 Visit: https://chhath.psots.in/pages/payment.html
+
+जय छठी मैया! 🌅
+— PSOTS Chhath Committee`;
 
 async function loadReminderList() {
   const currentYear = new Date().getFullYear();
@@ -3703,9 +3725,16 @@ async function loadReminderList() {
   if (!residents.length) {
     document.getElementById('reminderStats').textContent = 'No residents directory loaded — sync residents first via Data Manager.';
     document.getElementById('reminderBlastList').innerHTML = '';
+    document.getElementById('reminderTowerCards').innerHTML = '';
     allReminderData = [];
     return;
   }
+
+  _allReminderResidents = residents;
+
+  // Seed message textarea on first load
+  const msgEl = document.getElementById('reminderMsgText');
+  if (msgEl && !msgEl.value) msgEl.value = REMINDER_MSG_DEFAULT;
 
   // Build per-flat verified payment history from allConData (all past years)
   const flatHistory = {};
@@ -3766,6 +3795,52 @@ function renderReminderList() {
 
   if (selAllBtn)  selAllBtn.style.display  = 'inline-block';
   if (sendSelBtn) sendSelBtn.style.display = 'inline-block';
+
+  // Build tower stat cards
+  const towerCardsEl = document.getElementById('reminderTowerCards');
+  if (towerCardsEl) {
+    const towerTotals = {};
+    (_allReminderResidents || []).forEach(r => {
+      const t = r.tower || '—';
+      towerTotals[t] = (towerTotals[t] || 0) + 1;
+    });
+    const towerRemaining = {};
+    allReminderData.forEach(x => {
+      const t = x.tower || '—';
+      towerRemaining[t] = (towerRemaining[t] || 0) + 1;
+    });
+    const towers = Object.keys(towerTotals).sort();
+    const totalAll = Object.values(towerTotals).reduce((s,n)=>s+n,0);
+    const remAll   = allReminderData.length;
+    const paidAll  = totalAll - remAll;
+
+    const cardStyle = (active) =>
+      `cursor:pointer;border-radius:10px;padding:.45rem .75rem;font-size:.72rem;border:1.5px solid ${active?'var(--or)':'#f0d5b8'};background:${active?'#fff5e8':'var(--warm)'};min-width:80px;text-align:center`;
+
+    towerCardsEl.innerHTML =
+      `<div onclick="filterReminderTower(null,this)" style="${cardStyle(!reminderTowerFilter)}">
+        <div style="font-weight:700;color:var(--ink)">All</div>
+        <div style="color:#2e7d32;font-weight:600">${paidAll} paid</div>
+        <div style="color:#c0392b">${remAll} pending</div>
+        <div style="margin-top:.25rem;height:4px;border-radius:2px;background:#f0d5b8;overflow:hidden">
+          <div style="height:100%;background:#2e7d32;width:${totalAll?Math.round(paidAll/totalAll*100):0}%"></div>
+        </div>
+      </div>` +
+      towers.map(t => {
+        const total = towerTotals[t] || 0;
+        const rem   = towerRemaining[t] || 0;
+        const paid  = total - rem;
+        const active = reminderTowerFilter === t;
+        return `<div onclick="filterReminderTower('${t}',this)" style="${cardStyle(active)}">
+          <div style="font-weight:700;color:var(--ink)">${t}</div>
+          <div style="color:#2e7d32;font-weight:600">${paid} paid</div>
+          <div style="color:#c0392b">${rem} pending</div>
+          <div style="margin-top:.25rem;height:4px;border-radius:2px;background:#f0d5b8;overflow:hidden">
+            <div style="height:100%;background:#2e7d32;width:${total?Math.round(paid/total*100):0}%"></div>
+          </div>
+        </div>`;
+      }).join('');
+  }
 
   el.innerHTML = data.map(x => {
     const name    = x.names[0] || 'Resident';
@@ -3856,13 +3931,7 @@ async function sendSelectedReminders() {
   const selected = data.filter(x => _selectedReminders.has(x.flat) && x.mobile);
   if (!selected.length) { toast('No selected flats have a mobile number', 'error'); return; }
 
-  const reminderMsg =
-    `🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\n` +
-    `नमस्ते 🙏\n\n` +
-    `Kindly contribute before *25th October 2026* to be included in the prasad list.\n\n` +
-    `💰 UPI: 9482088904@sbi\n` +
-    `📱 Visit: https://chhath.psots.in/pages/payment.html\n\n` +
-    `जय छठी मैया! 🌅\n— PSOTS Chhath Committee`;
+  const reminderMsg = (document.getElementById('reminderMsgText')?.value || REMINDER_MSG_DEFAULT).trim();
 
   const recipients = selected.map(x => ({ label: `${x.flat} – ${x.names[0]||x.mobile}`, mobile: x.mobile }));
   const confirmed  = await showFonnteConfirm(`📲 Remind ${selected.length} Selected Flat${selected.length!==1?'s':''}`, reminderMsg, recipients);
@@ -3885,10 +3954,8 @@ async function sendSelectedReminders() {
   } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
-function filterReminderTower(tower, el) {
+function filterReminderTower(tower) {
   reminderTowerFilter = tower;
-  document.querySelectorAll('#reminderTowerFilters .filter-chip').forEach(c => c.classList.remove('active'));
-  if (el) el.classList.add('active');
   renderReminderList();
 }
 
@@ -3900,13 +3967,7 @@ async function sendBulkReminder() {
 
   const statusEl = document.getElementById('bulkReminderStatus');
   const btn = document.getElementById('bulkReminderBtn');
-  const reminderMsg =
-    `🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\n` +
-    `नमस्ते 🙏\n\n` +
-    `Kindly contribute before *25th October 2026* to be included in the prasad list.\n\n` +
-    `💰 UPI: 9482088904@sbi\n` +
-    `📱 Visit: https://chhath.psots.in/pages/payment.html\n\n` +
-    `जय छठी मैया! 🌅\n— PSOTS Chhath Committee`;
+  const reminderMsg = (document.getElementById('reminderMsgText')?.value || REMINDER_MSG_DEFAULT).trim();
 
   const recipients = withMobile.map(x => ({ label: `${x.flat || ''} – ${x.name || x.mobile}`, mobile: x.mobile }));
   const confirmed = await showFonnteConfirm(
@@ -3943,14 +4004,7 @@ async function sendBulkReminder() {
 
 /* Send a personalised reminder to a single flat via Fonnte (with wa.me fallback) */
 async function sendFonnteReminder(mobile, name, flat) {
-  const msg =
-    `🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\n` +
-    `नमस्ते ${name} ji 🙏\n\n` +
-    `This is a gentle reminder to contribute for *PSOTS Chhath Puja 2026* before the deadline of *25th October 2026*.\n\n` +
-    `💰 UPI: 9482088904@sbi\n` +
-    `📱 Or visit: https://chhath.psots.in/pages/payment.html\n\n` +
-    `Your contribution of ₹1,001+ makes you eligible for prasad! 🙏\n\n` +
-    `जय छठी मैया! 🌅\n— PSOTS Chhath Committee`;
+  const msg = (document.getElementById('reminderMsgText')?.value || REMINDER_MSG_DEFAULT).trim();
 
   const confirmed = await showFonnteConfirm(
     `📲 Confirm Reminder — Flat ${flat}`,
