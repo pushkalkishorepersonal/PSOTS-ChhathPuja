@@ -345,12 +345,16 @@
         <div id="reminderTowerFilters" style="display:flex;gap:.4rem;flex-wrap:wrap">
           <div class="filter-chip active" onclick="filterReminderTower(null,this)">All</div>
         </div>
-        <button class="btn-primary" id="bulkReminderBtn" style="margin-left:auto;background:linear-gradient(135deg,#c0392b,#a93226)" onclick="sendBulkReminder()">📲 Bulk Remind All via Fonnte</button>
+        <button class="btn-primary" id="bulkReminderBtn" style="margin-left:auto;background:linear-gradient(135deg,#c0392b,#a93226)" onclick="sendBulkReminder()">📲 Remind All via Fonnte</button>
       </div>
       <div id="bulkReminderStatus" style="font-size:.78rem;color:var(--lbr);margin-bottom:.4rem"></div>
 
-      <div id="reminderStats" style="font-size:.78rem;color:var(--lbr);margin-bottom:.7rem"></div>
-      <div id="reminderBlastList" style="display:grid;gap:.5rem;max-height:380px;overflow-y:auto"></div>
+      <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem;flex-wrap:wrap">
+        <div id="reminderStats" style="font-size:.78rem;color:var(--lbr);flex:1"></div>
+        <button onclick="selectAllReminders()" id="selectAllBtn" style="display:none;font-size:.72rem;background:var(--warm);border:1px solid #f0d5b8;border-radius:8px;padding:.25rem .7rem;cursor:pointer;color:var(--lbr)">☑ Select All</button>
+        <button onclick="sendSelectedReminders()" id="sendSelectedBtn" style="display:none;font-size:.72rem;background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;border-radius:8px;padding:.28rem .8rem;cursor:pointer;font-weight:600">📲 Remind Selected (0)</button>
+      </div>
+      <div id="reminderBlastList" style="display:grid;gap:.5rem;max-height:400px;overflow-y:auto"></div>
       <button class="btn-secondary" onclick="loadReminderList()" style="margin-top:.7rem">🔄 Refresh Non-Contributors</button>
     </div>
   </div>
@@ -3703,6 +3707,17 @@ async function loadReminderList() {
     return;
   }
 
+  // Build per-flat verified payment history from allConData (all past years)
+  const flatHistory = {};
+  (allConData || []).forEach(c => {
+    const flat = String(c.flat || '').trim();
+    const yr   = parseInt(c.year);
+    const amt  = parseFloat(c.amount) || 0;
+    if (!flat || !yr || !c.status?.includes('Received')) return;
+    if (!flatHistory[flat]) flatHistory[flat] = {};
+    flatHistory[flat][yr] = (flatHistory[flat][yr] || 0) + amt;
+  });
+
   allReminderData = residents
     .filter(r => {
       const flat = String(r.flat || '').trim();
@@ -3714,6 +3729,7 @@ async function loadReminderList() {
       tower:    r.tower || '',
       mobile:   r.mobile || '',
       lastYear: r.lastYear || null,
+      history:  flatHistory[String(r.flat || '').trim()] || {},
     }))
     .sort((a, b) => a.flat.localeCompare(b.flat, undefined, { numeric: true }));
 
@@ -3728,37 +3744,145 @@ async function loadReminderList() {
   renderReminderList();
 }
 
+let _selectedReminders = new Set();
+
 function renderReminderList() {
   let data = allReminderData;
   if (reminderTowerFilter) data = data.filter(x => x.tower === reminderTowerFilter);
 
-  const statsEl = document.getElementById('reminderStats');
-  if (statsEl) statsEl.textContent = `${data.length} flats haven't contributed yet`;
+  const statsEl    = document.getElementById('reminderStats');
+  const selAllBtn  = document.getElementById('selectAllBtn');
+  const sendSelBtn = document.getElementById('sendSelectedBtn');
+
+  if (statsEl) statsEl.textContent = `${data.length} flat${data.length!==1?'s':''} haven't contributed yet`;
 
   const el = document.getElementById('reminderBlastList');
   if (!data.length) {
     el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:#2e7d32;font-size:.85rem">🎉 All flats have contributed! Amazing!</div>';
+    if (selAllBtn)  selAllBtn.style.display  = 'none';
+    if (sendSelBtn) sendSelBtn.style.display = 'none';
     return;
   }
 
+  if (selAllBtn)  selAllBtn.style.display  = 'inline-block';
+  if (sendSelBtn) sendSelBtn.style.display = 'inline-block';
+
   el.innerHTML = data.map(x => {
-    const name = x.names[0] || 'Resident';
-    const mobile = x.mobile;
+    const name    = x.names[0] || 'Resident';
+    const mobile  = x.mobile;
+    const checked = _selectedReminders.has(x.flat);
+
+    // Year-wise history pills
+    const histYears = Object.keys(x.history || {}).map(Number).sort((a,b) => b-a);
+    const histHtml  = histYears.length
+      ? `<span style="display:inline-flex;gap:.3rem;flex-wrap:wrap;margin-top:.25rem">` +
+        histYears.map(y =>
+          `<span style="background:#f5e8d0;border:1px solid #f0d5b8;border-radius:50px;padding:.08rem .45rem;font-size:.65rem;color:var(--br);font-weight:600">${y}: ₹${(x.history[y]||0).toLocaleString('en-IN')}</span>`
+        ).join('') + `</span>`
+      : `<span style="font-size:.65rem;color:#c8a880;margin-top:.2rem;display:block">No history</span>`;
+
     const reminderBtn = mobile
       ? `<button onclick="sendFonnteReminder('${mobile}','${name.replace(/'/g,"\\'")}','${x.flat}')"
-           style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;border-radius:8px;padding:.4rem .75rem;font-size:.75rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">
+           style="background:linear-gradient(135deg,#25d366,#128c7e);color:#fff;border:none;border-radius:8px;padding:.35rem .7rem;font-size:.73rem;font-weight:600;cursor:pointer;white-space:nowrap;flex-shrink:0">
            📲 Remind
          </button>`
-      : '<span style="font-size:.72rem;color:#c8a880">No mobile</span>';
+      : '<span style="font-size:.72rem;color:#c8a880;flex-shrink:0">No mobile</span>';
+
     return `
-    <div style="display:flex;align-items:center;gap:.6rem;background:var(--warm);border:1px solid #f0d5b8;border-radius:10px;padding:.55rem .8rem">
+    <div style="display:flex;align-items:center;gap:.6rem;background:${checked?'#fff5e8':'var(--warm)'};border:1.5px solid ${checked?'var(--or)':'#f0d5b8'};border-radius:10px;padding:.55rem .8rem;transition:border-color .15s">
+      <input type="checkbox" ${checked?'checked':''} ${!mobile?'disabled':''} onchange="toggleReminderSelect('${x.flat}',this)"
+        style="width:15px;height:15px;cursor:${mobile?'pointer':'not-allowed'};flex-shrink:0;accent-color:var(--or)">
       <div style="flex:1;min-width:0">
-        <div style="font-weight:600;font-size:.82rem">${x.flat}</div>
-        <div style="font-size:.72rem;color:var(--lbr)">${x.names.join(', ') || '—'} ${x.lastYear ? '· Last paid: '+x.lastYear : ''}</div>
+        <div style="font-weight:600;font-size:.82rem">${x.flat}${x.tower ? ' <span style="font-weight:400;color:var(--lbr)">· '+x.tower+'</span>' : ''}</div>
+        <div style="font-size:.72rem;color:var(--lbr)">${x.names.join(', ') || '—'}</div>
+        ${histHtml}
       </div>
       ${reminderBtn}
     </div>`;
   }).join('');
+
+  _updateSendSelectedBtn();
+}
+
+function toggleReminderSelect(flat, cb) {
+  if (cb.checked) _selectedReminders.add(flat);
+  else _selectedReminders.delete(flat);
+  // Update card border
+  const cards = document.querySelectorAll('#reminderBlastList > div');
+  cards.forEach(card => {
+    const chk = card.querySelector('input[type=checkbox]');
+    if (chk && !chk.disabled) {
+      const sel = chk.checked;
+      card.style.background    = sel ? '#fff5e8' : 'var(--warm)';
+      card.style.borderColor   = sel ? 'var(--or)' : '#f0d5b8';
+    }
+  });
+  _updateSendSelectedBtn();
+}
+
+function selectAllReminders() {
+  let data = allReminderData;
+  if (reminderTowerFilter) data = data.filter(x => x.tower === reminderTowerFilter);
+  const withMobile = data.filter(x => x.mobile);
+  const allSelected = withMobile.every(x => _selectedReminders.has(x.flat));
+  if (allSelected) {
+    withMobile.forEach(x => _selectedReminders.delete(x.flat));
+  } else {
+    withMobile.forEach(x => _selectedReminders.add(x.flat));
+  }
+  renderReminderList();
+}
+
+function _updateSendSelectedBtn() {
+  const btn = document.getElementById('sendSelectedBtn');
+  const selAllBtn = document.getElementById('selectAllBtn');
+  if (!btn) return;
+  const n = _selectedReminders.size;
+  btn.textContent = `📲 Remind Selected (${n})`;
+  btn.style.opacity = n ? '1' : '0.5';
+
+  // Toggle select all label
+  let data = allReminderData;
+  if (reminderTowerFilter) data = data.filter(x => x.tower === reminderTowerFilter);
+  const withMobile = data.filter(x => x.mobile);
+  const allSelected = withMobile.length && withMobile.every(x => _selectedReminders.has(x.flat));
+  if (selAllBtn) selAllBtn.textContent = allSelected ? '☐ Deselect All' : '☑ Select All';
+}
+
+async function sendSelectedReminders() {
+  if (!_selectedReminders.size) { toast('Select at least one flat first', 'error'); return; }
+  let data = allReminderData;
+  if (reminderTowerFilter) data = data.filter(x => x.tower === reminderTowerFilter);
+  const selected = data.filter(x => _selectedReminders.has(x.flat) && x.mobile);
+  if (!selected.length) { toast('No selected flats have a mobile number', 'error'); return; }
+
+  const reminderMsg =
+    `🌅 *PSOTS Chhath Puja 2026 — Payment Reminder*\n\n` +
+    `नमस्ते 🙏\n\n` +
+    `Kindly contribute before *25th October 2026* to be included in the prasad list.\n\n` +
+    `💰 UPI: 9482088904@sbi\n` +
+    `📱 Visit: https://chhath.psots.in/pages/payment.html\n\n` +
+    `जय छठी मैया! 🌅\n— PSOTS Chhath Committee`;
+
+  const recipients = selected.map(x => ({ label: `${x.flat} – ${x.names[0]||x.mobile}`, mobile: x.mobile }));
+  const confirmed  = await showFonnteConfirm(`📲 Remind ${selected.length} Selected Flat${selected.length!==1?'s':''}`, reminderMsg, recipients);
+  if (!confirmed) return;
+
+  const statusEl = document.getElementById('bulkReminderStatus');
+  try {
+    const targets = selected.map(x => x.mobile);
+    const d = await _fonntePost(targets, reminderMsg);
+    if (d.ok) {
+      toast(`✅ Reminders sent to ${d.sent} selected flats!`, 'success');
+      if (statusEl) statusEl.textContent = `✅ Sent to ${d.sent} selected contacts at ${new Date().toLocaleTimeString()}`;
+      _selectedReminders.clear();
+      renderReminderList();
+    } else {
+      toast('Fonnte failed — opening WhatsApp links…', 'error');
+      const msgEnc = encodeURIComponent(reminderMsg);
+      selected.forEach((x, i) => setTimeout(() => window.open(`https://wa.me/91${x.mobile}?text=${msgEnc}`, '_blank'), i * 900));
+    }
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
 }
 
 function filterReminderTower(tower, el) {
