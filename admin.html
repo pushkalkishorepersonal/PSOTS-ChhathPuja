@@ -7,6 +7,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="js/config.js"></script>
+  <!-- Firebase SDK — Firestore as primary data source -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/db.js"></script>
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
   :root {
@@ -191,11 +196,18 @@
   .con-flat-cell { color: var(--lbr); }
   .con-amt-cell  { font-family: 'DM Sans', sans-serif; font-weight: 700; color: var(--or); }
   .action-btns { display: flex; gap: .4rem; }
-  .con-search-bar { width: 100%; padding: .65rem 1rem; border: 1.5px solid #f0d5b8; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: .88rem; color: var(--ink); background: var(--warm); outline: none; margin-bottom: 1rem; }
-  .con-search-bar:focus { border-color: var(--or); }
+  .con-search-bar { width: 100%; padding: .65rem 1rem; border: 1.5px solid #f0d5b8; border-radius: 10px; font-family: 'DM Sans', sans-serif; font-size: .88rem; color: var(--ink); background: var(--warm); outline: none; margin-bottom: 1rem; transition: border-color .2s, box-shadow .2s; }
+  .con-search-bar:focus { border-color: var(--or); box-shadow: 0 0 0 3px rgba(232,92,0,.1); }
   .con-filter-row { display: flex; gap: .6rem; margin-bottom: 1rem; flex-wrap: wrap; align-items: center; }
   .filter-chip { background: var(--warm); border: 1.5px solid #f0d5b8; color: var(--lbr); border-radius: 50px; padding: .3rem .85rem; font-size: .74rem; font-weight: 600; cursor: pointer; transition: all .2s; }
-  .filter-chip.active { background: var(--or); color: #fff; border-color: var(--or); }
+  .filter-chip.active { background: var(--or); color: #fff; border-color: var(--or); box-shadow: 0 3px 10px rgba(232,92,0,.3); }
+  /* contributor card animations */
+  @keyframes conCardIn { from { opacity:0; transform:translateY(10px) scale(.98); } to { opacity:1; transform:none; } }
+  #conCardList > div { animation: conCardIn .3s cubic-bezier(.34,1.2,.64,1) both; }
+  #conCardList > div:nth-child(1){animation-delay:.04s} #conCardList > div:nth-child(2){animation-delay:.08s}
+  #conCardList > div:nth-child(3){animation-delay:.12s} #conCardList > div:nth-child(4){animation-delay:.16s}
+  #conCardList > div:nth-child(5){animation-delay:.20s} #conCardList > div:nth-child(n+6){animation-delay:.24s}
+  #conCardList > div:hover { box-shadow: 0 4px 18px rgba(26,8,0,.1); transform: translateY(-1px); transition: box-shadow .2s, transform .2s; }
   .total-bar { display: flex; justify-content: space-between; align-items: center; background: linear-gradient(135deg, var(--or), #c93800); border-radius: 10px; padding: .75rem 1rem; margin-top: .8rem; color: #fff; }
   .total-bar .tl { font-size: .76rem; opacity: .8; }
   .total-bar .tv { font-family: 'DM Sans', sans-serif; font-size: 1.05rem; font-weight: 700; }
@@ -311,11 +323,8 @@
         <div class="filter-chip" onclick="setFilter('verified',this)">Verified ✅</div>
         <div class="filter-chip" onclick="setFilter('rejected',this)">Rejected</div>
       </div>
-      <div style="overflow-x:auto">
-        <table class="con-table">
-          <thead><tr><th>#</th><th>Name</th><th>Flat</th><th>Mobile</th><th>Amount</th><th>App</th><th>Date</th><th>Status</th><th>Actions</th></tr></thead>
-          <tbody id="conTableBody"><tr><td colspan="9" class="loading-state">Loading contributors…</td></tr></tbody>
-        </table>
+      <div id="conCardList" style="display:grid;gap:.5rem;margin-top:.5rem">
+        <div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.88rem">🌅 Loading contributors…</div>
       </div>
       <div class="total-bar"><span class="tl">Total Verified</span><span class="tv" id="conVerifiedTotal">—</span></div>
       <div id="dupAlert" style="display:none;background:#fff5e8;border:1.5px solid rgba(232,92,0,.3);border-radius:12px;padding:.8rem 1rem;margin-top:.8rem;font-size:.82rem;color:var(--br)"></div>
@@ -1518,7 +1527,7 @@ function escAdm(s) { return String(s||'').replace(/'/g,"\\'"); }
 ═══════════════════════════════════════════════════ */
 async function loadAdminCon() {
   const url = getScriptUrl();
-  const tbody = document.getElementById('conTableBody');
+  const container = document.getElementById('conCardList');
 
   // Check session cache first
   const cachedCon = PsotsCache.get('contributors_all');
@@ -1529,7 +1538,7 @@ async function loadAdminCon() {
     return;
   }
 
-  tbody.innerHTML = '<tr><td colspan="9" class="loading-state">🌅 Loading from Google Sheets…</td></tr>';
+  container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.88rem">🌅 Loading from Google Sheets…</div>';
 
   if (!url) {
     // Load from global data/history.json
@@ -1577,7 +1586,7 @@ async function loadAdminCon() {
         }));
         renderConTable(allConData);
         updateDashStats();
-        tbody.insertAdjacentHTML('afterend', '<div style="text-align:center;font-size:.78rem;color:#c03000;padding:.4rem">⚠️ Showing cached data — Google Sheets unavailable. Check Apps Script URL in Settings.</div>');
+        container.insertAdjacentHTML('afterend', '<div style="text-align:center;font-size:.78rem;color:#c03000;padding:.4rem">⚠️ Showing cached data — Google Sheets unavailable. Check Apps Script URL in Settings.</div>');
         return;
       }
       const gRes = await fetch('data/history.json');
@@ -1593,19 +1602,21 @@ async function loadAdminCon() {
         return;
       }
     } catch(e2) {}
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:#c03000">⚠️ Could not connect to Google Sheets. Check your Apps Script URL in Settings.</td></tr>';
+    container.innerHTML = '<div style="text-align:center;padding:2rem;color:#c03000;font-size:.88rem">⚠️ Could not connect to Google Sheets. Check your Apps Script URL in Settings.</div>';
   }
 }
 
+const AV_COLORS_ADM = ['#e85c00','#c93800','#8b2800','#1a5276','#1a7a4e','#7b1fa2','#c62828'];
+function _admAvColor(name) { return AV_COLORS_ADM[(name||'?').toUpperCase().charCodeAt(0) % AV_COLORS_ADM.length]; }
+
 function renderConTable(data) {
-  const tbody = document.getElementById('conTableBody');
+  const container = document.getElementById('conCardList');
   const q = (document.getElementById('conSearchAdmin')?.value || '').trim().toLowerCase();
   let filtered = data.filter(r => {
     if (q) {
       const flatStr = String(r.flat||'').toLowerCase();
       const nameStr = (r.name||'').toLowerCase();
       const utrStr  = (r.utr||r.ref||'').toLowerCase();
-      // Flat: must be exact or prefix match (prevents mobile substring false positives)
       const flatMatch = flatStr === q || flatStr.startsWith(q);
       const nameMatch = nameStr.includes(q);
       const utrMatch  = utrStr.includes(q);
@@ -1616,41 +1627,55 @@ function renderConTable(data) {
     if (filterMode === 'rejected') return r.status?.includes('Rejected');
     return true;
   });
+  _lastConFiltered = filtered; // used by bulkVerifyVisible
 
   if (!filtered.length) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--lbr)">No entries found.</td></tr>';
+    container.innerHTML = '<div style="text-align:center;padding:2rem;color:var(--lbr)">No entries found.</div>';
+    document.getElementById('conVerifiedTotal').textContent = '₹0';
     return;
   }
 
-  tbody.innerHTML = filtered.map((r, i) => {
+  container.innerHTML = filtered.map(r => {
     const isVerified = r.status?.includes('Received');
     const isRejected = r.status?.includes('Rejected');
-    const badge = isVerified ? 'verified' : isRejected ? 'rejected' : 'pending';
-    const label = isVerified ? '✅ Verified' : isRejected ? '❌ Rejected' : '⏳ Pending';
-    const fp = parseFlatNumber(r.flat);
-    const towerBadge = fp.tower ? `<div style="font-size:.6rem;color:var(--lbr);margin-top:.1rem">Tower ${fp.tower}</div>` : '';
-    return `
-      <tr>
-        <td>${i+1}</td>
-        <td class="con-name-cell">${r.name||'—'}</td>
-        <td class="con-flat-cell">${r.flat||'—'}${towerBadge}</td>
-        <td style="font-size:.78rem;color:var(--lbr)">${r.mobile||'—'}</td>
-        <td class="con-amt-cell">₹${parseInt(r.amount||0).toLocaleString('en-IN')}</td>
-        <td style="font-size:.78rem">${r.method||'UPI'}</td>
-        <td style="font-size:.75rem;color:var(--lbr)">${r.date||'—'}</td>
-        <td><span class="status-badge ${badge}">${label}</span></td>
-        <td>
-          <div class="action-btns">
-            ${!isVerified ? `<button class="btn-success" onclick="updateStatus(${i},'✅ Received')">✅</button>` : ''}
-            ${!isRejected ? `<button class="btn-danger"  onclick="updateStatus(${i},'❌ Rejected')">❌</button>` : ''}
-            <button class="btn-danger" onclick="deleteEntry(${i})" title="Delete record">🗑</button>
-            <button class="btn-icon" onclick="sendWAConfirm('${r.name}','${r.flat}','${r.amount}','${r.mobile}')">📲</button>
+    const isPending  = !isVerified && !isRejected;
+    const origIdx    = allConData.indexOf(r);
+    const fp         = parseFlatNumber(r.flat);
+    const initials   = (r.name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    const col        = _admAvColor(r.name);
+    const statusColor = isVerified ? '#2e7d32' : isRejected ? '#c0392b' : '#b45309';
+    const statusBg    = isVerified ? '#ecfdf5' : isRejected ? '#fff1f2' : '#fffbeb';
+    const statusLabel = isVerified ? '✅ Verified' : isRejected ? '❌ Rejected' : '⏳ Pending';
+    const borderColor = isPending ? 'rgba(234,179,8,.35)' : isVerified ? 'rgba(46,125,50,.2)' : 'rgba(192,57,43,.2)';
+    const towerTxt    = fp.tower ? ` · T${fp.tower}` : '';
+    const utr         = r.utr || r.ref || '';
+    return `<div style="background:#fff;border:1.5px solid ${borderColor};border-radius:13px;padding:.9rem 1rem;display:grid;gap:.5rem">
+      <div style="display:flex;align-items:flex-start;gap:.7rem">
+        <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${col},${col}cc);display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-weight:900;font-size:.88rem;color:#fff;flex-shrink:0">${initials}</div>
+        <div style="flex:1;min-width:0">
+          <div style="display:flex;justify-content:space-between;align-items:center;gap:.4rem">
+            <div style="font-weight:700;font-size:.9rem;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.name||'—'}</div>
+            <span style="background:${statusBg};color:${statusColor};border-radius:50px;font-size:.6rem;font-weight:700;padding:.2rem .55rem;white-space:nowrap;flex-shrink:0">${statusLabel}</span>
           </div>
-        </td>
-      </tr>`;
+          <div style="font-size:.71rem;color:var(--lbr);margin-top:.1rem">Flat <strong style="color:var(--or)">${r.flat||'—'}</strong>${towerTxt}</div>
+        </div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:.45rem;align-items:center;padding-left:2.8rem">
+        <span style="font-family:'DM Sans',sans-serif;font-weight:900;color:var(--or);font-size:.95rem">₹${parseInt(r.amount||0).toLocaleString('en-IN')}</span>
+        ${r.method ? `<span style="background:var(--warm);border:1px solid #f0d5b8;border-radius:50px;padding:.1rem .45rem;font-size:.68rem;color:var(--lbr)">${r.method}</span>` : ''}
+        ${r.date   ? `<span style="font-size:.7rem;color:var(--lbr)">${r.date}</span>` : ''}
+        ${r.mobile ? `<span style="font-size:.7rem;color:var(--lbr)">📱 ${r.mobile}</span>` : ''}
+        ${utr      ? `<span style="font-family:monospace;font-size:.64rem;background:#f5f0e8;padding:.12rem .38rem;border-radius:4px;color:var(--lbr)">${utr}</span>` : ''}
+      </div>
+      <div style="display:flex;justify-content:flex-end;gap:.4rem;padding-left:2.8rem;flex-wrap:wrap">
+        ${isPending  ? `<button onclick="updateStatus(${origIdx},'✅ Received')" style="background:#ecfdf5;color:#2e7d32;border:1px solid rgba(46,125,50,.3);border-radius:8px;padding:.32rem .75rem;font-size:.74rem;cursor:pointer;font-weight:600">✅ Verify</button>` : ''}
+        ${!isRejected? `<button onclick="updateStatus(${origIdx},'❌ Rejected')" style="background:#fff1f2;color:#c0392b;border:1px solid rgba(192,57,43,.25);border-radius:8px;padding:.32rem .75rem;font-size:.74rem;cursor:pointer;font-weight:600">❌ Reject</button>` : ''}
+        ${r.mobile   ? `<button onclick="sendWAConfirm('${escAdm(r.name)}','${escAdm(r.flat)}','${r.amount}','${r.mobile}')" style="background:var(--warm);color:var(--lbr);border:1px solid #f0d5b8;border-radius:8px;padding:.32rem .65rem;font-size:.74rem;cursor:pointer" title="WhatsApp">📲</button>` : ''}
+        <button onclick="deleteEntry(${origIdx})" style="background:#fff1f2;color:#c0392b;border:1px solid rgba(192,57,43,.2);border-radius:8px;padding:.32rem .65rem;font-size:.74rem;cursor:pointer" title="Delete">🗑</button>
+      </div>
+    </div>`;
   }).join('');
 
-  // Update verified total
   const verTotal = filtered.filter(r => r.status?.includes('Received')).reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
   document.getElementById('conVerifiedTotal').textContent = '₹' + verTotal.toLocaleString('en-IN');
   updateDashStats();
@@ -1732,13 +1757,12 @@ function setFilter(mode, el) {
 
 function filterAdminCon() { renderConTable(allConData); }
 
+let _lastConFiltered = [];
 function bulkVerifyVisible() {
   if (!confirm('Mark all currently visible entries as Verified? This will send WhatsApp confirmations to each contributor.')) return;
-  const rows = document.querySelectorAll('#conTableBody tr');
-  rows.forEach((_, i) => {
-    if (allConData[i] && !allConData[i].status?.includes('Received')) {
-      updateStatus(i, '✅ Received');
-    }
+  _lastConFiltered.forEach(r => {
+    const idx = allConData.indexOf(r);
+    if (idx >= 0 && !r.status?.includes('Received')) updateStatus(idx, '✅ Received');
   });
 }
 
