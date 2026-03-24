@@ -22,6 +22,9 @@
   var user = getUser();
   if (user && (user.id || user.email)) return; // ✅ already signed in
 
+  // ── Anonymous mode bypass — no login needed ──────────
+  if (new URLSearchParams(window.location.search).get('mode') === 'anon') return;
+
   // ── 2. Immediately hide page body until gate resolves ─
   var hideStyle = document.createElement('style');
   hideStyle.id = 'psots-gate-hide';
