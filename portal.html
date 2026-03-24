@@ -2165,6 +2165,8 @@ function renderContributions(data) {
   data.forEach(c => { (byYear[c.year] = byYear[c.year]||[]).push(c); });
   const years = Object.keys(byYear).sort((a,b) => b-a);
 
+  _cachedContribs = data; // cache for receipt page — avoids double-fetch duplication
+
   el.innerHTML = years.map((yr, yi) => {
     const rows  = byYear[yr];
     const total = rows.reduce((s,r) => s+(parseFloat(r.amount)||0), 0);
@@ -2195,8 +2197,10 @@ function renderContributions(data) {
           <span class="yr-num">🌅 ${yr}</span>
           <span class="yr-badge ${badgeCls}">${badgeTxt}</span>
         </div>
-        <div style="display:flex;align-items:center;gap:.6rem">
+        <div style="display:flex;align-items:center;gap:.5rem">
           <span class="yr-total">₹${total.toLocaleString('en-IN')}</span>
+          <button onclick="event.stopPropagation();quickReceiptYear('${yr}')" title="Download receipt for ${yr}"
+            style="background:rgba(232,92,0,.1);border:1px solid rgba(232,92,0,.25);color:var(--or);border-radius:7px;padding:.18rem .45rem;font-size:.7rem;cursor:pointer;font-weight:600;line-height:1.4">🎫</button>
           <span class="yr-chevron">▼</span>
         </div>
       </div>
@@ -2454,6 +2458,8 @@ function toast(msg, type='') {
 let _allReceiptContribs = [];
 let _receiptYear = '2026'; // currently selected year (or 'all')
 let _receiptName = '', _receiptFlat = '';
+/* Cache set by renderContributions — used by loadReceipt to avoid double-fetch */
+let _cachedContribs = [];
 
 async function loadReceipt() {
   const el = document.getElementById('receiptContent');
@@ -2472,41 +2478,17 @@ async function loadReceipt() {
     return;
   }
 
-  el.innerHTML = '<div class="loading">Loading your contribution data…</div>';
-
-  let combined = [];
-
-  // 1. Pull historical data from history.json
-  try {
-    const gRes = await fetch('data/history.json');
-    if (gRes.ok) {
-      const g = await gRes.json();
-      const allH = g.history || [];
-      const mine = allH.filter(r => String(r.flat).trim() === String(flat).trim());
-      combined = combined.concat(mine.map(r => ({
-        year: String(r.year), amount: r.amount, method: r.method || 'UPI',
-        date: r.date || '', status: r.status || '✅ Received'
-      })));
-    }
-  } catch(e) {}
-
-  // 2. Pull 2026 contributions from live sheet
-  const su = C.scriptUrl;
-  if (su && !su.includes('YOUR_APPS')) {
-    try {
-      const d = await fetch(su + '?action=list').then(r => r.json());
-      const mine26 = (d.contributors || []).filter(c =>
-        String(c.flat).trim() === String(flat).trim() && c.status && c.status.includes('Received'));
-      // Merge — avoid duplicates by year+amount+date
-      mine26.forEach(c => {
-        const cYear = String(c.year || new Date().getFullYear());
-        const dup = combined.find(x => x.year === cYear && String(x.amount) === String(c.amount) && x.date === (c.date || ''));
-        if (!dup) combined.push({ year: cYear, amount: c.amount, method: c.method || 'UPI', date: c.date || '', status: c.status });
-      });
-    } catch(e) {}
+  // Use the already-loaded & deduped contribution data from the history tab.
+  // This avoids fetching from both history.json and the live sheet which was
+  // causing every contribution to be counted twice (double amount shown).
+  if (_cachedContribs.length) {
+    _allReceiptContribs = _cachedContribs.filter(c => c.status?.includes('Received'));
+  } else {
+    // Contributions tab hasn't loaded yet — trigger load then re-render receipt
+    el.innerHTML = '<div class="loading">Loading your contribution data…</div>';
+    await loadContributions(); // populates _cachedContribs via renderContributions
+    _allReceiptContribs = _cachedContribs.filter(c => c.status?.includes('Received'));
   }
-
-  _allReceiptContribs = combined.filter(c => c.status && c.status.includes('Received'));
 
   if (_allReceiptContribs.length === 0) {
     el.innerHTML = '';
@@ -2595,6 +2577,17 @@ function _renderReceipt() {
       <div class="rc-label">Total Contribution · ${contribs.length} payment${contribs.length > 1 ? 's' : ''}</div>
       <div class="rc-year">${footerLine}<br/>जय छठी मैया! 🙏</div>
     </div>`;
+}
+
+/* Quick receipt download straight from the history tab year card */
+function quickReceiptYear(yr) {
+  _receiptName = userProfile.name || currentUser?.name || '';
+  _receiptFlat = userProfile.flat || '';
+  _allReceiptContribs = _cachedContribs.filter(c => c.status?.includes('Received'));
+  _receiptYear = String(yr);
+  _renderReceipt();
+  // Small delay so DOM updates before canvas capture
+  setTimeout(downloadReceipt, 200);
 }
 
 /* Keep old name as alias so existing callers (if any) still work */
