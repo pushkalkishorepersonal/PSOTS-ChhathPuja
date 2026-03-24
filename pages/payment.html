@@ -309,6 +309,11 @@
       </div>
     </div>
 
+    <!-- Anon flat field (optional, shown only in anon mode) -->
+    <div id="anon-flat-field" style="display:none;margin-bottom:.6rem">
+      <div class="ff"><label>Flat No. <span style="font-weight:400;color:#a07850">(optional)</span></label><input type="text" id="f-anon-flat" placeholder="e.g. B-204"/></div>
+    </div>
+
     <div class="fg" id="extra-fields">
       <div class="ff"><label>UPI App Used</label>
         <select id="f-method">
@@ -572,12 +577,13 @@ function setMode(m){
     document.getElementById('guest-fields').style.display='none';
     document.getElementById('user-confirm-only').style.display='none';
     document.getElementById('extra-fields').style.display='grid';
+    document.getElementById('anon-flat-field').style.display='block';
     document.getElementById('confHdrSub').textContent='No personal details needed — just confirm the amount after payment.';
     if(!anonNotice){
       anonNotice=document.createElement('div');
       anonNotice.id='anonNotice';
       anonNotice.style.cssText='background:linear-gradient(135deg,#f5f0e8,#ffe8d0);border:1px solid rgba(232,92,0,.2);border-radius:11px;padding:.85rem 1rem;font-size:.8rem;color:#6b3a18;line-height:1.68;margin-bottom:1rem';
-      anonNotice.innerHTML='<strong>🎭 Anonymous mode</strong> — Your contribution will be recorded without a name or flat number. Perfect for relatives, neighbours, and guests who want to help without a formal record. Your payment is just as meaningful. 🙏';
+      anonNotice.innerHTML='<strong>🎭 Anonymous mode</strong> — Your contribution will be recorded without a name. You may share your flat number if you wish — it remains entirely your choice. Every contribution is received with equal gratitude. 🙏';
       const cb=document.getElementById('confBody');
       cb.insertBefore(anonNotice,cb.firstChild);
     }
@@ -586,6 +592,7 @@ function setMode(m){
   }
 
   if(anonNotice) anonNotice.style.display='none';
+  document.getElementById('anon-flat-field').style.display='none';
   const isUser=m==='user'&&currentUser;
   document.getElementById('guest-fields').style.display='block';
   document.getElementById('user-confirm-only').style.display='none';
@@ -685,7 +692,9 @@ async function submitForm(){
   document.getElementById('errBox').style.display='none';
 
   if(_payMode==='anon'){
-    name='Anonymous Contributor'; flat='—'; mobile='';
+    name='Anonymous Contributor';
+    flat=document.getElementById('f-anon-flat').value.trim()||'—';
+    mobile='';
   } else {
     name=document.getElementById('f-name').value.trim();
     flat=document.getElementById('f-flat').value.trim();
