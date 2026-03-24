@@ -1,5 +1,5 @@
 # 🪔 PSOTS Chhath Puja 2026 — Complete Setup Guide
-<!-- Last updated: 2026-03-24 -->
+<!-- Last updated: 2026-03-24 (DB + broadcast updates) -->
 
 **Prestige Song of the South · पंच वर्ष महोत्सव**
 **Contact:** Pushkal Kishore · 9482088904 · psots.in
@@ -17,6 +17,7 @@
 | `config.js` | **Edit this to update all settings** | (not a page) |
 | `css/style.css` | Shared styles | (not a page) |
 | `pages/` | Individual section pages | psots.in/pages/... |
+| `tools/test-db-connections.html` | Dev tool — verify all DB connections | chhath.psots.in/tools/test-db-connections.html |
 
 ---
 
@@ -51,9 +52,12 @@
 
 | Collection | What's in it | Document ID |
 |---|---|---|
-| `profiles` | Resident profile (flat, mobile, family) | Google OAuth user ID |
+| `profiles` | Resident profile (flat, mobile, waOptIn, family) | Google OAuth user ID |
 | `contributions` | All payment records 2022–2026 | `year_flat_name_amount` |
 | `residents` | Directory — flat, name, mobile, tower, total, lastYear | sanitised flat number |
+| `announcements` | Community announcements managed from admin | auto-generated |
+
+> **Note:** `profiles.waOptIn` is the source of truth for WhatsApp subscribers. The admin "Load from DB" button reads this directly from Firestore.
 
 ### One-time: Sync historical data to Firestore
 
@@ -232,11 +236,21 @@ Go to `chhath.psots.in/data-manager.html` → 📥 Import History tab → paste 
 
 ## 📱 WhatsApp Broadcast Setup
 
-1. Open WhatsApp on your phone
-2. Tap the **three dots** (⋮) → **New broadcast**
-3. Add all subscriber numbers (from subscribe requests you receive)
-4. Name the list: **PSOTS Chhath 2026**
-5. To send an update: Admin panel → 📲 Broadcast tab → compose → tap Send → **select your broadcast list** → Send
+### How subscribers are collected
+Residents opt in from their **portal account** (portal.html → WhatsApp toggle). Their `waOptIn: true` is saved to **Firestore** automatically — no manual step needed.
+
+### Sending a broadcast (Admin)
+1. Go to `chhath.psots.in/admin.html` → **📲 Broadcast** tab
+2. Click **🔄 Load from DB** — pulls all opted-in subscribers from Firestore (+ Google Sheets as fallback)
+3. Compose your message or pick a template
+4. Click **📲 Send via Fonnte** (automated) or **Open in WhatsApp** (manual)
+
+### Manual WhatsApp broadcast list (one-time setup)
+1. Click **📋 Copy Numbers** after loading subscribers
+2. Open WhatsApp → **three dots** (⋮) → **New broadcast** → paste numbers
+3. Name the list: **PSOTS Chhath 2026**
+
+> **Note:** "Load from DB" replaces the old "Load from Sheet". Subscribers now come from Firestore, not Google Sheets.
 
 ---
 
