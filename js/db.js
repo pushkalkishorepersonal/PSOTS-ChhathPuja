@@ -316,6 +316,9 @@ const PSOTS_DB = (() => {
             method: r.method || '',
             status: r.status || '',
             mobile: r.mobile || '',
+            // submittedAt captures the real write time for new records;
+            // merge:true means existing records keep their original value
+            ...(r.submittedAt ? {} : { submittedAt: Date.now() }),
           }, { merge: true });
         });
         await batch.commit();
