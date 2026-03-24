@@ -7,20 +7,24 @@
   <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:ital,wght@0,700;0,900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css"/>
   <script src="../js/config.js"></script>
-  <script src="../js/auth-gate.js"></script>
+  <!-- Firebase SDK — Firestore as primary source -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="../js/firebase-config.js"></script>
   <style>
-  /* ── Filter / search ── */
+  /* ── Search ── */
   .filter-row{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:.9rem;align-items:center}
   .fchip{background:var(--warm);border:1.5px solid #f0d5b8;color:var(--lbr);border-radius:50px;padding:.3rem .85rem;font-size:.74rem;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap}
   .fchip.on{background:var(--or);color:#fff;border-color:var(--or);box-shadow:0 3px 10px rgba(232,92,0,.3)}
+  .fchip:hover:not(.on){background:#fff0e0}
   .con-search{width:100%;padding:.72rem 1rem .72rem 2.6rem;border:1.5px solid #f0d5b8;border-radius:12px;font-family:'DM Sans',sans-serif;font-size:.88rem;color:var(--ink);background:var(--warm);outline:none;transition:border-color .2s,box-shadow .2s;margin-bottom:.9rem}
   .con-search:focus{border-color:var(--or);box-shadow:0 0 0 3px rgba(232,92,0,.1)}
   .search-wrap{position:relative}
   .search-icon{position:absolute;left:.9rem;top:50%;transform:translateY(-50%);color:var(--lbr);font-size:.9rem;pointer-events:none}
 
   /* ── Year section ── */
-  .year-section{margin-bottom:.75rem;border-radius:14px;overflow:hidden;border:1.5px solid #f0dfc8}
-  .year-header{display:flex;align-items:center;justify-content:space-between;padding:.75rem 1rem;background:var(--warm);cursor:pointer;user-select:none;transition:background .15s}
+  .year-section{margin-bottom:.75rem;border-radius:16px;overflow:hidden;border:1.5px solid #f0dfc8;box-shadow:0 2px 12px rgba(26,8,0,.04)}
+  .year-header{display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.1rem;background:var(--warm);cursor:pointer;user-select:none;transition:background .15s}
   .year-header:hover{background:#fff0e0}
   .year-header-left{display:flex;align-items:center;gap:.6rem}
   .year-badge{font-family:'Yatra One',serif;font-size:1rem;color:var(--or);font-weight:700}
@@ -28,7 +32,7 @@
   .year-total{font-family:'DM Sans',sans-serif;font-size:.88rem;font-weight:700;color:var(--or)}
   .year-chevron{font-size:.75rem;color:var(--lbr);transition:transform .25s;flex-shrink:0}
   .year-header.open .year-chevron{transform:rotate(180deg)}
-  .year-body{display:none;padding:.5rem .6rem .6rem}
+  .year-body{display:none;padding:.6rem .65rem .7rem}
   .year-body.open{display:block}
 
   /* ── Top-3 podium ── */
@@ -46,16 +50,17 @@
   .pod-flat{font-size:.65rem;color:#6b3a18}
   .pod-amt{font-family:'DM Sans',sans-serif;font-size:.8rem;font-weight:900;color:var(--or)}
 
-  /* ── Contributor rows ── */
-  .con-item{display:grid;grid-template-columns:40px 40px 1fr auto auto;align-items:center;gap:.6rem;padding:.7rem .95rem;background:#fff;border-radius:10px;border:1px solid #f0dfc8;margin-bottom:.38rem;transition:background .15s,transform .15s,box-shadow .15s;opacity:0;transform:translateY(12px)}
-  .con-item.seen{opacity:1;transform:none;transition:opacity .4s ease,transform .4s ease,background .15s,box-shadow .15s}
-  .con-item:hover{background:#fff5e8;transform:translateX(3px);box-shadow:0 3px 14px rgba(26,8,0,.07)}
-  .ci-rank{font-family:'DM Sans',sans-serif;font-size:.75rem;font-weight:700;color:rgba(107,58,24,.55);text-align:center}
-  .ci-av{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--or),#c93800);display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-weight:900;font-size:.82rem;color:#fff;flex-shrink:0;overflow:hidden}
+  /* ── Contributor cards ── */
+  @keyframes cardIn{from{opacity:0;transform:translateY(10px) scale(.98)}to{opacity:1;transform:none}}
+  .con-card{background:#fff;border:1.5px solid #f0dfc8;border-radius:12px;padding:.75rem 1rem;display:flex;align-items:center;gap:.75rem;margin-bottom:.38rem;transition:box-shadow .2s,transform .2s,border-color .2s;animation:cardIn .35s cubic-bezier(.34,1.2,.64,1) both}
+  .con-card:hover{box-shadow:0 4px 18px rgba(26,8,0,.08);transform:translateX(3px);border-color:#f0c8a0}
+  .ci-rank{font-family:'DM Sans',sans-serif;font-size:.72rem;font-weight:700;color:rgba(107,58,24,.45);text-align:center;min-width:28px}
+  .ci-av{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-weight:900;font-size:.85rem;color:#fff;flex-shrink:0}
   .ci-name{font-weight:600;font-size:.88rem;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .ci-flat{font-size:.72rem;color:#6b3a18}
+  .ci-sub{font-size:.68rem;color:#6b3a18;margin-top:.08rem}
+  .ci-right{display:flex;flex-direction:column;align-items:flex-end;gap:.15rem;flex-shrink:0}
   .ci-amt{font-family:'DM Sans',sans-serif;font-weight:700;font-size:.88rem;color:var(--or);white-space:nowrap}
-  .ci-dot{width:9px;height:9px;border-radius:50%;background:#4caf50;flex-shrink:0}
+  .ci-dot{width:8px;height:8px;border-radius:50%;background:#4caf50}
   .ci-dot.p{background:var(--gold)}
 
   /* ── Total bar ── */
@@ -65,10 +70,10 @@
   .tb-count{font-size:.72rem;opacity:.8;margin-top:.08rem}
 
   /* ── Skeleton ── */
-  .skel-row{display:flex;align-items:center;gap:.6rem;padding:.7rem .95rem;background:var(--warm);border-radius:12px;border:1px solid #f0dfc8;margin-bottom:.42rem}
-  .skel-av{width:32px;height:32px;border-radius:50%;flex-shrink:0}
+  .skel-row{display:flex;align-items:center;gap:.65rem;padding:.75rem 1rem;background:var(--warm);border-radius:12px;border:1px solid #f0dfc8;margin-bottom:.42rem}
+  .skel-av{width:34px;height:34px;border-radius:50%;flex-shrink:0}
   .skel-body{flex:1;display:flex;flex-direction:column;gap:5px}
-  .skel-line{height:12px;border-radius:4px}
+  .skel-line{height:11px;border-radius:4px}
   .skel,.skel-line{background:linear-gradient(90deg,#f0e8d8 25%,#ffe8cc 50%,#f0e8d8 75%);background-size:200% 100%;animation:shim 1.5s infinite}
   @keyframes shim{to{background-position:-200% 0}}
 
@@ -76,10 +81,13 @@
   .legend{display:flex;gap:.8rem;flex-wrap:wrap;margin-bottom:.8rem;font-size:.76rem;color:#6b3a18}
   .leg-item{display:flex;align-items:center;gap:.35rem}
   .leg-dot{width:9px;height:9px;border-radius:50%}
+
+  /* ── Source badge ── */
+  .src-badge{display:inline-flex;align-items:center;gap:.3rem;font-size:.65rem;color:var(--lbr);background:var(--warm);border:1px solid #f0d5b8;border-radius:50px;padding:.15rem .55rem;margin-bottom:.7rem}
   </style>
   <link rel="icon" href="../images/logo-hindi.png" type="image/png">
   <link rel="apple-touch-icon" href="../images/logo-main.png">
-  <meta name="description" content="Honour roll of contributors to PSOTS Chhath Puja 2026 — पंच वर्ष महोत्सव. See who is helping make Chhath Mahaparv a success.">
+  <meta name="description" content="Honour roll of contributors to PSOTS Chhath Puja 2026 — पंच वर्ष महोत्सव.">
   <link rel="canonical" href="https://chhath.psots.in/pages/contributors.html">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="PSOTS Chhath Puja 2026">
@@ -92,7 +100,7 @@
   <meta property="og:image:alt" content="PSOTS Chhath Puja 2026 Logo">
   <meta name="twitter:card" content="summary">
   <meta name="twitter:title" content="Contributors — PSOTS Chhath 2026">
-  <meta name="twitter:description" content="Honour roll of contributors to PSOTS Chhath Puja 2026 — पंच वर्ष महोत्सव. See who is helping make Chhath Mahaparv a success.">
+  <meta name="twitter:description" content="Honour roll of contributors to PSOTS Chhath Puja 2026 — पंच वर्ष महोत्सव.">
   <meta name="twitter:image" content="https://chhath.psots.in/images/logo-main.png">
 </head>
 <body>
@@ -114,10 +122,15 @@
     <!-- Search -->
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
-      <input class="con-search" type="text" id="searchInp" placeholder="Search by name or flat number…" oninput="renderList(allData)"/>
+      <input class="con-search" type="text" id="searchInp" placeholder="Search by name or flat number…" oninput="renderList()"/>
     </div>
 
-    <!-- Status Filters -->
+    <!-- Tower filter -->
+    <div class="filter-row" id="towerFilter" style="display:none">
+      <span style="font-size:.74rem;color:#6b3a18;font-weight:600;flex-shrink:0">Tower:</span>
+    </div>
+
+    <!-- Year filter -->
     <div class="filter-row">
       <span style="font-size:.76rem;color:#6b3a18;font-weight:600">Show:</span>
       <div class="fchip on" onclick="setFilter('all',this)">All</div>
@@ -125,6 +138,9 @@
       <div class="fchip"    onclick="setFilter('portal',this)">Portal 🔐</div>
       <div class="fchip"    onclick="setFilter('guest',this)">Guests 👤</div>
     </div>
+
+    <!-- Source indicator -->
+    <div id="srcBadge" style="display:none" class="src-badge"></div>
 
     <!-- Legend -->
     <div class="legend">
@@ -142,7 +158,7 @@
     <!-- Grand total bar -->
     <div class="total-bar">
       <div><div class="tb-label">Grand Total — All Years</div><div class="tb-count" id="verCount">—</div></div>
-      <div class="tb-value count-num" id="totalAmt">—</div>
+      <div class="tb-value" id="totalAmt">—</div>
     </div>
 
     <div style="margin-top:.9rem;display:flex;gap:.7rem;flex-wrap:wrap">
@@ -153,14 +169,125 @@
 </div>
 
 <script>
-let allData = [], filterMode = 'all';
+/* ── State ── */
+let allData = [], filterMode = 'all', towerFilter = null;
 const cfg = window.PSOTS || {};
 const su = cfg.scriptUrl || localStorage.getItem('psots_script_url') || '';
 
+/* ── Constants ── */
+const PSOTS_TOWERS = new Set([1,2,3,4,5,8,9,10,11,12,14,15,16,17]);
 const AV_COLORS = ['#e85c00','#c93800','#8b2800','#1a5276','#1a7a4e','#7b1fa2','#c62828'];
+
+/* ── Helpers ── */
 function avColor(name){ const c=(name||'?').toUpperCase().charCodeAt(0); return AV_COLORS[c % AV_COLORS.length]; }
 function initial(name){ return (name||'?').charAt(0).toUpperCase(); }
 
+function parseTower(flat) {
+  const s = String(flat||'').replace(/\D/g,'');
+  if (!s || s.length < 3) return null;
+  const t2 = parseInt(s.slice(0,2));
+  if (s.length >= 5 && t2 >= 10 && PSOTS_TOWERS.has(t2)) return t2;
+  const t1 = parseInt(s.slice(0,1));
+  return PSOTS_TOWERS.has(t1) ? t1 : null;
+}
+
+/* ── Firestore loader ── */
+let _db = null;
+function _initFirestore() {
+  try {
+    const cfg = window.PSOTS_FIREBASE_CONFIG;
+    if (!cfg || cfg.apiKey === 'FILL_IN' || typeof firebase === 'undefined') return false;
+    if (!firebase.apps.length) firebase.initializeApp(cfg);
+    _db = firebase.firestore();
+    return true;
+  } catch(e) { return false; }
+}
+
+async function _loadFromFirestore() {
+  if (!_db) return null;
+  try {
+    const snap = await _db.collection('contributions').get();
+    return snap.docs.map(d => d.data());
+  } catch(e) { return null; }
+}
+
+/* ── Main load ── */
+async function loadList() {
+  const el = document.getElementById('conList');
+  el.innerHTML = `<div class="skel-row"><div class="skel-av skel"></div><div class="skel-body"><div class="skel-line skel" style="width:65%"></div><div class="skel-line skel" style="width:40%"></div></div></div>`.repeat(4);
+  document.getElementById('srcBadge').style.display = 'none';
+
+  // Layer 1 — Firestore (fast, offline-capable)
+  if (_initFirestore()) {
+    const fsData = await _loadFromFirestore();
+    if (fsData && fsData.length) {
+      allData = fsData;
+      _showSrcBadge('🔥 Live from Firestore');
+      renderList();
+      _buildTowerFilter();
+      return;
+    }
+  }
+
+  // Layer 2 — Apps Script
+  if (su && !su.includes('YOUR_APPS')) {
+    try {
+      const r = await fetch(su + '?action=list');
+      const d = await r.json();
+      if (d.contributors?.length) {
+        allData = d.contributors;
+        _showSrcBadge('☁️ Live from Google Sheets');
+        renderList();
+        _buildTowerFilter();
+        return;
+      }
+    } catch(e) { /* fall through */ }
+  }
+
+  // Layer 3 — history.json static fallback
+  try {
+    const r = await fetch('../data/history.json');
+    if (r.ok) {
+      const g = await r.json();
+      if (g.history?.length) {
+        allData = g.history;
+        _showSrcBadge('📄 From local data');
+        renderList();
+        _buildTowerFilter();
+        return;
+      }
+    }
+  } catch(e) {}
+
+  // Empty state
+  allData = [];
+  renderList();
+}
+
+function _showSrcBadge(text) {
+  const b = document.getElementById('srcBadge');
+  b.textContent = text;
+  b.style.display = 'inline-flex';
+}
+
+function _buildTowerFilter() {
+  const towers = [...new Set(allData.map(r => parseTower(r.flat)).filter(Boolean))].sort((a,b)=>a-b);
+  if (towers.length < 2) return;
+  const row = document.getElementById('towerFilter');
+  row.style.display = 'flex';
+  const allChip = `<div class="fchip on" onclick="setTower(null,this)">All</div>`;
+  const chips = towers.map(t => `<div class="fchip" onclick="setTower(${t},this)">T${t}</div>`).join('');
+  row.innerHTML = `<span style="font-size:.74rem;color:#6b3a18;font-weight:600;flex-shrink:0">Tower:</span>${allChip}${chips}`;
+}
+
+function setTower(t, el) {
+  towerFilter = t;
+  document.querySelectorAll('#towerFilter .fchip').forEach(c => c.classList.remove('on'));
+  el.classList.add('on');
+  renderList();
+}
+
+/* ── Podium ── */
 function buildPodiumHTML(sorted) {
   const top = sorted.slice(0, 3);
   if (top.length < 2) return '';
@@ -171,16 +298,18 @@ function buildPodiumHTML(sorted) {
   <div class="podium">${items.map(idx => {
     const c = top[idx];
     const col = avColor(c.name);
+    const tower = parseTower(c.flat);
     return `<div class="pod-item">
       <div class="pod-av" style="background:linear-gradient(135deg,${col},${col}cc)">${initial(c.name)}</div>
       <div class="pod-name">${c.name.split(' ')[0]}</div>
-      <div class="pod-flat">Flat ${c.flat}</div>
+      <div class="pod-flat">Flat ${c.flat}${tower?' · T'+tower:''}</div>
       <div class="pod-amt">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div>
       <div class="pod-pedestal pod-${idx+1}"><div class="pod-rank">${medals[idx]}</div></div>
     </div>`;
   }).join('')}</div>`;
 }
 
+/* ── Count-up animation ── */
 function animateCount(el, target) {
   const dur = 900, start = Date.now(), from = 0;
   const tick = () => {
@@ -192,20 +321,25 @@ function animateCount(el, target) {
   requestAnimationFrame(tick);
 }
 
-function rowsHTML(list) {
+/* ── Card rows ── */
+function cardsHTML(list) {
   return list.map((c, i) => {
     const isV = c.status?.includes('Received');
     const col = avColor(c.name);
+    const tower = parseTower(c.flat);
     const rankLabel = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
-    return `<div class="con-item" style="transition-delay:${Math.min(i*30,300)}ms">
+    const delay = Math.min(i * 30, 300);
+    return `<div class="con-card" style="animation-delay:${delay}ms">
       <div class="ci-rank">${rankLabel}</div>
       <div class="ci-av" style="background:linear-gradient(135deg,${col},${col}cc)">${initial(c.name)}</div>
-      <div>
+      <div style="flex:1;min-width:0">
         <div class="ci-name">${c.name}</div>
-        <div class="ci-flat">Flat ${c.flat}</div>
+        <div class="ci-sub">Flat ${c.flat}${tower?' · Tower '+tower:''}</div>
       </div>
-      <div class="ci-amt">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div>
-      <div class="ci-dot ${isV?'':'p'}" title="${isV?'Verified ✅':'Pending verification'}"></div>
+      <div class="ci-right">
+        <div class="ci-amt">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div>
+        <div class="ci-dot ${isV?'':'p'}" title="${isV?'Verified ✅':'Pending verification'}"></div>
+      </div>
     </div>`;
   }).join('');
 }
@@ -217,30 +351,13 @@ function toggleYear(yr) {
   hdr.classList.toggle('open', open);
 }
 
-async function loadList() {
-  const el = document.getElementById('conList');
-  el.innerHTML = `<div class="skel-row"><div class="skel-av skel"></div><div class="skel-body"><div class="skel-line skel" style="width:65%"></div><div class="skel-line skel" style="width:40%"></div></div></div>`.repeat(4);
-
-  if (!su || su.includes('YOUR_APPS')) {
-    allData = [];
-    renderList(allData); return;
-  }
-  try {
-    const r = await fetch(su + '?action=list');
-    const d = await r.json();
-    allData = d.contributors || [];
-    renderList(allData);
-  } catch(e) {
-    el.innerHTML = '<div class="empty"><span class="empty-icon">⚠️</span>Could not load. Check connection and try again.</div>';
-  }
-}
-
-function renderList(data) {
+/* ── Main render ── */
+function renderList() {
   const q = document.getElementById('searchInp').value.toLowerCase();
 
-  /* Apply status filter */
-  let f = data.filter(r => {
-    const m = !q || r.name.toLowerCase().includes(q) || String(r.flat).toLowerCase().includes(q);
+  let f = allData.filter(r => {
+    if (towerFilter && parseTower(r.flat) !== towerFilter) return false;
+    const m = !q || (r.name||'').toLowerCase().includes(q) || String(r.flat).toLowerCase().includes(q);
     if (!m) return false;
     if (filterMode==='verified') return r.status?.includes('Received');
     if (filterMode==='portal')   return r.accountType?.includes('Portal');
@@ -248,31 +365,24 @@ function renderList(data) {
     return true;
   });
 
-  /* Grand total */
   const grandVerified = f.filter(r => r.status?.includes('Received'));
   const grandTotal = grandVerified.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
   document.getElementById('subLine').textContent = f.length + ' contributors across all years · ₹' + grandTotal.toLocaleString('en-IN') + ' total';
   animateCount(document.getElementById('totalAmt'), grandTotal);
   document.getElementById('verCount').textContent = grandVerified.length + ' verified contributions';
 
-  /* Group by year, sorted newest first */
   const byYear = {};
-  f.forEach(r => {
-    const yr = r.year || 2026;
-    (byYear[yr] = byYear[yr] || []).push(r);
-  });
+  f.forEach(r => { const yr = r.year || 2026; (byYear[yr] = byYear[yr] || []).push(r); });
   const years = Object.keys(byYear).map(Number).sort((a,b) => b-a);
 
   if (!years.length) {
-    const isSearch = q || filterMode !== 'all';
+    const isSearch = q || filterMode !== 'all' || towerFilter;
     document.getElementById('conList').innerHTML = isSearch
       ? '<div class="empty"><span class="empty-icon">🔍</span>No contributors match your search.</div>'
       : `<div class="empty" style="text-align:center;padding:2rem 1rem">
            <div style="font-size:2.4rem;margin-bottom:.6rem">🌅</div>
            <div style="font-family:'Yatra One',serif;font-size:1rem;color:var(--or);margin-bottom:.4rem">Contributions opening soon</div>
-           <div style="font-size:.84rem;color:#6b3a18;line-height:1.65;max-width:280px;margin:0 auto">
-             Be among the first to support PSOTS Chhath Puja 2026!
-           </div>
+           <div style="font-size:.84rem;color:#6b3a18;line-height:1.65;max-width:280px;margin:0 auto">Be among the first to support PSOTS Chhath Puja 2026!</div>
            <a href="payment.html" style="display:inline-block;margin-top:1.1rem;text-decoration:none;background:linear-gradient(135deg,var(--or),#c93800);color:#fff;border-radius:50px;padding:.65rem 1.6rem;font-size:.88rem;font-weight:700;font-family:'DM Sans',sans-serif">💰 Contribute Now</a>
          </div>`;
     return;
@@ -284,11 +394,8 @@ function renderList(data) {
     const list = byYear[yr].sort((a,b) => (parseFloat(b.amount)||0)-(parseFloat(a.amount)||0));
     const verList = list.filter(r => r.status?.includes('Received'));
     const yrTotal = verList.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
-    const isOpen = yr === currentYear; /* expand current year by default */
-
-    const podium = isOpen && verList.length >= 2
-      ? buildPodiumHTML(verList)
-      : '';
+    const isOpen = yr === currentYear;
+    const podium = isOpen && verList.length >= 2 ? buildPodiumHTML(verList) : '';
 
     return `<div class="year-section">
       <div class="year-header ${isOpen ? 'open' : ''}" id="yh-${yr}" onclick="toggleYear(${yr})">
@@ -303,23 +410,20 @@ function renderList(data) {
       </div>
       <div class="year-body ${isOpen ? 'open' : ''}" id="yb-${yr}">
         ${podium}
-        ${rowsHTML(list)}
+        ${cardsHTML(list)}
       </div>
     </div>`;
   }).join('');
-
-  /* Staggered reveal */
-  const ro = new IntersectionObserver(entries => {
-    entries.forEach(e => { if(e.isIntersecting){ e.target.classList.add('seen'); ro.unobserve(e.target); }});
-  }, { threshold: 0.05 });
-  document.querySelectorAll('.con-item').forEach(el => ro.observe(el));
 }
 
 function setFilter(m, el){
   filterMode = m;
-  document.querySelectorAll('.filter-row .fchip').forEach(c => c.classList.remove('on'));
+  document.querySelectorAll('.filter-row .fchip').forEach(c => {
+    if (c.closest('#towerFilter')) return; // don't touch tower chips
+    c.classList.remove('on');
+  });
   el.classList.add('on');
-  renderList(allData);
+  renderList();
 }
 
 loadList();
