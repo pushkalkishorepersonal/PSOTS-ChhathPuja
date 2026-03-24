@@ -1612,8 +1612,9 @@ async function loadAllFromSheet() {
     if (f.timMornLoc)  document.getElementById('l-morning').value = f.timMornLoc;
     if (f.timKharnaTime) document.getElementById('t-kharna').value = f.timKharnaTime;
     if (f.timKharnaDate) document.getElementById('d-kharna').value = f.timKharnaDate;
-    // Update session cache with fresh data from sheet
+    // Update session cache with fresh data from sheet; refresh dashboard tile
     PsotsCache.set('finance', f, CACHE_TTL.finance);
+    updateDashStats();
     PsotsCache.set('timings', {
       evening:{time:f.timEveTime,date:f.timEveDate,location:f.timEveLoc},
       morning:{time:f.timMornTime,date:f.timMornDate,location:f.timMornLoc},
@@ -2218,11 +2219,10 @@ function updateDashStats() {
   const pc = document.getElementById('pendingCard');
   if (pc) pc.style.display = pending.length ? 'block' : 'none';
 
-  // ── Finance tile ──────────────────────────────────
-  const fin = JSON.parse(localStorage.getItem('psots_finance_2026') || '{}');
-  const budget   = parseFloat(fin.budget)   || 0;
-  const expenses = parseFloat(fin.expenses) || 0;
-  const carry    = parseFloat(fin.carryForward) || 0;
+  // ── Finance tile — read directly from DOM inputs (populated by loadAllFromSheet) ──
+  const budget   = parseFloat(document.getElementById('f-budget')?.value)    || 0;
+  const expenses = parseFloat(document.getElementById('f-expenses')?.value)  || 0;
+  const carry    = parseFloat(document.getElementById('f-carry')?.value)     || 0;
   if (budget) {
     const used = Math.min(Math.round(expenses / budget * 100), 100);
     _set('ft-val-fin', used + '%');
@@ -2397,6 +2397,7 @@ async function saveFinance() {
       await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(data) });
     } catch(e) {}
   }
+  updateDashStats();
   toast('✅ Finance data saved!', 'success');
 }
 
