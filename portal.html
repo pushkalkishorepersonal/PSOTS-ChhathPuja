@@ -2180,7 +2180,7 @@ function renderContributions(data) {
       return `<div class="cr-entry" style="animation-delay:${delay}s">
         <div class="cr-method-tag">${appLabel(r.method)}</div>
         <div class="cr-info">
-          ${r.name ? `<div style="font-size:.78rem;font-weight:600;color:var(--ink);margin-bottom:.08rem">${r.name}</div>` : ''}
+          ${(r.name || userProfile.name) ? `<div style="font-size:.78rem;font-weight:600;color:var(--ink);margin-bottom:.08rem">${r.name || userProfile.name}</div>` : ''}
           <div class="cr-date">${fmtDate(r.date)}</div>
           ${r.note ? `<div class="cr-note-txt">${r.note}</div>` : ''}
         </div>
@@ -2538,7 +2538,7 @@ function selectReceiptYear(year) {
 function _renderReceipt() {
   const contribs = _receiptYear === 'all'
     ? _allReceiptContribs
-    : _allReceiptContribs.filter(c => c.year === _receiptYear);
+    : _allReceiptContribs.filter(c => String(c.year) === String(_receiptYear));
 
   const el = document.getElementById('receiptContent');
   const actions = document.getElementById('receiptActions');
