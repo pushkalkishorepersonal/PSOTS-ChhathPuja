@@ -589,6 +589,15 @@
         </div>
       </div>
     </a>
+    <a class="tile t-anon" href="pages/payment.html?mode=anon" style="display:flex;align-items:center;gap:.8rem;padding:1rem 1.2rem;background:linear-gradient(135deg,#2d1b4e 0%,#1a1035 100%);border:1.5px solid #6c4bc7;border-radius:16px;text-decoration:none;color:inherit;margin-top:-.2rem">
+      <div style="font-size:1.6rem;flex-shrink:0">🎭</div>
+      <div style="flex:1">
+        <div style="font-size:.75rem;font-weight:600;letter-spacing:.06em;color:#a98eff;text-transform:uppercase">Privacy First</div>
+        <div style="font-size:.97rem;font-weight:700;color:#e8e0ff;margin:.12rem 0">Contribute Anonymously</div>
+        <div style="font-size:.78rem;color:#a098c0">No name, no flat, no login required</div>
+      </div>
+      <div style="font-size:.82rem;font-weight:600;color:#a98eff;flex-shrink:0">→</div>
+    </a>
 
     <div class="mob-section" id="sec-updates" data-gated="true">
       <button class="mob-sec-hdr" onclick="toggleMobSec('sec-updates')">
@@ -610,7 +619,7 @@
 
     <a class="tile t-ann" href="pages/announcements.html">
       <div class="anh"><div class="an-title">📢 Announcements <span class="an-new">New</span></div></div>
-      <div class="al">
+      <div class="al" id="annListHome">
         <div class="ai"><div class="ai-m">2026 — 5th Year</div><div class="ai-tag">🎊 Grand</div><div class="ai-txt">पंच वर्ष महोत्सव! Grander ghat, bigger celebration — our grandest year yet!</div></div>
         <div class="ai"><div class="ai-m">2026 — Prasad</div><div class="ai-tag">🙏 Prasad</div><div class="ai-txt"><b>Nov 2</b> खरना & <b>Nov 4</b> ठेकुआ प्रसाद for all residents.</div></div>
         <div class="ai"><div class="ai-m">Deadline</div><div class="ai-tag">⏰ Important</div><div class="ai-txt">Contribute before <b>Oct 25</b> for prasad list.</div></div>
@@ -707,6 +716,10 @@
 </footer>
 
 <script src="js/config.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+<script src="js/firebase-config.js"></script>
+<script src="js/db.js"></script>
 <script>
 const evt=new Date(window.PSOTS?PSOTS.eventStart:'2026-11-01T06:00:00');
 function tick(){const d=evt-new Date();if(d<=0){document.getElementById('countdown').innerHTML='<div style="font-family:\'Yatra One\',serif;font-size:1.3rem;color:var(--gold)">🌅 जय छठी मैया!</div>';return}const p=n=>String(Math.floor(n)).padStart(2,'0');document.getElementById('cd-d').textContent=p(d/864e5);document.getElementById('cd-h').textContent=p((d%864e5)/36e5);document.getElementById('cd-m').textContent=p((d%36e5)/6e4);document.getElementById('cd-s').textContent=p((d%6e4)/1e3)}
@@ -755,84 +768,187 @@ if(!_li){
   const _cl=document.getElementById('conPreview');if(_cl)_cl.innerHTML=_lockHtml;
   const _cb=document.getElementById('conBadge');if(_cb)_cb.textContent='';
 }
+/* ── Stale-while-revalidate cache helpers ── */
+const _LS_TTL = 5 * 60 * 1000; // 5 min
+function _lsCacheGet(key) {
+  try {
+    const v = JSON.parse(localStorage.getItem('psots_idx_' + key) || 'null');
+    if (v && v._t && (Date.now() - v._t) < _LS_TTL) return v.data;
+    return null;
+  } catch(e) { return null; }
+}
+function _lsCacheSet(key, data) {
+  try { localStorage.setItem('psots_idx_' + key, JSON.stringify({ data, _t: Date.now() })); } catch(e) {}
+}
+
+/* ── Contributors tile ── */
+function buildYearStats(list){
+  const map={};
+  list.forEach(c=>{
+    const y=Number(c.year)||0;if(!y)return;
+    if(!map[y])map[y]={count:0,total:0};
+    map[y].count++;map[y].total+=parseFloat(c.amount)||0;
+  });
+  return Object.entries(map).map(([y,s])=>({year:Number(y),...s})).sort((a,b)=>b.year-a.year);
+}
+function renderYearRows(stats){
+  if(!stats.length)return'<div class="crl">No data yet</div>';
+  return stats.map(s=>`<div class="cr" style="justify-content:space-between">
+    <div style="font-size:.88rem;font-weight:700;color:var(--ink);min-width:38px">${s.year}</div>
+    <div style="font-size:.72rem;color:var(--lbr);flex:1;text-align:center">${s.count} contributors</div>
+    <div style="font-family:'DM Sans',sans-serif;font-weight:700;font-size:.8rem;color:var(--or)">₹${Math.round(s.total).toLocaleString('en-IN')}</div>
+  </div>`).join('');
+}
+function setConStats(stats){
+  const el=document.getElementById('conPreview'),bd=document.getElementById('conBadge'),titleEl=document.getElementById('conTitle'),yrTag=document.getElementById('conBadgeYear');
+  const total=stats.reduce((s,r)=>s+r.count,0);
+  if(bd)bd.textContent=total||'…';
+  if(yrTag)yrTag.textContent=stats.length>1?'all years':stats[0]?stats[0].year+'':'';
+  if(titleEl)titleEl.textContent='🙏 Contributors';
+  if(el)el.innerHTML=renderYearRows(stats);
+}
+
 async function loadPrev(){
-  const el=document.getElementById('conPreview'),bd=document.getElementById('conBadge'),titleEl=document.getElementById('conTitle');
-  const yrTag=document.getElementById('conBadgeYear');
+  const el=document.getElementById('conPreview');
 
-  function buildYearStats(list){
-    const map={};
-    list.forEach(c=>{
-      const y=Number(c.year)||0;if(!y)return;
-      if(!map[y])map[y]={count:0,total:0};
-      map[y].count++;map[y].total+=parseFloat(c.amount)||0;
-    });
-    return Object.entries(map).map(([y,s])=>({year:Number(y),...s})).sort((a,b)=>b.year-a.year);
-  }
+  // Layer 1: instant stale cache
+  const stale = _lsCacheGet('con_stats');
+  if (stale) { setConStats(stale); }
+  else if(el) el.innerHTML='<div class="crl">Loading…</div>';
 
-  function renderYearRows(stats){
-    if(!stats.length)return'<div class="crl">No data yet</div>';
-    return stats.map(s=>`<div class="cr" style="justify-content:space-between">
-      <div style="font-size:.88rem;font-weight:700;color:var(--ink);min-width:38px">${s.year}</div>
-      <div style="font-size:.72rem;color:var(--lbr);flex:1;text-align:center">${s.count} contributors</div>
-      <div style="font-family:'DM Sans',sans-serif;font-weight:700;font-size:.8rem;color:var(--or)">₹${Math.round(s.total).toLocaleString('en-IN')}</div>
-    </div>`).join('');
-  }
-
-  function setStats(stats){
-    const total=stats.reduce((s,r)=>s+r.count,0);
-    if(bd)bd.textContent=total||'…';
-    if(yrTag)yrTag.textContent=stats.length>1?'all years':stats[0]?stats[0].year+'':'';
-    if(titleEl)titleEl.textContent='🙏 Contributors';
-    if(el)el.innerHTML=renderYearRows(stats);
-  }
-
-  if(!su||su.includes('YOUR_APPS')){
-    try{
-      const res=await fetch('data/history.json');
-      if(res.ok){
-        const g=await res.json(),h=g.history||[];
-        const stats=buildYearStats(h);
-        if(stats.length){setStats(stats);return;}
+  // Layer 2: Firestore (primary) — all contributions
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    try {
+      // Query current year from Firestore
+      const currentYear = new Date().getFullYear();
+      const snap = await firebase.firestore().collection('contributions').get();
+      if (!snap.empty) {
+        const all = snap.docs.map(d => d.data());
+        const stats = buildYearStats(all);
+        if (stats.length) { setConStats(stats); _lsCacheSet('con_stats', stats); return; }
       }
-    }catch(e){}
-    setStats([{year:2025,count:429,total:1234567},{year:2024,count:312,total:987654}]);return;
+    } catch(e) {}
   }
 
-  try{
-    const r=await fetch(su+'?action=list'),d=await r.json(),all=d.contributors||[];
-    const stats=buildYearStats(all);
-    setStats(stats);
-  }catch(e){el.innerHTML='<div class="crl">Tap to view →</div>';}
+  if (!su || su.includes('YOUR_APPS')) {
+    try {
+      const res = await fetch('data/history.json');
+      if (res.ok) {
+        const g = await res.json(), h = g.history||[];
+        const stats = buildYearStats(h);
+        if (stats.length) { setConStats(stats); _lsCacheSet('con_stats', stats); return; }
+      }
+    } catch(e) {}
+    setConStats([{year:2025,count:429,total:1234567},{year:2024,count:312,total:987654}]); return;
+  }
+
+  // Layer 3: Apps Script
+  try {
+    const r = await fetch(su+'?action=list'), d = await r.json(), all = d.contributors||[];
+    const stats = buildYearStats(all);
+    setConStats(stats); _lsCacheSet('con_stats', stats);
+  } catch(e) { if(el&&!stale) el.innerHTML='<div class="crl">Tap to view →</div>'; }
 }
 if(_li) loadPrev();
-if(su){
-  if(_li) fetch(su+'?action=list_all').then(r=>r.json()).then(d=>{
-    const rows=(d.all||[]).filter(x=>Number(x.year)===2026);
-    const col=rows.reduce((s,c)=>s+(parseFloat(c.amount)||0),0);
-    const cnt=rows.length;
+
+/* ── Finance tile (stale-while-revalidate) ── */
+function applyFinanceData(rows2026, finance) {
+  if (rows2026 !== null) {
+    const col = rows2026.reduce((s,c)=>s+(parseFloat(c.amount)||0),0);
+    const cnt = rows2026.length;
     document.getElementById('tf-collected').textContent='₹'+col.toLocaleString('en-IN');
     document.getElementById('tf-count').textContent=cnt||'0';
-    const openBal=104670,bgt=600000;
+    const openBal=104670, bgt=600000;
     const need=Math.max(0,bgt-openBal-col);
     const pct=Math.min(100,Math.round((openBal+col)/bgt*100));
     const needEl=document.getElementById('tf-need');if(needEl)needEl.textContent='₹'+need.toLocaleString('en-IN');
     const needLbl=document.getElementById('tf-need-lbl');if(needLbl)needLbl.textContent=(need>0?'₹'+need.toLocaleString('en-IN')+' more to reach ₹6L goal':'🎉 Goal reached!');
     const pctEl=document.getElementById('tf-pct');if(pctEl)pctEl.textContent=pct+'%';
     const tfBar=document.getElementById('tfBar');if(tfBar){tfBar.dataset.pct=pct;setTimeout(()=>{tfBar.style.width=pct+'%';},400);}
-  }).catch(()=>{});
-  fetch(su+'?action=getFinance').then(r=>r.json()).then(d=>{const f=d.finance||{};
-    if(_li){
-    const bgt=f.budget&&Number(f.budget)>0?parseInt(f.budget):600000;
-    document.getElementById('tf-budget').textContent='₹'+bgt.toLocaleString('en-IN');
-    const tfBar=document.getElementById('tfBar');if(tfBar)tfBar.style.width='0%';
-    }
+  }
+  if (finance) {
+    const bgt=finance.budget&&Number(finance.budget)>0?parseInt(finance.budget):600000;
+    if(_li) document.getElementById('tf-budget').textContent='₹'+bgt.toLocaleString('en-IN');
+    const tfBar=document.getElementById('tfBar');if(tfBar&&_li)tfBar.style.width='0%';
     function fmtTime(t){if(!t)return null;const[h,m]=t.split(':');const hr=parseInt(h);return(hr>12?hr-12:hr||12)+':'+(m||'00')+' '+(hr>=12?'PM':'AM');}
     function fmtDate(dd,loc){if(!dd)return null;const dt=new Date(dd);const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mo[dt.getMonth()]+' '+(dt.getDate())+', '+(dt.getFullYear())+(loc?' · '+loc:'');}
-    if(f.timEveTime){const t=fmtTime(f.timEveTime);if(t){document.getElementById('eve-time').textContent=t;const el=document.getElementById('sch-eve-time');if(el)el.textContent=t+' 🌇';}}
-    if(f.timEveDate||f.timEveLoc){const s=fmtDate(f.timEveDate,f.timEveLoc);if(s)document.getElementById('eve-date').textContent=s;}
-    if(f.timMornTime){const t=fmtTime(f.timMornTime);if(t){document.getElementById('morn-time').textContent=t;const el=document.getElementById('sch-morn-time');if(el)el.textContent=t+' 🌅';}}
-    if(f.timMornDate||f.timMornLoc){const s=fmtDate(f.timMornDate,f.timMornLoc);if(s)document.getElementById('morn-date').textContent=s;}
-  }).catch(()=>{});
+    if(finance.timEveTime){const t=fmtTime(finance.timEveTime);if(t){document.getElementById('eve-time').textContent=t;const el=document.getElementById('sch-eve-time');if(el)el.textContent=t+' 🌇';}}
+    if(finance.timEveDate||finance.timEveLoc){const s=fmtDate(finance.timEveDate,finance.timEveLoc);if(s)document.getElementById('eve-date').textContent=s;}
+    if(finance.timMornTime){const t=fmtTime(finance.timMornTime);if(t){document.getElementById('morn-time').textContent=t;const el=document.getElementById('sch-morn-time');if(el)el.textContent=t+' 🌅';}}
+    if(finance.timMornDate||finance.timMornLoc){const s=fmtDate(finance.timMornDate,finance.timMornLoc);if(s)document.getElementById('morn-date').textContent=s;}
+  }
+}
+
+(async function loadFinanceTile(){
+  // Stale cache first (instant)
+  const staleFinance = _lsCacheGet('finance');
+  if (staleFinance && _li) applyFinanceData(staleFinance.rows2026, staleFinance.finance);
+
+  if (!_li) return;
+
+  // Firestore contributions for 2026
+  const curYear = new Date().getFullYear();
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    try {
+      const snap = await firebase.firestore().collection('contributions')
+        .where('year', '==', curYear).get();
+      if (!snap.empty) {
+        const rows2026 = snap.docs.map(d => d.data());
+        applyFinanceData(rows2026, null);
+        _lsCacheSet('finance', { rows2026, finance: staleFinance?.finance || null });
+      }
+    } catch(e) {}
+  }
+
+  // Apps Script for finance meta + timing + fallback rows
+  if (su) {
+    fetch(su+'?action=list_all').then(r=>r.json()).then(d=>{
+      const rows=(d.all||[]).filter(x=>Number(x.year)===curYear);
+      applyFinanceData(rows, null);
+      _lsCacheSet('finance', { rows2026: rows, finance: staleFinance?.finance || null });
+    }).catch(()=>{});
+    fetch(su+'?action=getFinance').then(r=>r.json()).then(d=>{
+      const f=d.finance||{};
+      applyFinanceData(null, f);
+      const existing = _lsCacheGet('finance') || {};
+      _lsCacheSet('finance', { ...existing, finance: f });
+    }).catch(()=>{});
+  }
+})();
+
+/* ── Announcements tile on homepage ── */
+(async function loadHomepageAnns(){
+  const annEl = document.getElementById('annListHome');
+  if (!annEl) return;
+  // Stale first
+  const staleAnns = _lsCacheGet('announcements');
+  if (staleAnns && staleAnns.length) _renderHomepageAnns(staleAnns, annEl);
+  // Firestore
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    const list = await PSOTS_DB.getAnnouncements().catch(()=>null);
+    if (list && list.length) { _renderHomepageAnns(list, annEl); _lsCacheSet('announcements', list); return; }
+  }
+  // Apps Script
+  const annLs = localStorage.getItem('psots_announcements');
+  if (annLs) { try { _renderHomepageAnns(JSON.parse(annLs), annEl); } catch(e) {} }
+  if (su) {
+    fetch(su+'?action=getAnnouncements').then(r=>r.json()).then(d=>{
+      const list=d.announcements||[];
+      if(list.length){ _renderHomepageAnns(list, annEl); localStorage.setItem('psots_announcements',JSON.stringify(list)); }
+    }).catch(()=>{});
+  }
+})();
+function _renderHomepageAnns(list, el){
+  if (!list||!list.length||!el) return;
+  const sorted=[...list].sort((a,b)=>{if(a.pinned&&!b.pinned)return -1;if(!a.pinned&&b.pinned)return 1;return(a.sortOrder??99)-(b.sortOrder??99)});
+  el.innerHTML=sorted.slice(0,4).map(a=>`
+    <div style="padding:.75rem 1rem;border-bottom:1px solid rgba(255,194,0,.1);display:flex;gap:.6rem;align-items:flex-start">
+      <span style="font-size:.7rem;background:${a.pinned?'rgba(232,92,0,.25)':'rgba(255,194,0,.15)'};color:${a.pinned?'var(--or)':'var(--gold)'};padding:.16rem .5rem;border-radius:4px;font-weight:700;white-space:nowrap;flex-shrink:0;margin-top:.05rem">${a.tag||'📢'}</span>
+      <div>
+        <div style="font-size:.82rem;color:rgba(255,237,200,.92);line-height:1.5">${(a.text||'').replace(/\*([^*]+)\*/g,'<strong>$1</strong>').slice(0,120)}${(a.text||'').length>120?'…':''}</div>
+        ${a.meta?`<div style="font-size:.68rem;color:rgba(255,194,0,.6);margin-top:.15rem">${a.meta}</div>`:''}
+      </div>
+    </div>`).join('');
 }
 (function(){
   const now=new Date();const y=now.getFullYear(),m=now.getMonth(),d=now.getDate(),h=now.getHours();

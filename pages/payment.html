@@ -175,10 +175,11 @@
     <div class="card-title">🌅 Pay via UPI</div>
     <div class="card-sub" id="cardSub">Enter amount → pay with your preferred method below.</div>
 
-    <!-- Guest / Signed-in toggle -->
+    <!-- Guest / Signed-in / Anonymous toggle -->
     <div class="mode-bar">
-      <button class="mode-btn" id="mb-guest" onclick="setMode('guest')">👤 Pay as Guest</button>
-      <button class="mode-btn active" id="mb-user"  onclick="setMode('user')">🔐 Signed In (Quick Pay)</button>
+      <button class="mode-btn" id="mb-guest" onclick="setMode('guest')">👤 Guest</button>
+      <button class="mode-btn active" id="mb-user"  onclick="setMode('user')">🔐 Quick Pay</button>
+      <button class="mode-btn" id="mb-anon" onclick="setMode('anon')">🎭 Anonymous</button>
     </div>
 
     <!-- Signed-in mode: show prefill card -->
@@ -344,7 +345,7 @@ const C={
   waOrg:     _cfg.waOrg     ||'919482088904',
   scriptUrl: _cfg.scriptUrl ||localStorage.getItem('psots_script_url')||''
 };
-let currentUser=null,userProfile={},lastSubmit={},_qr=null;
+let currentUser=null,userProfile={},lastSubmit={},_qr=null,_payMode='user';
 
 // ── QR helpers ──────────────────────────────────────────────
 function buildUpiUri(amount){
@@ -518,6 +519,9 @@ window.addEventListener('DOMContentLoaded',()=>{
   } else {
     setMode('guest');
   }
+  // Auto-activate mode from URL param (e.g. ?mode=anon from homepage tile)
+  const urlMode = new URLSearchParams(location.search).get('mode');
+  if(urlMode === 'anon') setMode('anon');
 });
 
 // QR is primary on all devices — app shortcuts are optional and collapsed by default
@@ -556,12 +560,34 @@ function loadUserMode(){
 }
 
 function setMode(m){
+  _payMode=m;
   document.getElementById('mb-guest').classList.toggle('active',m==='guest');
   document.getElementById('mb-user').classList.toggle('active',m==='user');
+  document.getElementById('mb-anon').classList.toggle('active',m==='anon');
   document.getElementById('mp-user').classList.toggle('active',m==='user');
-  // In user mode, guest fields still shown but prefilled; extra-fields shown
+
+  // Show/hide anonymous notice
+  let anonNotice=document.getElementById('anonNotice');
+  if(m==='anon'){
+    document.getElementById('guest-fields').style.display='none';
+    document.getElementById('user-confirm-only').style.display='none';
+    document.getElementById('extra-fields').style.display='grid';
+    document.getElementById('confHdrSub').textContent='No personal details needed — just confirm the amount after payment.';
+    if(!anonNotice){
+      anonNotice=document.createElement('div');
+      anonNotice.id='anonNotice';
+      anonNotice.style.cssText='background:linear-gradient(135deg,#f5f0e8,#ffe8d0);border:1px solid rgba(232,92,0,.2);border-radius:11px;padding:.85rem 1rem;font-size:.8rem;color:#6b3a18;line-height:1.68;margin-bottom:1rem';
+      anonNotice.innerHTML='<strong>🎭 Anonymous mode</strong> — Your contribution will be recorded without a name or flat number. Perfect for relatives, neighbours, and guests who want to help without a formal record. Your payment is just as meaningful. 🙏';
+      const cb=document.getElementById('confBody');
+      cb.insertBefore(anonNotice,cb.firstChild);
+    }
+    anonNotice.style.display='block';
+    return;
+  }
+
+  if(anonNotice) anonNotice.style.display='none';
   const isUser=m==='user'&&currentUser;
-  document.getElementById('guest-fields').style.display='block'; // always show
+  document.getElementById('guest-fields').style.display='block';
   document.getElementById('user-confirm-only').style.display='none';
   document.getElementById('extra-fields').style.display='grid';
   if(isUser){
@@ -652,16 +678,22 @@ function copyUpiId(){
 }
 
 async function submitForm(){
-  const name=document.getElementById('f-name').value.trim();
-  const flat=document.getElementById('f-flat').value.trim();
-  const mobile=document.getElementById('f-mobile').value.trim();
+  let name,flat,mobile;
   const amount=document.getElementById('payAmt').value;
   const date=document.getElementById('f-date').value;
   const method=document.getElementById('f-method').value;
   document.getElementById('errBox').style.display='none';
-  if(!name)return showErr('Please enter your name.');
-  if(!flat)return showErr('Please enter your flat number.');
-  if(!/^\d{10}$/.test(mobile))return showErr('Please enter the 10-digit mobile used for payment.');
+
+  if(_payMode==='anon'){
+    name='Anonymous Contributor'; flat='—'; mobile='';
+  } else {
+    name=document.getElementById('f-name').value.trim();
+    flat=document.getElementById('f-flat').value.trim();
+    mobile=document.getElementById('f-mobile').value.trim();
+    if(!name)return showErr('Please enter your name.');
+    if(!flat)return showErr('Please enter your flat number.');
+    if(!/^\d{10}$/.test(mobile))return showErr('Please enter the 10-digit mobile used for payment.');
+  }
   if(!amount||amount<1)return showErr('Please enter the contribution amount above.');
   const btn=document.getElementById('submitBtn');
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Submitting…';
