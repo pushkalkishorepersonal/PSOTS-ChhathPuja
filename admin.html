@@ -1421,8 +1421,9 @@ function renderDirCards() {
     if (r.name && !histMap[f].names.some(n => n.toLowerCase() === r.name.toLowerCase())) histMap[f].names.push(r.name);
   });
   // Also include current year from live contributor data (verified only, amount > 0)
+  // Only add currentYear entries — history.json already covers prior years; adding all years causes double-counting
   const currentYear = new Date().getFullYear();
-  allConData.forEach(r => {
+  allConData.filter(r => (r.year || currentYear) === currentYear).forEach(r => {
     if (!r.flat || !(r.status||'').includes('Received')) return;
     const amt = parseFloat(r.amount) || 0;
     if (amt <= 0) return;
