@@ -10,10 +10,10 @@
 
 | File | Who Uses It | URL After Hosting |
 |---|---|---|
-| `index.html` | All residents — home dashboard | psots.in |
-| `portal.html` | Residents — personal account | psots.in/portal.html |
-| `admin.html` | Committee — manage everything | psots.in/admin.html |
-| `data-manager.html` | Admin — import history & resident data | psots.in/data-manager.html |
+| `index.html` | All residents — home dashboard | chhath.psots.in |
+| `portal.html` | Residents — personal account | chhath.psots.in/portal.html |
+| `admin.html` | Committee — manage everything | chhath.psots.in/admin.html |
+| `data-manager.html` | Admin — import history & resident data | chhath.psots.in/data-manager.html |
 | `config.js` | **Edit this to update all settings** | (not a page) |
 | `css/style.css` | Shared styles | (not a page) |
 | `pages/` | Individual section pages | psots.in/pages/... |
@@ -49,49 +49,21 @@
 
 ---
 
-### STEP 2 — Deploy on Netlify (5 mins · FREE · auto-updates)
+### STEP 2 — Deploy on Cloudflare Pages (already done ✅)
 
-1. Go to **netlify.com** → click **Sign up** → choose **Continue with GitHub**
-2. Click **Add new site** → **Import an existing project**
-3. Click **GitHub** → authorise → select `psots-chhath-2026`
-4. Leave all settings as they are → click **Deploy site**
-5. Netlify gives you a random URL like: `https://funny-name-123.netlify.app`
+**Hosting:** Cloudflare Pages
+**Project:** `psots-chhathpuja`
+**Live URLs:**
+- `https://psots-chhathpuja.pages.dev` (Cloudflare default)
+- `https://chhath.psots.in` (custom domain — primary)
 
-**Test it:** open that URL — your site should be live! ✅
-
-**Every time you update a file on GitHub → Netlify auto-deploys in 30 seconds.**
+**Every time you push to `main` on GitHub → Cloudflare auto-deploys in ~18 seconds.**
 
 ---
 
-### STEP 3 — Connect psots.in Domain (15 mins)
+### STEP 3 — Domain (already done ✅)
 
-You own `psots.in` via Google Domains. Here's exactly what to do:
-
-#### In Netlify:
-1. Go to your site → **Domain management** → **Add a custom domain**
-2. Type: `psots.in` → click **Verify** → click **Add domain**
-3. Netlify will show you DNS values like:
-   ```
-   Type: A      Name: @    Value: 75.2.60.5
-   Type: CNAME  Name: www  Value: funny-name-123.netlify.app
-   ```
-
-#### In Google Domains:
-1. Go to **domains.google.com** → click on `psots.in`
-2. Left menu → **DNS**
-3. Scroll to **Custom records** → click **Manage custom records**
-4. Delete any existing A records for `@`
-5. Add new record:
-   - Type: **A** · Host: **@** · Value: **75.2.60.5** · TTL: 3600
-6. Add another record:
-   - Type: **CNAME** · Host: **www** · Value: **funny-name-123.netlify.app** · TTL: 3600
-7. Click **Save**
-
-**Wait 10–30 minutes** → psots.in will show your site ✅
-
-Back in Netlify → Domain management → click **Verify DNS configuration** → it should show green.
-
-**Enable HTTPS:** Netlify → Domain management → HTTPS → click **Verify DNS configuration** → **Provision certificate** — this gives you the padlock 🔒 automatically, free.
+`chhath.psots.in` is connected to Cloudflare Pages and live with HTTPS.
 
 ---
 
@@ -111,7 +83,7 @@ This connects your Google Sheet to the website for form submissions and the live
 #### Create the Apps Script:
 1. In your Google Sheet → **Extensions** → **Apps Script**
 2. Delete ALL existing code in the editor
-3. Go to `psots.in/data-manager.html` → login → **⚙️ Apps Script Setup tab**
+3. Go to `chhath.psots.in/data-manager.html` → login → **⚙️ Apps Script Setup tab**
 4. Click **📋 Copy Script** → paste into the Apps Script editor
 5. Click **Save** (💾)
 
@@ -135,9 +107,9 @@ Open `config.js` → find `scriptUrl: ''` → paste your URL:
 ```js
 scriptUrl: 'https://script.google.com/macros/s/AKfycbXXXXXXXXXX/exec',
 ```
-Save the file → push to GitHub → Netlify auto-deploys → live in 30 seconds.
+Save the file → push to GitHub → Cloudflare auto-deploys → live in ~18 seconds.
 
-**Test it:** go to `data-manager.html` → ⚙️ Apps Script Setup → paste URL → click **Test Connection** → should say ✅ Connected.
+**Test it:** go to `chhath.psots.in/data-manager.html` → ⚙️ Apps Script Setup → paste URL → click **Test Connection** → should say ✅ Connected.
 
 ---
 
@@ -160,7 +132,7 @@ Residents sign in with their existing Google/Gmail account — no new passwords 
    - Authorized JavaScript origins — click **Add URI**, type:
      ```
      https://chhath.psots.in
-     https://chhathatpsots.netlify.app
+     https://psots-chhathpuja.pages.dev
      ```
    - Click **Create**
 5. A popup shows your **Client ID** — looks like:
@@ -171,7 +143,7 @@ Residents sign in with their existing Google/Gmail account — no new passwords 
    ```js
    googleClientId: '123456789012-abcdefghijk.apps.googleusercontent.com',
    ```
-7. Save → push to GitHub → live in 30 seconds ✅
+7. Save → push to GitHub → live in ~18 seconds ✅
 
 ---
 
