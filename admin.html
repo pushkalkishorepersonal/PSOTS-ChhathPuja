@@ -2135,41 +2135,72 @@ function initBroadcast() {
 async function loadSubscribers() {
   const el    = document.getElementById('subList');
   const count = document.getElementById('subCount');
-  const su    = localStorage.getItem('psots_script_url') || (window.PSOTS && window.PSOTS.scriptUrl) || '';
-  if (!su || su.includes('YOUR_APPS')) {
-    el.innerHTML = '<div style="color:var(--lbr);font-size:.85rem;padding:.5rem 0">Script URL not configured in Settings.</div>';
+  el.innerHTML = '<div style="color:var(--lbr);font-size:.85rem">Loading…</div>';
+
+  const subs = [];
+  const seenMobiles = new Set();
+
+  // Source 1: Firestore (primary — portal writes waOptIn here)
+  try {
+    if (typeof firebase !== 'undefined' && firebase.apps.length) {
+      const snap = await firebase.firestore()
+        .collection('profiles')
+        .where('waOptIn', '==', true)
+        .get();
+      snap.docs.forEach(d => {
+        const p = d.data();
+        const mobile = String(p.mobile || '').trim();
+        if (mobile && !seenMobiles.has(mobile)) {
+          seenMobiles.add(mobile);
+          subs.push({ name: p.name || '', flat: p.flat || '', mobile });
+        }
+      });
+    }
+  } catch(e) {
+    console.warn('[loadSubscribers] Firestore query failed:', e.message);
+  }
+
+  // Source 2: Apps Script / Google Sheets (legacy backup)
+  const su = localStorage.getItem('psots_script_url') || (window.PSOTS && window.PSOTS.scriptUrl) || '';
+  if (su && !su.includes('YOUR_APPS')) {
+    try {
+      const res  = await fetch(su + '?action=getWaSubscribers');
+      const data = await res.json();
+      (data.subscribers || []).forEach(s => {
+        const mobile = String(s.mobile || '').trim();
+        if (mobile && !seenMobiles.has(mobile)) {
+          seenMobiles.add(mobile);
+          subs.push(s);
+        }
+      });
+    } catch(e) {
+      console.warn('[loadSubscribers] Apps Script query failed:', e.message);
+    }
+  }
+
+  count.textContent = subs.length + ' subscriber' + (subs.length !== 1 ? 's' : '');
+  if (subs.length === 0) {
+    el.innerHTML = '<div style="color:var(--lbr);font-size:.85rem;padding:.5rem 0">No subscribers yet — they opt in from their portal account.</div>';
+    document.getElementById('copyNumsBtn').style.display = 'none';
+    window._subscribers = [];
     return;
   }
-  el.innerHTML = '<div style="color:var(--lbr);font-size:.85rem">Loading…</div>';
-  try {
-    const res  = await fetch(su + '?action=getWaSubscribers');
-    const data = await res.json();
-    const subs = data.subscribers || [];
-    count.textContent = subs.length + ' subscriber' + (subs.length !== 1 ? 's' : '');
-    if (subs.length === 0) {
-      el.innerHTML = '<div style="color:var(--lbr);font-size:.85rem;padding:.5rem 0">No subscribers yet — they opt in from their portal account.</div>';
-      document.getElementById('copyNumsBtn').style.display = 'none';
-      return;
-    }
-    el.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.85rem">
-      <thead><tr style="background:#f5ece0;text-align:left">
-        <th style="padding:.5rem .7rem">#</th>
-        <th style="padding:.5rem .7rem">Name</th>
-        <th style="padding:.5rem .7rem">Flat</th>
-        <th style="padding:.5rem .7rem">WhatsApp</th>
-      </tr></thead>
-      <tbody>${subs.map((s,i)=>`<tr style="border-bottom:1px solid #f0e8dc">
-        <td style="padding:.45rem .7rem;color:var(--lbr)">${i+1}</td>
-        <td style="padding:.45rem .7rem">${s.name||'—'}</td>
-        <td style="padding:.45rem .7rem">${s.flat||'—'}</td>
-        <td style="padding:.45rem .7rem;font-family:monospace">${s.mobile||'—'}</td>
-      </tr>`).join('')}</tbody>
-    </table></div>`;
-    document.getElementById('copyNumsBtn').style.display = 'inline-block';
-    window._subscribers = subs;
-  } catch(e) {
-    el.innerHTML = '<div style="color:#c0392b;font-size:.85rem">Error loading subscribers. Check script URL in Settings.</div>';
-  }
+  el.innerHTML = `<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:.85rem">
+    <thead><tr style="background:#f5ece0;text-align:left">
+      <th style="padding:.5rem .7rem">#</th>
+      <th style="padding:.5rem .7rem">Name</th>
+      <th style="padding:.5rem .7rem">Flat</th>
+      <th style="padding:.5rem .7rem">WhatsApp</th>
+    </tr></thead>
+    <tbody>${subs.map((s,i)=>`<tr style="border-bottom:1px solid #f0e8dc">
+      <td style="padding:.45rem .7rem;color:var(--lbr)">${i+1}</td>
+      <td style="padding:.45rem .7rem">${s.name||'—'}</td>
+      <td style="padding:.45rem .7rem">${s.flat||'—'}</td>
+      <td style="padding:.45rem .7rem;font-family:monospace">${s.mobile||'—'}</td>
+    </tr>`).join('')}</tbody>
+  </table></div>`;
+  document.getElementById('copyNumsBtn').style.display = 'inline-block';
+  window._subscribers = subs;
 }
 
 function copySubscriberNums() {
