@@ -47,17 +47,16 @@ const PSOTS_DB = (() => {
     try {
       if (!firebase.apps.length) firebase.initializeApp(cfg);
       _db = firebase.firestore();
+      _ready = true; // Firestore instance is usable immediately; persistence is just an enhancement
+      console.info('[PSOTS_DB] Firestore ready ✓');
 
       _db.enablePersistence({ synchronizeTabs: true })
         .then(() => {
-          _ready = true;
-          console.info('[PSOTS_DB] Firestore ready ✓ (offline persistence enabled)');
+          console.info('[PSOTS_DB] Offline persistence enabled');
         })
         .catch(err => {
-          // FAILED_PRECONDITION = multiple tabs open; still works without persistence
-          // UNIMPLEMENTED       = browser does not support IndexedDB (rare)
-          console.warn('[PSOTS_DB] Persistence unavailable (' + err.code + ') — still online-only.');
-          _ready = true;
+          // FAILED_PRECONDITION = multiple tabs open; UNIMPLEMENTED = no IndexedDB support
+          console.warn('[PSOTS_DB] Persistence unavailable (' + err.code + ') — online-only.');
         });
     } catch (e) {
       console.warn('[PSOTS_DB] Firestore init error:', e);
