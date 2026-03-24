@@ -1761,7 +1761,21 @@ async function loadContributions() {
 async function _refreshHistoryCache(flat, mobile) {
   const el = document.getElementById('contribHistory');
 
-  // Fetch data/history.json with cache-bust every 10-min bucket
+  // 0. Firestore — real-time primary source (~50ms, no redeploy needed for updates)
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady && flat) {
+    try {
+      const contribs = await PSOTS_DB.getContributions(flat);
+      if (contribs && contribs.length) {
+        _setCachedHistory(contribs);
+        renderContributions(contribs.map(r => ({
+          year: r.year, amount: r.amount, method: r.method || '', date: r.date || '', status: r.status || '✅ Received'
+        })));
+        return;
+      }
+    } catch(e) { /* Firestore unavailable — fall through to history.json */ }
+  }
+
+  // 1. Fetch data/history.json with cache-bust every 10-min bucket
   try {
     const bucket = Math.floor(Date.now() / HIST_CACHE_TTL);
     const gRes = await fetch('data/history.json?v=' + bucket);
@@ -1812,13 +1826,31 @@ async function lookupByFlat() {
   if (btn) { btn.disabled = true; btn.textContent = '…'; }
 
   try {
-    const res = await fetch(`${C.scriptUrl}?action=findByFlat&flat=${encodeURIComponent(flat)}`);
-    const data = await res.json();
-
     userProfile.flat = flat;
-    if (data.found) {
-      if (data.name && !userProfile.name) userProfile.name = data.name;
-      if (data.mobile && !userProfile.mobile) userProfile.mobile = data.mobile;
+
+    // Layer 1: Firestore residents directory — fastest, no network round-trip to Apps Script
+    let foundInFirestore = false;
+    if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+      try {
+        const resident = await PSOTS_DB.getResident(flat);
+        if (resident) {
+          if (resident.name   && !userProfile.name)   userProfile.name   = resident.name;
+          if (resident.mobile && !userProfile.mobile) userProfile.mobile = resident.mobile;
+          foundInFirestore = true;
+        }
+      } catch(e) { /* fall through to Apps Script */ }
+    }
+
+    // Layer 2: Apps Script fallback (if not found in Firestore)
+    if (!foundInFirestore) {
+      try {
+        const res  = await fetch(`${C.scriptUrl}?action=findByFlat&flat=${encodeURIComponent(flat)}`);
+        const data = await res.json();
+        if (data.found) {
+          if (data.name   && !userProfile.name)   userProfile.name   = data.name;
+          if (data.mobile && !userProfile.mobile) userProfile.mobile = data.mobile;
+        }
+      } catch(e) { /* ignore — flat is set, continue */ }
     }
 
     // Write through all cache layers (memory + localStorage + Firestore)

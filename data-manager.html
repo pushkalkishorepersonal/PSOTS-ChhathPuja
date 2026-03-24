@@ -112,6 +112,10 @@
   @keyframes spin{to{transform:rotate(360deg)}}
   </style>
   <script src="js/config.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="js/firebase-config.js"></script>
+  <script src="js/db.js"></script>
 </head>
 <body>
 
@@ -272,6 +276,7 @@ Praveen Kumar	2172	5001	8-Oct" rows="10"></textarea>
         <button class="btn-primary" onclick="loadFromSheet()" id="loadSheetBtn" style="background:linear-gradient(135deg,#2e7d32,#1b5e20)">☁️ Load from Google Sheet</button>
         <button class="btn-primary" onclick="loadBaseSheet()" id="baseSheetBtn" style="background:linear-gradient(135deg,#555,#333);font-size:.8rem">📂 Load BaseSheet (offline fallback)</button>
         <button class="btn-secondary" onclick="syncToSheet()">☁️ Sync to Google Sheet</button>
+        <button class="btn-secondary" onclick="syncToFirestore()" id="btnSyncFirestore">🔥 Sync to Firestore</button>
         <button class="btn-danger" onclick="clearAllHistory()">🗑 Clear History</button>
         <button class="btn-danger" onclick="clearAllData()">🗑 Clear ALL Data (History + Directory)</button>
       </div>
@@ -858,6 +863,29 @@ async function syncToSheet() {
     await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'bulkImport', records: all }) });
     toast('✅ Synced to Google Sheet!', 'success');
   } catch(e) { toast('Sync failed — check connection', 'error'); }
+}
+
+async function syncToFirestore() {
+  const btn = document.getElementById('btnSyncFirestore');
+  if (typeof PSOTS_DB === 'undefined') { toast('Firebase not loaded', 'error'); return; }
+  if (!PSOTS_DB.isFirestoreReady) { toast('Firestore not ready — check firebase-config.js', 'error'); return; }
+  const history   = getHistory();
+  const residents = getResidents();
+  if (!history.length && !residents.length) { toast('No data to sync', 'error'); return; }
+  btn.disabled = true;
+  btn.textContent = '⏳ Syncing…';
+  const [cRes, rRes] = await Promise.all([
+    history.length   ? PSOTS_DB.syncContributions(history)   : Promise.resolve({ ok: true, written: 0 }),
+    residents.length ? PSOTS_DB.syncResidents(residents)     : Promise.resolve({ ok: true, written: 0 }),
+  ]);
+  btn.disabled = false;
+  btn.textContent = '🔥 Sync to Firestore';
+  if (cRes.ok && rRes.ok) {
+    toast(`✅ Synced — ${cRes.written} contributions + ${rRes.written} residents`, 'success');
+  } else {
+    const err = (!cRes.ok ? cRes.error : rRes.error) || 'Unknown error';
+    toast('Sync failed: ' + err, 'error');
+  }
 }
 
 function clearAllHistory() {

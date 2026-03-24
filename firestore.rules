@@ -17,12 +17,27 @@ service cloud.firestore {
     // ── Profiles ──────────────────────────────────────
     // Document ID = Google OAuth sub (a large opaque numeric string,
     // not publicly guessable). Any client that knows the UID can read/write.
-    // This is equivalent to "anyone with the secret link" — fine for Step 1.
-    //
-    // Step 2 upgrade (after Firebase Auth integration):
-    //   allow read, write: if request.auth != null && request.auth.uid == uid;
+    // Step 2 upgrade: allow read, write: if request.auth != null && request.auth.uid == uid;
     match /profiles/{uid} {
       allow read, write: if true;
+    }
+
+    // ── Contributions ──────────────────────────────────
+    // Historical + current year contributions indexed by flat number.
+    // Readable by anyone (flat numbers are not secret).
+    // Writable by anyone for now — Step 2 will restrict to admin + owner.
+    match /contributions/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
+    // ── Residents directory ─────────────────────────────
+    // Document ID = sanitised flat number (e.g. "15167", "15167A").
+    // Fields: flat, name, mobile, tower, total, lastYear, isVrati.
+    // Readable by anyone. Step 2 will restrict writes to admin only.
+    match /residents/{flat} {
+      allow read: if true;
+      allow write: if true;
     }
 
     // ── Everything else — locked until later migration steps ──

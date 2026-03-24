@@ -5,13 +5,13 @@
  *  Read order (fastest → authoritative):
  *    Layer 1 · Memory cache  — sub-millisecond, lives until page close
  *    Layer 2 · localStorage  — instant, persists across reloads (TTL: 1 hour)
- *    Layer 3 · Firestore     — ~50 ms, source of truth (needs firebase-config.js)
- *    Layer 4 · Apps Script   — 1-2 s, legacy fallback (always available)
+ *    Layer 3 · Firestore     — ~50 ms, PRIMARY persistent store
+ *    Layer 4 · Apps Script   — 1-2 s, secondary fallback + Google Sheets backup
  *
- *  Write order (all layers updated together):
+ *  Write order:
  *    Memory + localStorage  → immediate (user sees instant feedback)
- *    Firestore              → async background write
- *    Apps Script            → async background write (backup / export)
+ *    Firestore              → PRIMARY async write (source of truth)
+ *    Apps Script / Sheet    → SECONDARY async write (backup/export)
  *
  *  Usage:
  *    const profile = await PSOTS_DB.getProfile(userId);
@@ -179,9 +179,158 @@ const PSOTS_DB = (() => {
     _lsDel(uid);
   }
 
+  /* ════════════════════════════════════════════════════
+     CONTRIBUTIONS API
+  ════════════════════════════════════════════════════ */
+
+  /**
+   * getContributions(flat) → array of records or null
+   *
+   * Returns all contribution records for a given flat from Firestore.
+   * Returns null (not empty array) if Firestore is unavailable — callers
+   * should fall back to history.json / Apps Script in that case.
+   */
+  async function getContributions(flat) {
+    if (!_db || !flat) return null;
+    try {
+      const snap = await _db.collection('contributions')
+        .where('flat', '==', String(flat))
+        .get();
+      return snap.docs.map(d => d.data());
+    } catch (e) {
+      console.warn('[PSOTS_DB] getContributions failed:', e.message);
+      return null;
+    }
+  }
+
+  /**
+   * getResident(flat) → resident object or null
+   *
+   * Fetches a single resident from Firestore by flat number.
+   * Returns null if not found or Firestore unavailable.
+   */
+  async function getResident(flat) {
+    if (!_db || !flat) return null;
+    try {
+      const id   = String(flat).replace(/[^a-zA-Z0-9]/g, '_');
+      const snap = await _db.collection('residents').doc(id).get();
+      return snap.exists ? snap.data() : null;
+    } catch (e) {
+      console.warn('[PSOTS_DB] getResident failed:', e.message);
+      return null;
+    }
+  }
+
+  /**
+   * upsertResident(flat, data) → { ok }
+   *
+   * Creates or merges a single resident document in Firestore.
+   * Called when a resident saves their portal profile.
+   */
+  async function upsertResident(flat, data) {
+    if (!_db || !flat) return { ok: false, error: 'No flat or Firestore not ready' };
+    try {
+      const id = String(flat).replace(/[^a-zA-Z0-9]/g, '_');
+      await _db.collection('residents').doc(id).set({
+        flat:     String(flat),
+        name:     data.name     || '',
+        mobile:   data.mobile   || '',
+        tower:    data.tower    || '',
+        total:    Number(data.total)    || 0,
+        lastYear: Number(data.lastYear) || 0,
+        isVrati:  Boolean(data.isVrati),
+      }, { merge: true });
+      return { ok: true };
+    } catch (e) {
+      console.warn('[PSOTS_DB] upsertResident failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /**
+   * syncResidents(residents) → { ok, written }
+   *
+   * Bulk-writes the residents directory to Firestore.
+   * Document ID = sanitised flat number — idempotent on re-sync.
+   * Strips the internal `contributions` and `names` arrays (redundant in Firestore).
+   */
+  async function syncResidents(residents) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      const BATCH_SIZE = 400;
+      let written = 0;
+      for (let i = 0; i < residents.length; i += BATCH_SIZE) {
+        const batch = _db.batch();
+        residents.slice(i, i + BATCH_SIZE).forEach(r => {
+          const id = String(r.flat || '').replace(/[^a-zA-Z0-9]/g, '_');
+          if (!id) return;
+          const ref = _db.collection('residents').doc(id);
+          batch.set(ref, {
+            flat:     String(r.flat     || ''),
+            name:     r.name     || '',
+            mobile:   r.mobile   || '',
+            tower:    r.tower    || '',
+            total:    Number(r.total)    || 0,
+            lastYear: Number(r.lastYear) || 0,
+            isVrati:  Boolean(r.isVrati),
+          }, { merge: true });
+        });
+        await batch.commit();
+        written += Math.min(BATCH_SIZE, residents.length - i);
+      }
+      return { ok: true, written };
+    } catch (e) {
+      console.warn('[PSOTS_DB] syncResidents failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /**
+   * syncContributions(records) → { ok, written }
+   *
+   * Bulk-writes contribution records to Firestore using deterministic
+   * document IDs so re-syncing is safe (idempotent).
+   * Processes in batches of 400 (Firestore limit is 500).
+   */
+  async function syncContributions(records) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      const BATCH_SIZE = 400;
+      let written = 0;
+      for (let i = 0; i < records.length; i += BATCH_SIZE) {
+        const batch = _db.batch();
+        records.slice(i, i + BATCH_SIZE).forEach(r => {
+          const key = [
+            r.year,
+            String(r.flat  || '').replace(/\//g, '-'),
+            String(r.name  || '').replace(/\s+/g, '').toLowerCase().slice(0, 12),
+            r.amount,
+          ].join('_').replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 120);
+          const ref = _db.collection('contributions').doc(key);
+          batch.set(ref, {
+            flat:   String(r.flat   || ''),
+            year:   Number(r.year)  || 0,
+            name:   r.name   || '',
+            amount: Number(r.amount) || 0,
+            date:   r.date   || '',
+            method: r.method || '',
+            status: r.status || '',
+            mobile: r.mobile || '',
+          }, { merge: true });
+        });
+        await batch.commit();
+        written += Math.min(BATCH_SIZE, records.length - i);
+      }
+      return { ok: true, written };
+    } catch (e) {
+      console.warn('[PSOTS_DB] syncContributions failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, syncContributions, getResident, upsertResident, syncResidents };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();
