@@ -327,9 +327,127 @@ const PSOTS_DB = (() => {
     }
   }
 
+  /* ════════════════════════════════════════════════════
+     ANNOUNCEMENTS API
+  ════════════════════════════════════════════════════ */
+
+  /**
+   * getAnnouncements() → array of announcement objects or null
+   *
+   * Returns all announcements from Firestore ordered by sortOrder, then createdAt.
+   * Returns null if Firestore unavailable — callers fall back to Apps Script / static data.
+   */
+  async function getAnnouncements() {
+    if (!_db) return null;
+    try {
+      const snap = await _db.collection('announcements')
+        .orderBy('sortOrder', 'asc')
+        .get();
+      if (!snap.empty) return snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      // Try without ordering in case index not yet built
+      const snap2 = await _db.collection('announcements').get();
+      return snap2.docs.map(d => ({ id: d.id, ...d.data() }))
+        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+    } catch (e) {
+      if (e.code === 'failed-precondition' || e.message?.includes('index')) {
+        // Index not ready — fall back to unordered
+        try {
+          const snap3 = await _db.collection('announcements').get();
+          return snap3.docs.map(d => ({ id: d.id, ...d.data() }))
+            .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+        } catch (e2) { /* fall through */ }
+      }
+      console.warn('[PSOTS_DB] getAnnouncements failed:', e.message);
+      return null;
+    }
+  }
+
+  /**
+   * saveAnnouncement(ann) → { ok, id }
+   *
+   * Creates or updates a single announcement document.
+   * ann.id (optional) — if provided, updates that doc; otherwise creates new.
+   * ann.tag, ann.meta, ann.text, ann.sortOrder, ann.pinned
+   */
+  async function saveAnnouncement(ann) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      const { id, ...data } = ann;
+      const payload = {
+        tag:       data.tag       || '📌 Update',
+        meta:      data.meta      || '',
+        text:      data.text      || '',
+        sortOrder: Number(data.sortOrder) || 0,
+        pinned:    Boolean(data.pinned),
+        updatedAt: Date.now(),
+      };
+      if (!payload.createdAt && !id) payload.createdAt = Date.now();
+      let docId = id;
+      if (docId) {
+        await _db.collection('announcements').doc(docId).set(payload, { merge: true });
+      } else {
+        const ref = await _db.collection('announcements').add({ ...payload, createdAt: Date.now() });
+        docId = ref.id;
+      }
+      return { ok: true, id: docId };
+    } catch (e) {
+      console.warn('[PSOTS_DB] saveAnnouncement failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /**
+   * deleteAnnouncement(id) → { ok }
+   *
+   * Deletes an announcement document by Firestore document ID.
+   */
+  async function deleteAnnouncement(id) {
+    if (!_db || !id) return { ok: false, error: 'No id or Firestore not ready' };
+    try {
+      await _db.collection('announcements').doc(id).delete();
+      return { ok: true };
+    } catch (e) {
+      console.warn('[PSOTS_DB] deleteAnnouncement failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /**
+   * bulkSaveAnnouncements(list) → { ok, written }
+   *
+   * Replaces the full announcements collection with the given list.
+   * Each item must have an 'id' field for stable document IDs.
+   * Items without 'id' get a generated one. Items that disappeared are NOT deleted —
+   * use deleteAnnouncement() for explicit deletes.
+   */
+  async function bulkSaveAnnouncements(list) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      const batch = _db.batch();
+      list.forEach((ann, i) => {
+        const docId = ann.id || ('ann_' + Date.now() + '_' + i);
+        const ref = _db.collection('announcements').doc(docId);
+        batch.set(ref, {
+          tag:       ann.tag       || '📌 Update',
+          meta:      ann.meta      || '',
+          text:      ann.text      || '',
+          sortOrder: Number(ann.sortOrder ?? i),
+          pinned:    Boolean(ann.pinned),
+          updatedAt: Date.now(),
+          createdAt: ann.createdAt || Date.now(),
+        }, { merge: true });
+      });
+      await batch.commit();
+      return { ok: true, written: list.length };
+    } catch (e) {
+      console.warn('[PSOTS_DB] bulkSaveAnnouncements failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, syncContributions, getResident, upsertResident, syncResidents };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, syncContributions, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();

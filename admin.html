@@ -1893,48 +1893,123 @@ async function saveFinance() {
 /* ═══════════════════════════════════════════════════
    ANNOUNCEMENTS
 ═══════════════════════════════════════════════════ */
-function loadAnnouncements() {
-  announcements = PsotsCache.get('announcements') || [
-    { tag:'🎊 5th Year', meta:'2026 — Grand Celebration', text:"This year marks our पंच वर्ष महोत्सव! Grander ghat, extended cultural programme. ₹1,04,670 carried forward from 2025." },
-    { tag:'🙏 Prasad', meta:'2026 — Prasad Details', text:'2nd Nov खरना प्रसाद & 4th Nov ठेकुआ प्रसाद for all PSOTS residents after Arghya.' },
-    { tag:'🤝 Volunteer', meta:'2026 — Volunteers', text:'Volunteers needed for ghat decoration on 2nd November. Breakfast provided for all volunteers.' },
-    { tag:'⏰ Important', meta:'2026 — Deadline', text:'Contribute before 25th October 2026 to be on the prasad list.' },
-  ];
+const DEFAULT_ANNOUNCEMENTS = [
+  { tag:'🎊 5th Year', meta:'2026 — Grand Celebration', text:"This year marks our पंच वर्ष महोत्सव! Grander ghat, extended cultural programme. ₹1,04,670 carried forward from 2025.", sortOrder:0 },
+  { tag:'🙏 Prasad', meta:'2026 — Prasad Details', text:'2nd Nov खरना प्रसाद & 4th Nov ठेकुआ प्रसाद for all PSOTS residents after Arghya.', sortOrder:1 },
+  { tag:'🤝 Volunteer', meta:'2026 — Volunteers', text:'Volunteers needed for ghat decoration on 2nd November. Breakfast provided for all volunteers.', sortOrder:2 },
+  { tag:'⏰ Important', meta:'2026 — Deadline', text:'Contribute before 25th October 2026 to be on the prasad list.', sortOrder:3 },
+];
+
+async function loadAnnouncements() {
+  const el = document.getElementById('annList');
+  el.innerHTML = '<div style="text-align:center;padding:1.2rem;color:var(--lbr);font-size:.88rem">🔄 Loading…</div>';
+
+  // Try Firestore first
+  if (PSOTS_DB.isFirestoreReady) {
+    const fsData = await PSOTS_DB.getAnnouncements();
+    if (fsData && fsData.length) {
+      announcements = fsData;
+      PsotsCache.set('announcements', announcements, CACHE_TTL.announcements);
+      renderAnnouncements();
+      return;
+    }
+  }
+
+  // Try session cache
+  const cached = PsotsCache.get('announcements');
+  if (cached && cached.length) {
+    announcements = cached;
+    renderAnnouncements();
+    // Kick off background Firestore refresh if now ready
+    if (PSOTS_DB.isFirestoreReady) {
+      PSOTS_DB.getAnnouncements().then(d => {
+        if (d && d.length) { announcements = d; PsotsCache.set('announcements', d, CACHE_TTL.announcements); renderAnnouncements(); }
+      });
+    }
+    return;
+  }
+
+  // Try Apps Script
+  const url = getScriptUrl();
+  if (url) {
+    try {
+      const d = await fetch(url + '?action=getAnnouncements').then(r => r.json());
+      const list = d.announcements || [];
+      if (list.length) {
+        announcements = list.map((a, i) => ({ ...a, sortOrder: a.sortOrder ?? i }));
+        PsotsCache.set('announcements', announcements, CACHE_TTL.announcements);
+        renderAnnouncements();
+        return;
+      }
+    } catch(e) {}
+  }
+
+  // Fallback to defaults
+  announcements = DEFAULT_ANNOUNCEMENTS.map(a => ({ ...a }));
   renderAnnouncements();
 }
 
 function renderAnnouncements() {
   const el = document.getElementById('annList');
+  if (!announcements.length) {
+    el.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.88rem">No announcements yet. Click + Add Announcement.</div>';
+    return;
+  }
   el.innerHTML = announcements.map((a, i) => `
-    <div class="ann-item-edit">
-      <div class="ann-header">
-        <span class="ann-num">Announcement ${i+1}</span>
+    <div class="ann-item-edit" style="background:var(--warm);border:1.5px solid #f0d5b8;border-radius:14px;padding:1rem 1.1rem;margin-bottom:.7rem">
+      <div class="ann-header" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.7rem">
+        <span class="ann-num" style="font-size:.78rem;font-weight:700;color:var(--lbr)">Announcement ${i+1}${a.id ? ' <span style="font-weight:400;opacity:.6">#'+a.id.slice(0,6)+'</span>' : ''}</span>
         <div style="display:flex;gap:.5rem;align-items:center">
-          <input class="ann-tag-select" type="text" value="${a.tag}" onchange="announcements[${i}].tag=this.value" style="width:120px"/>
-          <button class="btn-danger" onclick="removeAnn(${i})">🗑</button>
+          <input class="ann-tag-select" type="text" value="${(a.tag||'').replace(/"/g,'&quot;')}" oninput="announcements[${i}].tag=this.value" style="width:130px;border-radius:7px;border:1px solid #f0d5b8;padding:.3rem .5rem;font-size:.82rem;font-family:inherit"/>
+          <label style="display:flex;align-items:center;gap:.3rem;font-size:.78rem;cursor:pointer"><input type="checkbox" ${a.pinned?'checked':''} onchange="announcements[${i}].pinned=this.checked"> 📌</label>
+          <button class="btn-danger" onclick="removeAnn(${i})" style="padding:.3rem .7rem;font-size:.8rem">🗑</button>
         </div>
       </div>
-      <div class="fg" style="grid-template-columns:1fr">
-        <div class="ff"><label>Date / Meta Label</label><input type="text" value="${a.meta}" onchange="announcements[${i}].meta=this.value"/></div>
-        <div class="ff"><label>Message Text</label><textarea onchange="announcements[${i}].text=this.value">${a.text}</textarea></div>
+      <div style="display:grid;gap:.5rem">
+        <div class="ff"><label style="font-size:.75rem;font-weight:600;color:var(--lbr)">Date / Meta Label</label><input type="text" value="${(a.meta||'').replace(/"/g,'&quot;')}" oninput="announcements[${i}].meta=this.value" style="border-radius:8px;border:1px solid #f0d5b8;padding:.45rem .7rem;font-size:.88rem;width:100%;box-sizing:border-box;font-family:inherit"/></div>
+        <div class="ff"><label style="font-size:.75rem;font-weight:600;color:var(--lbr)">Message Text</label><textarea oninput="announcements[${i}].text=this.value" style="border-radius:8px;border:1px solid #f0d5b8;padding:.45rem .7rem;font-size:.88rem;width:100%;box-sizing:border-box;font-family:inherit;resize:vertical;min-height:64px">${(a.text||'').replace(/</g,'&lt;')}</textarea></div>
       </div>
     </div>`).join('');
 }
 
 function addAnn() {
-  announcements.push({ tag:'📌 New', meta:'2026 — Update', text:'Enter your announcement here…' });
+  const i = announcements.length;
+  announcements.push({ tag:'📌 New', meta:'2026 — Update', text:'Enter your announcement here…', sortOrder: i, pinned: false });
   renderAnnouncements();
   toast('✅ New announcement added', 'success');
 }
 
-function removeAnn(i) {
+async function removeAnn(i) {
   if (!confirm('Remove this announcement?')) return;
+  const ann = announcements[i];
+  // Delete from Firestore if it has an id
+  if (ann && ann.id && PSOTS_DB.isFirestoreReady) {
+    await PSOTS_DB.deleteAnnouncement(ann.id);
+  }
   announcements.splice(i, 1);
   renderAnnouncements();
   toast('🗑 Removed', 'error');
 }
 
 async function saveAnnouncements() {
+  // Assign sortOrder from current display order
+  announcements.forEach((a, i) => { a.sortOrder = i; });
+
+  // Primary: Firestore
+  if (PSOTS_DB.isFirestoreReady) {
+    const res = await PSOTS_DB.bulkSaveAnnouncements(announcements);
+    if (res.ok) {
+      // Update local ids from Firestore response
+      PsotsCache.set('announcements', announcements, CACHE_TTL.announcements);
+      toast('✅ Saved to Firestore!', 'success');
+      // Also sync to Apps Script as backup
+      const url = getScriptUrl();
+      if (url) fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ action:'updateAnnouncements', data: announcements }) }).catch(()=>{});
+      return;
+    }
+  }
+
+  // Fallback: Apps Script only
   PsotsCache.set('announcements', announcements, CACHE_TTL.announcements);
   const url = getScriptUrl();
   if (url) {

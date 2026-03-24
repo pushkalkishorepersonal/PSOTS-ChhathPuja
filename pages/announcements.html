@@ -8,6 +8,10 @@
   <link rel="stylesheet" href="../css/style.css"/>
   <script src="../js/config.js"></script>
   <script src="../js/auth-gate.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/db.js"></script>
   <style>
   /* ── Announcement card ── */
   .ann{background:#fff;border-radius:16px;border:1px solid rgba(200,100,0,.1);border-left:4px solid var(--saff);overflow:hidden;margin-bottom:1rem;box-shadow:0 3px 16px rgba(26,8,0,.07);transition:box-shadow .25s,transform .25s;opacity:0;transform:translateY(22px)}
@@ -220,29 +224,69 @@ document.querySelectorAll('.ann').forEach((el, i) => {
 
 /* ── Load dynamic announcements ── */
 function renderAnns(list) {
-  if (!list.length) return;
+  if (!list || !list.length) return;
   const el = document.getElementById('ann-list');
-  el.innerHTML = list.map((a, i) => `
-    <div class="ann" style="transition-delay:${i*70}ms">
+  const sorted = [...list].sort((a, b) => {
+    if (a.pinned && !b.pinned) return -1;
+    if (!a.pinned && b.pinned) return 1;
+    return (a.sortOrder ?? 99) - (b.sortOrder ?? 99);
+  });
+  el.innerHTML = sorted.map((a, i) => `
+    <div class="ann${a.pinned ? ' pinned' : ''}" style="transition-delay:${i*70}ms">
       <div class="ann-head">
-        <div class="ann-tags"><span class="ann-tag tag-info">${a.tag||'📢 Update'}</span></div>
+        <div class="ann-tags">
+          ${a.pinned ? '<span class="ann-tag tag-pinned">📌 Pinned</span>' : ''}
+          <span class="ann-tag tag-info">${a.tag||'📢 Update'}</span>
+        </div>
         <div class="ann-meta">${a.meta||''}</div>
       </div>
       <div class="ann-body">
-        <div class="ann-text">${(a.text||'').replace(/\*([^*]+)\*/g,'<strong>$1</strong>')}</div>
+        <div class="ann-text">${(a.text||'').replace(/\*([^*]+)\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</div>
       </div>
     </div>`).join('');
-  document.querySelectorAll('.ann').forEach(el => ro.observe(el));
+  document.querySelectorAll('.ann:not(.seen)').forEach(el => ro.observe(el));
 }
-const cached = localStorage.getItem('psots_announcements');
-if (cached) { try { renderAnns(JSON.parse(cached)); } catch(e) {} }
-const su = (window.PSOTS&&window.PSOTS.scriptUrl)||localStorage.getItem('psots_script_url')||'';
-if (su) {
-  fetch(su+'?action=getAnnouncements').then(r=>r.json()).then(d=>{
-    const list=d.announcements||[];
-    if(list.length){ renderAnns(list); localStorage.setItem('psots_announcements',JSON.stringify(list)); }
-  }).catch(()=>{});
+
+async function loadAnns() {
+  // Layer 1: stale cache for instant display
+  const cached = localStorage.getItem('psots_announcements');
+  if (cached) { try { renderAnns(JSON.parse(cached)); } catch(e) {} }
+
+  // Layer 2: Firestore (primary)
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    try {
+      const list = await PSOTS_DB.getAnnouncements();
+      if (list && list.length) {
+        renderAnns(list);
+        localStorage.setItem('psots_announcements', JSON.stringify(list));
+        return;
+      }
+    } catch(e) {}
+  } else {
+    // Firestore may need a moment — retry once after short delay
+    setTimeout(async () => {
+      if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+        const list = await PSOTS_DB.getAnnouncements().catch(() => null);
+        if (list && list.length) {
+          renderAnns(list);
+          localStorage.setItem('psots_announcements', JSON.stringify(list));
+        }
+      }
+    }, 1500);
+  }
+
+  // Layer 3: Apps Script fallback
+  const su = (window.PSOTS&&window.PSOTS.scriptUrl)||localStorage.getItem('psots_script_url')||'';
+  if (su) {
+    try {
+      const d = await fetch(su+'?action=getAnnouncements').then(r=>r.json());
+      const list = d.announcements||[];
+      if (list.length) { renderAnns(list); localStorage.setItem('psots_announcements', JSON.stringify(list)); }
+    } catch(e) {}
+  }
 }
+
+loadAnns();
 </script>
 </body>
 </html>
