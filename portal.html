@@ -8,6 +8,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <!-- Central config (sets window.PSOTS) -->
   <script src="js/config.js"></script>
+  <!-- Firebase SDK (compat) — loads before db.js so PSOTS_DB can initialise Firestore -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <!-- Firebase project credentials (fill in js/firebase-config.js) -->
+  <script src="js/firebase-config.js"></script>
+  <!-- PSOTS DB service: 3-layer cache (memory → localStorage → Firestore → Apps Script) -->
+  <script src="js/db.js"></script>
   <!-- Google Sign-In -->
   <script src="https://accounts.google.com/gsi/client" async defer></script>
   <style>
@@ -1605,13 +1612,29 @@ function dismissNudge() {
   localStorage.setItem('psots_nudge_snooze_v1', String(until));
 }
 
-const PROFILE_FETCH_TTL = 60 * 60 * 1000; // 1 hour — skip server fetch if profile was synced recently
+const PROFILE_FETCH_TTL = 60 * 60 * 1000; // 1 hour TTL for Apps Script fallback
 
 async function fetchProfileFromSheet() {
-  if (C.scriptUrl.includes('YOUR_APPS_SCRIPT')) return;
+  // ── Layer 3: Try Firestore via PSOTS_DB ──────────────────────────────
+  // PSOTS_DB.getProfile handles memory → localStorage → Firestore automatically.
+  // It returns null only when all three layers have no data (first-ever visit).
+  const cached = await PSOTS_DB.getProfile(currentUser.id);
+  if (cached && cached._fetchedAt && (Date.now() - cached._fetchedAt) < PROFILE_FETCH_TTL) {
+    // Fresh enough — merge into userProfile and update UI
+    const hadFlat   = !!userProfile.flat;
+    const hadMobile = !!userProfile.mobile;
+    userProfile = { ...userProfile, ...cached };
+    fillProfileUI();
+    if (typeof cached.waOptIn === 'boolean') {
+      localStorage.setItem('psots_wa_' + currentUser.id, String(cached.waOptIn));
+      updateWABanner(cached.waOptIn);
+    }
+    if ((!hadFlat || !hadMobile) && (userProfile.flat || userProfile.mobile)) loadContributions();
+    return;
+  }
 
-  // Skip the network round-trip if we have a recently-synced copy in cache
-  if (userProfile._fetchedAt && (Date.now() - userProfile._fetchedAt) < PROFILE_FETCH_TTL) return;
+  // ── Layer 4: Apps Script fallback (Firestore not configured or doc missing) ─
+  if (C.scriptUrl.includes('YOUR_APPS_SCRIPT')) return;
 
   try {
     const res = await fetch(`${C.scriptUrl}?action=getProfile&uid=${encodeURIComponent(currentUser.id)}`);
@@ -1619,20 +1642,15 @@ async function fetchProfileFromSheet() {
     if (data.profile) {
       const hadFlat   = !!userProfile.flat;
       const hadMobile = !!userProfile.mobile;
-      userProfile = { ...userProfile, ...data.profile, _fetchedAt: Date.now() };
-      // Persist updated profile + timestamp so next load skips server
-      localStorage.setItem('psots_profile_' + currentUser.id, JSON.stringify(userProfile));
+      // Merge and write back through all cache layers (including Firestore if ready)
+      userProfile = { ...userProfile, ...data.profile };
+      await PSOTS_DB.saveProfile(currentUser.id, userProfile);
       fillProfileUI();
-      // Sync WA banner from server-sourced waOptIn
       if (typeof data.profile.waOptIn === 'boolean') {
-        const waKey = 'psots_wa_' + currentUser.id;
-        localStorage.setItem(waKey, String(data.profile.waOptIn));
+        localStorage.setItem('psots_wa_' + currentUser.id, String(data.profile.waOptIn));
         updateWABanner(data.profile.waOptIn);
       }
-      // If flat/mobile just became available, reload contributions
-      if ((!hadFlat || !hadMobile) && (userProfile.flat || userProfile.mobile)) {
-        loadContributions();
-      }
+      if ((!hadFlat || !hadMobile) && (userProfile.flat || userProfile.mobile)) loadContributions();
     }
   } catch(e) {}
 }
@@ -1658,28 +1676,24 @@ async function saveProfile() {
                   : '',
   };
 
-  // Stamp fetch time so fetchProfileFromSheet won't overwrite immediately after save
-  userProfile._fetchedAt = Date.now();
-  const key = 'psots_profile_' + currentUser.id;
-  localStorage.setItem(key, JSON.stringify(userProfile));
+  // Write through all cache layers (memory + localStorage + Firestore)
+  await PSOTS_DB.saveProfile(currentUser.id, userProfile);
   fillProfileUI();
 
+  // Also sync to Apps Script for CSV export / Google Sheets backup
   if (!C.scriptUrl.includes('YOUR_APPS_SCRIPT')) {
-    try {
-      await fetch(C.scriptUrl, {
-        method:'POST', mode:'no-cors',
-        headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ action:'saveProfile', ...userProfile }),
-      });
-    } catch(e) {}
+    fetch(C.scriptUrl, {
+      method:'POST', mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'saveProfile', ...userProfile }),
+    }).catch(() => {});
   }
   toast('✅ Profile saved!', 'success');
 }
 
 function deleteMyData() {
   if (!confirm('This will remove your name and contact info. Contribution amounts stay for accounting (flat number kept, name removed). Continue?')) return;
-  const key = 'psots_profile_' + currentUser.id;
-  localStorage.removeItem(key);
+  PSOTS_DB.invalidateProfile(currentUser.id);
   localStorage.removeItem('psots_user');
   userProfile = {};
   toast('🗑 Your data has been removed', 'error');
@@ -1806,10 +1820,9 @@ async function lookupByFlat() {
       if (data.name && !userProfile.name) userProfile.name = data.name;
       if (data.mobile && !userProfile.mobile) userProfile.mobile = data.mobile;
     }
-    userProfile._fetchedAt = Date.now();
 
-    const key = 'psots_profile_' + currentUser.id;
-    localStorage.setItem(key, JSON.stringify(userProfile));
+    // Write through all cache layers (memory + localStorage + Firestore)
+    await PSOTS_DB.saveProfile(currentUser.id, userProfile);
     fillProfileUI();
 
     // Persist to backend so this device links flat to email userId
@@ -1945,16 +1958,15 @@ function toggleWASub() {
 }
 
 async function persistWAOptIn() {
-  const key = 'psots_profile_' + currentUser.id;
-  localStorage.setItem(key, JSON.stringify(userProfile));
+  // Write through all cache layers (memory + localStorage + Firestore)
+  await PSOTS_DB.saveProfile(currentUser.id, userProfile);
+  // Apps Script backup
   if (!C.scriptUrl.includes('YOUR_APPS_SCRIPT')) {
-    try {
-      await fetch(C.scriptUrl, {
-        method: 'POST', mode: 'no-cors',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'saveProfile', ...userProfile }),
-      });
-    } catch(e) {}
+    fetch(C.scriptUrl, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'saveProfile', ...userProfile }),
+    }).catch(() => {});
   }
 }
 

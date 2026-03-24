@@ -1,0 +1,33 @@
+rules_version = '2';
+
+// ════════════════════════════════════════════════════
+//  PSOTS Chhath Puja — Firestore Security Rules
+//  Step 1: Profiles only
+//
+//  DEPLOY: firebase deploy --only firestore:rules
+//  OR:     Firebase Console → Firestore → Rules tab → paste & publish
+//
+//  These rules are intentionally open for the initial rollout
+//  because we are not yet using Firebase Auth (still on Google OAuth).
+//  Step 2 will add Firebase Auth sign-in and tighten these rules.
+// ════════════════════════════════════════════════════
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ── Profiles ──────────────────────────────────────
+    // Document ID = Google OAuth sub (a large opaque numeric string,
+    // not publicly guessable). Any client that knows the UID can read/write.
+    // This is equivalent to "anyone with the secret link" — fine for Step 1.
+    //
+    // Step 2 upgrade (after Firebase Auth integration):
+    //   allow read, write: if request.auth != null && request.auth.uid == uid;
+    match /profiles/{uid} {
+      allow read, write: if true;
+    }
+
+    // ── Everything else — locked until later migration steps ──
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
