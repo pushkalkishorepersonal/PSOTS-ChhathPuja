@@ -328,6 +328,24 @@ const PSOTS_DB = (() => {
     }
   }
 
+  /**
+   * getAllContributions() → array of all contribution records or null
+   *
+   * Fetches every document in the contributions collection.
+   * Used by admin page to show all contributors across all flats/years.
+   * Returns null if Firestore unavailable.
+   */
+  async function getAllContributions() {
+    if (!_db) return null;
+    try {
+      const snap = await _db.collection('contributions').get();
+      return snap.docs.map(d => d.data());
+    } catch (e) {
+      console.warn('[PSOTS_DB] getAllContributions failed:', e.message);
+      return null;
+    }
+  }
+
   /* ════════════════════════════════════════════════════
      ANNOUNCEMENTS API
   ════════════════════════════════════════════════════ */
@@ -448,7 +466,7 @@ const PSOTS_DB = (() => {
 
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, syncContributions, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, syncContributions, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();

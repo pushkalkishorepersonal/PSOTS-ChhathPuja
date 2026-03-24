@@ -503,7 +503,7 @@
   <div class="tab-panel" id="tab-contributors">
     <div class="admin-card">
       <div class="ac-title">🙏 All Contributors — 2026</div>
-      <div class="ac-sub">Mark payments as verified (✅) once you confirm the UPI transfer in your PhonePe/GPay app. Only verified entries show on the public website.</div>
+      <div class="ac-sub">Mark payments as verified (✅) once you confirm the UPI transfer. Data loads from Firestore — no Google Sheets dependency.</div>
       <input class="con-search-bar" type="text" id="conSearchAdmin" placeholder="🔍  Search by name, flat or UTR…" oninput="filterAdminCon()"/>
       <div class="con-filter-row">
         <span style="font-size:.72rem;color:var(--lbr)">Filter:</span>
@@ -1718,11 +1718,18 @@ function escAdm(s) { return String(s||'').replace(/'/g,"\\'"); }
 /* ═══════════════════════════════════════════════════
    CONTRIBUTORS
 ═══════════════════════════════════════════════════ */
+function _mapConRow(r) {
+  return {
+    ts: r.ts || r.date || '', name: r.name || '', flat: r.flat || '',
+    mobile: r.mobile || '', amount: r.amount || 0, method: r.method || '',
+    date: r.date || '', status: r.status || '✅ Received', year: r.year || 2025
+  };
+}
+
 async function loadAdminCon() {
-  const url = getScriptUrl();
   const container = document.getElementById('conCardList');
 
-  // Check session cache first
+  // 0. Session cache — instant
   const cachedCon = PsotsCache.get('contributors_all');
   if (cachedCon) {
     allConData = cachedCon;
@@ -1731,72 +1738,50 @@ async function loadAdminCon() {
     return;
   }
 
-  container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.88rem">🌅 Loading from Google Sheets…</div>';
+  container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.88rem">🌅 Loading contributors…</div>';
 
-  if (!url) {
-    // Load from global data/history.json
+  // 1. Firestore — primary source
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
     try {
-      const gRes = await fetch('data/history.json');
-      if (gRes.ok) {
-        const g = await gRes.json();
-        allConData = (g.history || []).map(r => ({
-          ts: r.date || '', name: r.name || '', flat: r.flat || '',
-          mobile: r.mobile || '', amount: r.amount || 0, method: r.method || '',
-          date: r.date || '', status: r.status || '✅ Received', year: r.year || 2025
-        }));
+      const rows = await PSOTS_DB.getAllContributions();
+      if (rows && rows.length) {
+        allConData = rows.map(_mapConRow);
+        PsotsCache.set('contributors_all', allConData, CACHE_TTL.contributors);
         renderConTable(allConData);
         updateDashStats();
         return;
       }
-    } catch(e) {}
-    // Fallback demo data
-    allConData = [
-      {ts:'2026-10-01 10:30',name:'Pushkal Kishore',flat:'15167',mobile:'9482088904',amount:5001,method:'GPay',date:'01/10/2026',status:'Pending Verification'},
-      {ts:'2026-10-02 11:00',name:'Ratnesh Singh',flat:'15165',mobile:'9876543210',amount:1100,method:'PhonePe',date:'02/10/2026',status:'✅ Received'},
-      {ts:'2026-10-02 14:22',name:'Praveen Kumar',flat:'2172',mobile:'9123456789',amount:5001,method:'GPay',date:'02/10/2026',status:'Pending Verification'},
-    ];
-    renderConTable(allConData);
-    updateDashStats();
-    return;
+    } catch(e) { /* fall through */ }
   }
 
+  // 2. Local history.json — bundled static data
   try {
-    const res = await fetch(url + '?action=list_all');
-    const data = await res.json();
-    allConData = data.all || [];
-    PsotsCache.set('contributors_all', allConData, CACHE_TTL.contributors);
-    renderConTable(allConData);
-    updateDashStats();
-  } catch(e) {
-    // Fall back to local history data
+    const gRes = await fetch('data/history.json');
+    if (gRes.ok) {
+      const g = await gRes.json();
+      allConData = (g.history || []).map(_mapConRow);
+      PsotsCache.set('contributors_all', allConData, CACHE_TTL.contributors);
+      renderConTable(allConData);
+      updateDashStats();
+      return;
+    }
+  } catch(e) {}
+
+  // 3. Apps Script — last resort
+  const url = getScriptUrl();
+  if (url) {
     try {
-      const localHistory = JSON.parse(localStorage.getItem('psots_history') || '[]');
-      if (localHistory.length > 0) {
-        allConData = localHistory.map(r => ({
-          ts: r.date || '', name: r.name || '', flat: r.flat || '',
-          mobile: r.mobile || '', amount: r.amount || 0, method: r.method || '',
-          date: r.date || '', status: r.status || '✅ Received', year: r.year || 2025
-        }));
-        renderConTable(allConData);
-        updateDashStats();
-        container.insertAdjacentHTML('afterend', '<div style="text-align:center;font-size:.78rem;color:#c03000;padding:.4rem">⚠️ Showing cached data — Google Sheets unavailable. Check Apps Script URL in Settings.</div>');
-        return;
-      }
-      const gRes = await fetch('data/history.json');
-      if (gRes.ok) {
-        const g = await gRes.json();
-        allConData = (g.history || []).map(r => ({
-          ts: r.date || '', name: r.name || '', flat: r.flat || '',
-          mobile: r.mobile || '', amount: r.amount || 0, method: r.method || '',
-          date: r.date || '', status: r.status || '✅ Received', year: r.year || 2025
-        }));
-        renderConTable(allConData);
-        updateDashStats();
-        return;
-      }
-    } catch(e2) {}
-    container.innerHTML = '<div style="text-align:center;padding:2rem;color:#c03000;font-size:.88rem">⚠️ Could not connect to Google Sheets. Check your Apps Script URL in Settings.</div>';
+      const res  = await fetch(url + '?action=list_all');
+      const data = await res.json();
+      allConData = (data.all || []).map(_mapConRow);
+      PsotsCache.set('contributors_all', allConData, CACHE_TTL.contributors);
+      renderConTable(allConData);
+      updateDashStats();
+      return;
+    } catch(e) {}
   }
+
+  container.innerHTML = '<div style="text-align:center;padding:2rem;color:#c03000;font-size:.88rem">⚠️ Could not load contributors. Check Firestore connection or Apps Script URL in Settings.</div>';
 }
 
 const AV_COLORS_ADM = ['#e85c00','#c93800','#8b2800','#1a5276','#1a7a4e','#7b1fa2','#c62828'];
