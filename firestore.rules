@@ -40,6 +40,14 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // ── Announcements ───────────────────────────────────
+    // Community announcements managed by admin.
+    // Readable by anyone. Step 2 will restrict writes to admin only.
+    match /announcements/{docId} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // ── Everything else — locked until later migration steps ──
     match /{document=**} {
       allow read, write: if false;
