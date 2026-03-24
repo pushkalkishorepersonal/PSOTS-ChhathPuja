@@ -2026,14 +2026,28 @@ async function sendWAConfirm(name, flat, amount, mobile) {
   window.open(`https://wa.me/91${mobile}?text=${encodeURIComponent(plainMsg)}`, '_blank');
 }
 
-function deleteEntry(idx) {
+async function deleteEntry(idx) {
   const r = allConData[idx];
   if (!r) return;
-  if (!confirm(`Delete this entry?\n\n${r.name} · Flat ${r.flat} · ₹${r.amount}\n\nThis only removes it from your local view. If synced to Google Sheets, delete from there too.`)) return;
+  if (!confirm(`Delete this entry?\n\n${r.name || 'Anonymous'} · Flat ${r.flat || '—'} · ₹${r.amount}\n\nThis will permanently remove it from the database.`)) return;
+
+  // Remove from local list immediately
   allConData.splice(idx, 1);
+  PsotsCache.invalidate('contributors_all');
   renderConTable(allConData);
   updateDashStats();
-  toast('🗑 Entry deleted', 'error');
+
+  // Delete from Firestore
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    const result = await PSOTS_DB.deleteContribution(r);
+    if (result.ok) {
+      toast('🗑 Deleted from database', 'error');
+    } else {
+      toast('⚠️ Removed locally but Firestore delete failed: ' + result.error, 'error');
+    }
+  } else {
+    toast('🗑 Removed from local view (Firestore unavailable)', 'error');
+  }
 }
 
 function setFilter(mode, el) {
