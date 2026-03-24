@@ -1,5 +1,5 @@
 # 🪔 PSOTS Chhath Puja 2026 — Complete Setup Guide
-<!-- Last updated: 2026-03-23 -->
+<!-- Last updated: 2026-03-24 -->
 
 **Prestige Song of the South · पंच वर्ष महोत्सव**
 **Contact:** Pushkal Kishore · 9482088904 · psots.in
@@ -20,7 +20,7 @@
 
 ---
 
-## ✅ WHAT'S ALREADY FILLED IN (you don't need to change these)
+## ✅ WHAT'S ALREADY DONE (no action needed)
 
 - UPI ID: `9482088904@sbi`
 - Mobile: `9482088904` and `9902837002`
@@ -28,6 +28,41 @@
 - Arghya times: 5:45 PM (Nov 3) and 6:15 AM (Nov 4)
 - Financial data: All 2025 actuals (₹2,35,553 collected · ₹1,98,383 spent · ₹1,04,670 surplus)
 - Committee: Pushkal Kishore as Chief Organiser
+- Firebase project: `psots-chhath` (Firestore configured, credentials in `js/firebase-config.js`)
+- Google OAuth Client ID: configured in `js/config.js`
+- Apps Script URL: configured in `js/config.js`
+- Hosting: Cloudflare Pages → `chhath.psots.in`
+- Historical data: 429 contribution records (2022–2025) in `data/history.json`
+
+---
+
+## 🗄️ DATABASE ARCHITECTURE
+
+### How data is stored (priority order)
+
+| Layer | Store | Speed | Purpose |
+|---|---|---|---|
+| 1 | Memory cache | Instant | Page-load speed |
+| 2 | localStorage | Instant | Offline fallback |
+| **3** | **Firestore (PRIMARY)** | **~50ms** | **Source of truth — real-time** |
+| 4 | Google Sheet (secondary) | 1–2s | Backup + export |
+
+**Firestore collections:**
+
+| Collection | What's in it | Document ID |
+|---|---|---|
+| `profiles` | Resident profile (flat, mobile, family) | Google OAuth user ID |
+| `contributions` | All payment records 2022–2026 | `year_flat_name_amount` |
+
+### One-time: Sync historical data to Firestore
+
+After the site is live, do this once to populate Firestore with 2022–2025 data:
+
+1. Open `chhath.psots.in/data-manager.html`
+2. Tap **Import History** tab
+3. Tap **"Load BaseSheet (offline fallback)"** — loads 429 records
+4. Tap **"🔥 Sync to Firestore"** — writes all records to Firestore
+5. Verify in Firebase Console → Firestore → `contributions` collection
 
 ---
 
@@ -153,7 +188,7 @@ Residents sign in with their existing Google/Gmail account — no new passwords 
 1. Open `config.js` on GitHub (click the file → pencil ✏️ icon)
 2. Edit the value
 3. Scroll down → click **Commit changes**
-4. Netlify auto-deploys in ~30 seconds — **live immediately** ✅
+4. Cloudflare auto-deploys in ~18 seconds — **live immediately** ✅
 
 ### Change Arghya timings:
 In `config.js`:
@@ -178,8 +213,8 @@ finance2026: {
 },
 ```
 
-### Import historical data from old Sheets:
-Go to `psots.in/data-manager.html` → 📥 Import History tab → paste from your old sheet → Import.
+### Import historical data / sync to Firestore:
+Go to `chhath.psots.in/data-manager.html` → 📥 Import History tab → paste from your old sheet → Import → then tap **🔥 Sync to Firestore**.
 
 ---
 

@@ -1761,7 +1761,21 @@ async function loadContributions() {
 async function _refreshHistoryCache(flat, mobile) {
   const el = document.getElementById('contribHistory');
 
-  // Fetch data/history.json with cache-bust every 10-min bucket
+  // 0. Firestore — real-time primary source (~50ms, no redeploy needed for updates)
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady && flat) {
+    try {
+      const contribs = await PSOTS_DB.getContributions(flat);
+      if (contribs && contribs.length) {
+        _setCachedHistory(contribs);
+        renderContributions(contribs.map(r => ({
+          year: r.year, amount: r.amount, method: r.method || '', date: r.date || '', status: r.status || '✅ Received'
+        })));
+        return;
+      }
+    } catch(e) { /* Firestore unavailable — fall through to history.json */ }
+  }
+
+  // 1. Fetch data/history.json with cache-bust every 10-min bucket
   try {
     const bucket = Math.floor(Date.now() / HIST_CACHE_TTL);
     const gRes = await fetch('data/history.json?v=' + bucket);

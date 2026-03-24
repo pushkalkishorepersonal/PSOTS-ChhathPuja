@@ -5,13 +5,13 @@
  *  Read order (fastest → authoritative):
  *    Layer 1 · Memory cache  — sub-millisecond, lives until page close
  *    Layer 2 · localStorage  — instant, persists across reloads (TTL: 1 hour)
- *    Layer 3 · Firestore     — ~50 ms, source of truth (needs firebase-config.js)
- *    Layer 4 · Apps Script   — 1-2 s, legacy fallback (always available)
+ *    Layer 3 · Firestore     — ~50 ms, PRIMARY persistent store
+ *    Layer 4 · Apps Script   — 1-2 s, secondary fallback + Google Sheets backup
  *
- *  Write order (all layers updated together):
+ *  Write order:
  *    Memory + localStorage  → immediate (user sees instant feedback)
- *    Firestore              → async background write
- *    Apps Script            → async background write (backup / export)
+ *    Firestore              → PRIMARY async write (source of truth)
+ *    Apps Script / Sheet    → SECONDARY async write (backup/export)
  *
  *  Usage:
  *    const profile = await PSOTS_DB.getProfile(userId);
@@ -179,9 +179,76 @@ const PSOTS_DB = (() => {
     _lsDel(uid);
   }
 
+  /* ════════════════════════════════════════════════════
+     CONTRIBUTIONS API
+  ════════════════════════════════════════════════════ */
+
+  /**
+   * getContributions(flat) → array of records or null
+   *
+   * Returns all contribution records for a given flat from Firestore.
+   * Returns null (not empty array) if Firestore is unavailable — callers
+   * should fall back to history.json / Apps Script in that case.
+   */
+  async function getContributions(flat) {
+    if (!_db || !flat) return null;
+    try {
+      const snap = await _db.collection('contributions')
+        .where('flat', '==', String(flat))
+        .get();
+      return snap.docs.map(d => d.data());
+    } catch (e) {
+      console.warn('[PSOTS_DB] getContributions failed:', e.message);
+      return null;
+    }
+  }
+
+  /**
+   * syncContributions(records) → { ok, written }
+   *
+   * Bulk-writes contribution records to Firestore using deterministic
+   * document IDs so re-syncing is safe (idempotent).
+   * Processes in batches of 400 (Firestore limit is 500).
+   */
+  async function syncContributions(records) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      const BATCH_SIZE = 400;
+      let written = 0;
+      for (let i = 0; i < records.length; i += BATCH_SIZE) {
+        const batch = _db.batch();
+        records.slice(i, i + BATCH_SIZE).forEach(r => {
+          const key = [
+            r.year,
+            String(r.flat  || '').replace(/\//g, '-'),
+            String(r.name  || '').replace(/\s+/g, '').toLowerCase().slice(0, 12),
+            r.amount,
+          ].join('_').replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 120);
+          const ref = _db.collection('contributions').doc(key);
+          batch.set(ref, {
+            flat:   String(r.flat   || ''),
+            year:   Number(r.year)  || 0,
+            name:   r.name   || '',
+            amount: Number(r.amount) || 0,
+            date:   r.date   || '',
+            method: r.method || '',
+            status: r.status || '',
+            mobile: r.mobile || '',
+          }, { merge: true });
+        });
+        await batch.commit();
+        written += Math.min(BATCH_SIZE, records.length - i);
+      }
+      return { ok: true, written };
+    } catch (e) {
+      console.warn('[PSOTS_DB] syncContributions failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, syncContributions };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();
