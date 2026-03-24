@@ -2178,6 +2178,7 @@ function renderContributions(data) {
       return `<div class="cr-entry" style="animation-delay:${delay}s">
         <div class="cr-method-tag">${appLabel(r.method)}</div>
         <div class="cr-info">
+          ${r.name ? `<div style="font-size:.78rem;font-weight:600;color:var(--ink);margin-bottom:.08rem">${r.name}</div>` : ''}
           <div class="cr-date">${fmtDate(r.date)}</div>
           ${r.note ? `<div class="cr-note-txt">${r.note}</div>` : ''}
         </div>
