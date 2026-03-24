@@ -236,6 +236,76 @@
   .stat-val.green { color: var(--green); }
   .stat-lbl { font-size: .62rem; color: var(--lbr); margin-top: .18rem; letter-spacing: .05em; }
 
+  /* ── FEATURE TILES ────────────────── */
+  .feat-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.6rem;
+  }
+  .feat-tile {
+    background: var(--white);
+    border-radius: 16px;
+    padding: 1.15rem 1.2rem 1rem;
+    border: 1.5px solid rgba(200,100,0,.09);
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    transition: transform .2s ease, box-shadow .2s ease;
+    animation: ftIn .4s ease both;
+  }
+  .feat-tile::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3.5px;
+    background: var(--tc, var(--or));
+    border-radius: 16px 16px 0 0;
+  }
+  .feat-tile:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 12px 30px rgba(0,0,0,.1);
+  }
+  .feat-tile:nth-child(1) { animation-delay:.04s }
+  .feat-tile:nth-child(2) { animation-delay:.08s }
+  .feat-tile:nth-child(3) { animation-delay:.12s }
+  .feat-tile:nth-child(4) { animation-delay:.16s }
+  .feat-tile:nth-child(5) { animation-delay:.20s }
+  .feat-tile:nth-child(6) { animation-delay:.24s }
+  .feat-tile:nth-child(7) { animation-delay:.28s }
+  .feat-tile:nth-child(8) { animation-delay:.32s }
+  .feat-tile:nth-child(9) { animation-delay:.36s }
+  @keyframes ftIn {
+    from { opacity:0; transform:translateY(16px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .ft-head { display:flex; align-items:center; justify-content:space-between; margin-bottom:.5rem; }
+  .ft-icon { font-size:1.4rem; line-height:1; }
+  .ft-badge {
+    font-size:.62rem; font-weight:700; border-radius:50px;
+    padding:.15rem .5rem; background:#fef3c7; color:#92400e;
+    display:none;
+  }
+  .ft-badge.show { display:inline-block; }
+  .ft-badge.urgent { background:#fee2e2; color:#991b1b; }
+  .ft-badge.good   { background:#dcfce7; color:#166534; }
+  .ft-title { font-size:.72rem; font-weight:700; color:var(--lbr); letter-spacing:.06em; text-transform:uppercase; margin-bottom:.4rem; }
+  .ft-val { font-family:'DM Sans',sans-serif; font-size:1.5rem; font-weight:900; color:var(--tc,var(--or)); line-height:1.1; margin-bottom:.2rem; }
+  .ft-sub { font-size:.7rem; color:var(--lbr); line-height:1.4; margin-bottom:.65rem; }
+  .ft-progress-wrap { height:5px; border-radius:3px; background:#f0d5b8; overflow:hidden; margin-bottom:.75rem; }
+  .ft-bar { height:100%; border-radius:3px; background:var(--tc,var(--or)); transition:width .6s ease; width:0; }
+  .ft-actions { display:flex; gap:.4rem; flex-wrap:wrap; }
+  .ft-btn {
+    font-size:.67rem; font-weight:600; border-radius:7px;
+    padding:.25rem .65rem; cursor:pointer; border:1.5px solid;
+    border-color:var(--tc,var(--or)); color:var(--tc,var(--or));
+    background:transparent; transition:all .15s;
+    white-space:nowrap;
+  }
+  .ft-btn:hover { background:var(--tc,var(--or)); color:#fff; }
+  .ft-btn.primary { background:var(--tc,var(--or)); color:#fff; }
+  .ft-btn.primary:hover { opacity:.88; }
+
   /* ── SPINNER ─────────────────────── */
   .sp { display: inline-block; width: 14px; height: 14px; border: 2px solid rgba(255,255,255,.3); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: middle; margin-right: 5px; }
   @keyframes spin { to{transform:rotate(360deg)} }
@@ -293,6 +363,7 @@
       </div>
     </div>
 
+    <!-- Top 4 stat counters -->
     <div class="stat-grid" id="dashStats">
       <div class="stat-card"><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Total Collected</div></div>
       <div class="stat-card"><div class="stat-val" id="s-count">—</div><div class="stat-lbl">Contributors</div></div>
@@ -300,24 +371,154 @@
       <div class="stat-card"><div class="stat-val green" id="s-verified">—</div><div class="stat-lbl">Verified ✅</div></div>
     </div>
 
-    <div class="admin-card">
-      <div class="ac-title">🔔 Pending Verifications</div>
-      <div id="pendingList"><div class="loading-state">Loading…</div></div>
-    </div>
+    <!-- Feature tile grid -->
+    <div class="feat-grid" id="featGrid">
 
-    <div class="admin-card">
-      <div class="ac-title">📅 Event Countdown</div>
-      <div style="font-family:'DM Sans',sans-serif;font-size:2rem;font-weight:900;color:var(--or)" id="adminCountdown">—</div>
-      <div id="adminCountdownLbl" style="font-size:.8rem;color:var(--lbr);margin-top:.3rem">Days until Chhath Puja (Nov 1)</div>
-    </div>
-
-    <div class="admin-card">
-      <div class="ac-title">🔗 Quick Links</div>
-      <div style="display:flex;gap:.7rem;flex-wrap:wrap">
-        <a href="index.html" target="_blank" style="text-decoration:none"><button class="btn-secondary">🌐 View Live Site</button></a>
-        <button class="btn-secondary" onclick="switchTab('contributors')">🙏 Verify Payments</button>
-        <button class="btn-secondary" onclick="switchTab('broadcast')">📲 Send Update</button>
+      <!-- 1. Collections & Verification -->
+      <div class="feat-tile" style="--tc:#c0392b" onclick="switchTab('contributors')">
+        <div class="ft-head">
+          <div class="ft-icon">💰</div>
+          <div class="ft-badge urgent" id="ft-badge-col"></div>
+        </div>
+        <div class="ft-title">Collections</div>
+        <div class="ft-val" id="ft-val-col">—</div>
+        <div class="ft-sub" id="ft-sub-col">— contributors · — pending</div>
+        <div class="ft-progress-wrap"><div class="ft-bar" id="ft-bar-col"></div></div>
+        <div class="ft-actions">
+          <button class="ft-btn primary" onclick="event.stopPropagation();switchTab('contributors')">Verify Payments</button>
+          <button class="ft-btn" onclick="event.stopPropagation();switchTab('manual')">+ Add</button>
+        </div>
       </div>
+
+      <!-- 2. Finance & Budget -->
+      <div class="feat-tile" style="--tc:#e67e22" onclick="switchTab('finance')">
+        <div class="ft-head">
+          <div class="ft-icon">📊</div>
+          <div class="ft-badge" id="ft-badge-fin"></div>
+        </div>
+        <div class="ft-title">Finance & Budget</div>
+        <div class="ft-val" id="ft-val-fin">—</div>
+        <div class="ft-sub" id="ft-sub-fin">Budget utilisation</div>
+        <div class="ft-progress-wrap"><div class="ft-bar" id="ft-bar-fin"></div></div>
+        <div class="ft-actions">
+          <button class="ft-btn primary" onclick="event.stopPropagation();switchTab('finance')">View Finance</button>
+        </div>
+      </div>
+
+      <!-- 3. Communication -->
+      <div class="feat-tile" style="--tc:#25d366" onclick="switchTab('broadcast')">
+        <div class="ft-head">
+          <div class="ft-icon">📲</div>
+          <div class="ft-badge" id="ft-badge-com"></div>
+        </div>
+        <div class="ft-title">Communication</div>
+        <div class="ft-val" id="ft-val-com">—</div>
+        <div class="ft-sub" id="ft-sub-com">subscribers · announcements</div>
+        <div class="ft-progress-wrap" style="display:none"></div>
+        <div class="ft-actions">
+          <button class="ft-btn primary" onclick="event.stopPropagation();switchTab('broadcast')">Broadcast</button>
+          <button class="ft-btn" onclick="event.stopPropagation();switchTab('announcements')">Announce</button>
+        </div>
+      </div>
+
+      <!-- 4. Event & Timings -->
+      <div class="feat-tile" style="--tc:#2980b9" onclick="switchTab('timings')">
+        <div class="ft-head">
+          <div class="ft-icon">📅</div>
+          <div class="ft-badge good" id="ft-badge-evt"></div>
+        </div>
+        <div class="ft-title">Event & Timings</div>
+        <div class="ft-val" id="ft-val-evt" style="font-size:1.6rem">—</div>
+        <div class="ft-sub" id="ft-sub-evt">days away · Nov 1</div>
+        <div class="ft-progress-wrap"><div class="ft-bar" id="ft-bar-evt"></div></div>
+        <div class="ft-actions">
+          <button class="ft-btn primary" onclick="event.stopPropagation();switchTab('timings')">Edit Timings</button>
+        </div>
+      </div>
+
+      <!-- 5. Directory -->
+      <div class="feat-tile" style="--tc:#16a085" onclick="switchTab('directory')">
+        <div class="ft-head">
+          <div class="ft-icon">🏠</div>
+          <div class="ft-badge" id="ft-badge-dir"></div>
+        </div>
+        <div class="ft-title">Resident Directory</div>
+        <div class="ft-val" id="ft-val-dir">—</div>
+        <div class="ft-sub" id="ft-sub-dir">residents · — towers</div>
+        <div class="ft-progress-wrap" style="display:none"></div>
+        <div class="ft-actions">
+          <button class="ft-btn primary" onclick="event.stopPropagation();switchTab('directory')">View Directory</button>
+        </div>
+      </div>
+
+      <!-- 6. Prasad Distribution -->
+      <div class="feat-tile" style="--tc:#f39c12" onclick="switchTab('prasad')">
+        <div class="ft-head">
+          <div class="ft-icon">🙏</div>
+          <div class="ft-badge" id="ft-badge-pra"></div>
+        </div>
+        <div class="ft-title">Prasad Distribution</div>
+        <div class="ft-val" id="ft-val-pra">—</div>
+        <div class="ft-sub" id="ft-sub-pra">on list · — vratis</div>
+        <div class="ft-progress-wrap" style="display:none"></div>
+        <div class="ft-actions">
+          <button class="ft-btn primary" onclick="event.stopPropagation();switchTab('prasad')">View List</button>
+          <button class="ft-btn" onclick="event.stopPropagation();switchTab('prasad')">Print</button>
+        </div>
+      </div>
+
+      <!-- 7. Volunteers -->
+      <div class="feat-tile" style="--tc:#8e44ad" onclick="switchTab('volunteers')">
+        <div class="ft-head">
+          <div class="ft-icon">👥</div>
+          <div class="ft-badge" id="ft-badge-vol"></div>
+        </div>
+        <div class="ft-title">Volunteers</div>
+        <div class="ft-val" id="ft-val-vol">—</div>
+        <div class="ft-sub" id="ft-sub-vol">volunteers registered</div>
+        <div class="ft-progress-wrap" style="display:none"></div>
+        <div class="ft-actions">
+          <button class="ft-btn primary" onclick="event.stopPropagation();switchTab('volunteers')">Manage</button>
+        </div>
+      </div>
+
+      <!-- 8. Gallery -->
+      <div class="feat-tile" style="--tc:#c0392b" onclick="switchTab('gallery')">
+        <div class="ft-head">
+          <div class="ft-icon">📸</div>
+          <div class="ft-badge" id="ft-badge-gal"></div>
+        </div>
+        <div class="ft-title">Gallery</div>
+        <div class="ft-val" id="ft-val-gal">—</div>
+        <div class="ft-sub" id="ft-sub-gal">pending review</div>
+        <div class="ft-progress-wrap" style="display:none"></div>
+        <div class="ft-actions">
+          <button class="ft-btn primary" onclick="event.stopPropagation();switchTab('gallery')">Review</button>
+          <button class="ft-btn" onclick="event.stopPropagation();switchTab('gallery')">Upload</button>
+        </div>
+      </div>
+
+      <!-- 9. Settings -->
+      <div class="feat-tile" style="--tc:#7f8c8d" onclick="switchTab('settings')">
+        <div class="ft-head">
+          <div class="ft-icon">⚙️</div>
+          <div class="ft-badge" id="ft-badge-set"></div>
+        </div>
+        <div class="ft-title">Settings</div>
+        <div class="ft-val" id="ft-val-set" style="font-size:1rem;padding-top:.2rem">—</div>
+        <div class="ft-sub" id="ft-sub-set">Team · Permissions · Config</div>
+        <div class="ft-progress-wrap" style="display:none"></div>
+        <div class="ft-actions">
+          <button class="ft-btn primary" onclick="event.stopPropagation();switchTab('settings')">Open Settings</button>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Pending verifications (compact, below tiles) -->
+    <div class="admin-card" id="pendingCard" style="display:none">
+      <div class="ac-title" style="font-size:.9rem">🔔 Pending Verifications</div>
+      <div id="pendingList"><div class="loading-state">Loading…</div></div>
     </div>
   </div>
 
@@ -1879,26 +2080,91 @@ function shiftActiveYear(delta) {
    DASHBOARD
 ═══════════════════════════════════════════════════ */
 function updateDashStats() {
-  // Show current active year only
+  // Filter to active year only
   const all      = allConData.filter(r => (parseInt(r.year) || new Date().getFullYear()) === ACTIVE_YEAR);
   const verified = all.filter(r => r.status?.includes('Received'));
   const pending  = all.filter(r => !r.status?.includes('Received') && !r.status?.includes('Rejected'));
   const total    = verified.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
-  document.getElementById('s-total').textContent    = '₹' + total.toLocaleString('en-IN');
-  document.getElementById('s-count').textContent    = all.length;
-  document.getElementById('s-pending').textContent  = pending.length;
-  document.getElementById('s-verified').textContent = verified.length;
 
-  // Year label
-  const lbl = document.getElementById('dashYearLabel');
-  if (lbl) lbl.textContent = `Chhath Puja ${ACTIVE_YEAR}`;
+  // Top stat bar
+  _set('s-total',    '₹' + total.toLocaleString('en-IN'));
+  _set('s-count',    all.length);
+  _set('s-pending',  pending.length);
+  _set('s-verified', verified.length);
 
-  // Show switch banner if Dec 1 of ACTIVE_YEAR has passed
+  // Year label + switch banner
+  _set('dashYearLabel', `Chhath Puja ${ACTIVE_YEAR}`);
   const banner = document.getElementById('dashYearSwitchBanner');
-  if (banner) {
-    const switchDate = new Date(ACTIVE_YEAR, 11, 1); // Dec 1
-    banner.style.display = (new Date() >= switchDate) ? 'inline-block' : 'none';
+  if (banner) banner.style.display = new Date() >= new Date(ACTIVE_YEAR, 11, 1) ? 'inline-block' : 'none';
+
+  // ── Collections tile ──────────────────────────────
+  const pct = all.length ? Math.round(verified.length / all.length * 100) : 0;
+  _set('ft-val-col', '₹' + total.toLocaleString('en-IN'));
+  _set('ft-sub-col', `${all.length} contributors · ${pending.length} pending`);
+  _bar('ft-bar-col', pct);
+  _badge('ft-badge-col', pending.length ? `${pending.length} pending` : null, pending.length ? 'urgent' : '');
+
+  // Show/hide pending card
+  const pc = document.getElementById('pendingCard');
+  if (pc) pc.style.display = pending.length ? 'block' : 'none';
+
+  // ── Finance tile ──────────────────────────────────
+  const fin = JSON.parse(localStorage.getItem('psots_finance_2026') || '{}');
+  const budget   = parseFloat(fin.budget)   || 0;
+  const expenses = parseFloat(fin.expenses) || 0;
+  const carry    = parseFloat(fin.carryForward) || 0;
+  if (budget) {
+    const used = Math.min(Math.round(expenses / budget * 100), 100);
+    _set('ft-val-fin', used + '%');
+    _set('ft-sub-fin', `₹${expenses.toLocaleString('en-IN')} of ₹${budget.toLocaleString('en-IN')} budget`);
+    _bar('ft-bar-fin', used);
+    _badge('ft-badge-fin', carry ? `CF ₹${carry.toLocaleString('en-IN')}` : null, '');
+  } else {
+    _set('ft-val-fin', 'Not set');
+    _set('ft-sub-fin', 'Set budget in Finance tab');
   }
+
+  // ── Communication tile ────────────────────────────
+  const subs = JSON.parse(localStorage.getItem('psots_subscribers') || '[]');
+  const anns = (typeof announcements !== 'undefined' ? announcements : []).filter(a => a.active !== false);
+  _set('ft-val-com', subs.length);
+  _set('ft-sub-com', `subscribers · ${anns.length} active announcement${anns.length !== 1 ? 's' : ''}`);
+
+  // ── Directory tile ────────────────────────────────
+  const residents = JSON.parse(localStorage.getItem('psots_residents') || '[]');
+  const towers = [...new Set(residents.map(r => r.tower).filter(Boolean))];
+  _set('ft-val-dir', residents.length || '—');
+  _set('ft-sub-dir', `residents · ${towers.length} towers`);
+  _badge('ft-badge-dir', towers.length ? `${towers.length} towers` : null, 'good');
+
+  // ── Prasad tile ───────────────────────────────────
+  const prasadAll = allConData.filter(r => r.status?.includes('Received') && (parseInt(r.year)||new Date().getFullYear()) === ACTIVE_YEAR);
+  const vratiCount = prasadAll.filter(r => r.isVrati === 'yes').length;
+  _set('ft-val-pra', prasadAll.length);
+  _set('ft-sub-pra', `on list · ${vratiCount} vrat${vratiCount !== 1 ? 'is' : 'i'}`);
+
+  // ── Settings tile — Fonnte status ─────────────────
+  const fSt = document.getElementById('fonnteStatusBadge');
+  const fTxt = fSt ? fSt.textContent.trim() : '';
+  const connected = fTxt.includes('Connected') || fTxt.includes('✅');
+  _set('ft-val-set', connected ? '✅ Fonnte connected' : '⚠️ Check Fonnte');
+  _badge('ft-badge-set', connected ? 'Connected' : 'Setup needed', connected ? 'good' : 'urgent');
+}
+
+function _set(id, val) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = val;
+}
+function _bar(id, pct) {
+  const el = document.getElementById(id);
+  if (el) setTimeout(() => el.style.width = pct + '%', 120);
+}
+function _badge(id, text, cls) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  if (!text) { el.classList.remove('show','urgent','good'); return; }
+  el.textContent = text;
+  el.className = 'ft-badge show' + (cls ? ' ' + cls : '');
 }
 
 function updatePendingList() {
@@ -1925,10 +2191,28 @@ function updateAdminCountdown() {
   const eventDate = new Date(`${ACTIVE_YEAR}-11-01T06:00:00`);
   const diff = eventDate - new Date();
   const days = Math.floor(diff / 86400000);
-  const el  = document.getElementById('adminCountdown');
-  const lbl = document.getElementById('adminCountdownLbl');
-  if (el)  el.textContent  = days > 0 ? days + ' days' : (days === 0 ? '🎉 Today!' : `${Math.abs(days)}d ago`);
-  if (lbl) lbl.textContent = `${days > 0 ? 'Days until' : 'Days since'} Chhath Puja ${ACTIVE_YEAR} (Nov 1)`;
+  // Event tile
+  _set('ft-val-evt', days > 0 ? days : (days === 0 ? 'Today!' : `${Math.abs(days)}d ago`));
+  _set('ft-sub-evt', `${days > 0 ? 'days until' : 'days since'} Chhath Puja ${ACTIVE_YEAR} (Nov 1)`);
+  // Progress bar: days elapsed since Jan 1 / total year
+  const yearStart  = new Date(`${ACTIVE_YEAR}-01-01`);
+  const elapsed    = Math.max(0, new Date() - yearStart);
+  const toEvent    = Math.max(1, eventDate - yearStart);
+  _bar('ft-bar-evt', Math.min(Math.round(elapsed / toEvent * 100), 100));
+  _badge('ft-badge-evt', days > 0 ? `${days}d away` : (days === 0 ? 'Today!' : 'Over'), days > 0 ? '' : 'good');
+  // Volunteer tile — pull from stat if already rendered
+  const vTotal = document.getElementById('v-total');
+  if (vTotal && vTotal.textContent !== '—') {
+    _set('ft-val-vol', vTotal.textContent);
+    _set('ft-sub-vol', `volunteers · ${document.getElementById('v-day3')?.textContent||'—'} Nov3 · ${document.getElementById('v-day4')?.textContent||'—'} Nov4`);
+  }
+  // Gallery pending
+  const galGrid = document.getElementById('galGrid');
+  if (galGrid) {
+    const pendingCards = galGrid.querySelectorAll('[data-status="pending"]');
+    _set('ft-val-gal', pendingCards.length || '—');
+    _badge('ft-badge-gal', pendingCards.length ? `${pendingCards.length} pending` : null, 'urgent');
+  }
 }
 
 /* ═══════════════════════════════════════════════════
