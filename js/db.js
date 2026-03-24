@@ -204,6 +204,88 @@ const PSOTS_DB = (() => {
   }
 
   /**
+   * getResident(flat) → resident object or null
+   *
+   * Fetches a single resident from Firestore by flat number.
+   * Returns null if not found or Firestore unavailable.
+   */
+  async function getResident(flat) {
+    if (!_db || !flat) return null;
+    try {
+      const id   = String(flat).replace(/[^a-zA-Z0-9]/g, '_');
+      const snap = await _db.collection('residents').doc(id).get();
+      return snap.exists ? snap.data() : null;
+    } catch (e) {
+      console.warn('[PSOTS_DB] getResident failed:', e.message);
+      return null;
+    }
+  }
+
+  /**
+   * upsertResident(flat, data) → { ok }
+   *
+   * Creates or merges a single resident document in Firestore.
+   * Called when a resident saves their portal profile.
+   */
+  async function upsertResident(flat, data) {
+    if (!_db || !flat) return { ok: false, error: 'No flat or Firestore not ready' };
+    try {
+      const id = String(flat).replace(/[^a-zA-Z0-9]/g, '_');
+      await _db.collection('residents').doc(id).set({
+        flat:     String(flat),
+        name:     data.name     || '',
+        mobile:   data.mobile   || '',
+        tower:    data.tower    || '',
+        total:    Number(data.total)    || 0,
+        lastYear: Number(data.lastYear) || 0,
+        isVrati:  Boolean(data.isVrati),
+      }, { merge: true });
+      return { ok: true };
+    } catch (e) {
+      console.warn('[PSOTS_DB] upsertResident failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /**
+   * syncResidents(residents) → { ok, written }
+   *
+   * Bulk-writes the residents directory to Firestore.
+   * Document ID = sanitised flat number — idempotent on re-sync.
+   * Strips the internal `contributions` and `names` arrays (redundant in Firestore).
+   */
+  async function syncResidents(residents) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      const BATCH_SIZE = 400;
+      let written = 0;
+      for (let i = 0; i < residents.length; i += BATCH_SIZE) {
+        const batch = _db.batch();
+        residents.slice(i, i + BATCH_SIZE).forEach(r => {
+          const id = String(r.flat || '').replace(/[^a-zA-Z0-9]/g, '_');
+          if (!id) return;
+          const ref = _db.collection('residents').doc(id);
+          batch.set(ref, {
+            flat:     String(r.flat     || ''),
+            name:     r.name     || '',
+            mobile:   r.mobile   || '',
+            tower:    r.tower    || '',
+            total:    Number(r.total)    || 0,
+            lastYear: Number(r.lastYear) || 0,
+            isVrati:  Boolean(r.isVrati),
+          }, { merge: true });
+        });
+        await batch.commit();
+        written += Math.min(BATCH_SIZE, residents.length - i);
+      }
+      return { ok: true, written };
+    } catch (e) {
+      console.warn('[PSOTS_DB] syncResidents failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /**
    * syncContributions(records) → { ok, written }
    *
    * Bulk-writes contribution records to Firestore using deterministic
@@ -248,7 +330,7 @@ const PSOTS_DB = (() => {
 
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, syncContributions };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, syncContributions, getResident, upsertResident, syncResidents };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();

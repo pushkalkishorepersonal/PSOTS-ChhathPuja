@@ -869,17 +869,22 @@ async function syncToFirestore() {
   const btn = document.getElementById('btnSyncFirestore');
   if (typeof PSOTS_DB === 'undefined') { toast('Firebase not loaded', 'error'); return; }
   if (!PSOTS_DB.isFirestoreReady) { toast('Firestore not ready — check firebase-config.js', 'error'); return; }
-  const all = getHistory();
-  if (!all.length) { toast('No history to sync', 'error'); return; }
+  const history   = getHistory();
+  const residents = getResidents();
+  if (!history.length && !residents.length) { toast('No data to sync', 'error'); return; }
   btn.disabled = true;
   btn.textContent = '⏳ Syncing…';
-  const result = await PSOTS_DB.syncContributions(all);
+  const [cRes, rRes] = await Promise.all([
+    history.length   ? PSOTS_DB.syncContributions(history)   : Promise.resolve({ ok: true, written: 0 }),
+    residents.length ? PSOTS_DB.syncResidents(residents)     : Promise.resolve({ ok: true, written: 0 }),
+  ]);
   btn.disabled = false;
   btn.textContent = '🔥 Sync to Firestore';
-  if (result.ok) {
-    toast(`✅ ${result.written} records synced to Firestore!`, 'success');
+  if (cRes.ok && rRes.ok) {
+    toast(`✅ Synced — ${cRes.written} contributions + ${rRes.written} residents`, 'success');
   } else {
-    toast('Sync failed: ' + result.error, 'error');
+    const err = (!cRes.ok ? cRes.error : rRes.error) || 'Unknown error';
+    toast('Sync failed: ' + err, 'error');
   }
 }
 

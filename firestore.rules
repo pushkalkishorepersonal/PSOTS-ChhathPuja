@@ -31,6 +31,15 @@ service cloud.firestore {
       allow write: if true;
     }
 
+    // ── Residents directory ─────────────────────────────
+    // Document ID = sanitised flat number (e.g. "15167", "15167A").
+    // Fields: flat, name, mobile, tower, total, lastYear, isVrati.
+    // Readable by anyone. Step 2 will restrict writes to admin only.
+    match /residents/{flat} {
+      allow read: if true;
+      allow write: if true;
+    }
+
     // ── Everything else — locked until later migration steps ──
     match /{document=**} {
       allow read, write: if false;

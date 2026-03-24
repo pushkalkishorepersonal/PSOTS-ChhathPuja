@@ -53,6 +53,7 @@
 |---|---|---|
 | `profiles` | Resident profile (flat, mobile, family) | Google OAuth user ID |
 | `contributions` | All payment records 2022–2026 | `year_flat_name_amount` |
+| `residents` | Directory — flat, name, mobile, tower, total, lastYear | sanitised flat number |
 
 ### One-time: Sync historical data to Firestore
 
