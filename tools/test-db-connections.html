@@ -201,7 +201,7 @@ async function testCollectionRead(db, collectionName, testId) {
 
 async function testFirestoreWrite(db) {
   run('write');
-  const docRef = db.collection('_test_connection_probe').doc('canary');
+  const docRef = db.collection('profiles').doc('__test_canary__');
   try {
     await docRef.set({ ts: Date.now(), by: 'test-db-connections.html' });
     await docRef.delete();
