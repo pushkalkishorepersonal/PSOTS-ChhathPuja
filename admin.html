@@ -1550,6 +1550,15 @@ function enterAdmin(u) {
     const freshRole = getMemberRole(u.email);
     applyRoleFilter(freshRole);
   });
+
+  // Deep-link: ?tab=finance etc (from portal role tiles)
+  const deepTab = new URLSearchParams(window.location.search).get('tab');
+  if (deepTab) {
+    setTimeout(() => {
+      const btn = document.querySelector(`.tab-btn[data-tab="${deepTab}"]`);
+      if (btn && btn.style.display !== 'none') btn.click();
+    }, 300);
+  }
 }
 
 function logout() {

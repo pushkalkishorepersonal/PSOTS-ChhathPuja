@@ -599,6 +599,21 @@
         <div class="ph-tile-sub">See who contributed</div>
       </div>
     </div>
+
+    <!-- Committee role quick-access — only shown for committee members -->
+    <div id="roleSection" style="display:none;margin-top:1.4rem">
+      <div style="font-size:.67rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--lbr);margin-bottom:.6rem">My Committee Role</div>
+      <div id="roleBanner" style="background:linear-gradient(135deg,#1a0800,#3d1200);border:1px solid rgba(255,194,0,.15);border-radius:14px;padding:.9rem 1.1rem;margin-bottom:.9rem;display:flex;align-items:center;gap:.85rem">
+        <div id="roleIcon" style="font-size:1.6rem;line-height:1"></div>
+        <div>
+          <div id="roleTitle" style="font-size:.88rem;font-weight:700;color:#fff"></div>
+          <div id="roleDesc" style="font-size:.72rem;color:rgba(255,220,120,.55);margin-top:.1rem"></div>
+        </div>
+        <a href="admin.html" style="margin-left:auto;background:rgba(232,92,0,.75);color:#fff;border:none;border-radius:50px;padding:.28rem .9rem;font-size:.66rem;font-weight:600;text-decoration:none;white-space:nowrap">Open Panel →</a>
+      </div>
+      <div class="ph-grid" id="roleTileGrid"></div>
+    </div>
+
   </div>
 
   <!-- ═══ CONTRIBUTIONS TAB ═══ -->
@@ -1406,6 +1421,80 @@ function getScriptUrlPortal() {
   return (window.PSOTS && window.PSOTS.scriptUrl) || localStorage.getItem('psots_script_url') || '';
 }
 
+/* ── Role tiles shown on portal home for committee members ── */
+const PORTAL_ROLE_META = {
+  treasurer: {
+    icon: '💰', desc: 'Finance & payment oversight',
+    tiles: [
+      { icon:'💰', title:'Finance',       sub:'Expense overview',  tab:'finance' },
+      { icon:'🙏', title:'Contributors',  sub:'Payment list',      tab:'contributors' },
+      { icon:'✍️', title:'Manual Entry',  sub:'Add payment',       tab:'manual' },
+    ]
+  },
+  announcements_manager: {
+    icon: '📢', desc: 'Posts & WhatsApp broadcasts',
+    tiles: [
+      { icon:'📢', title:'Announcements', sub:'Post updates',      tab:'announcements' },
+      { icon:'📲', title:'Broadcast',     sub:'WhatsApp blast',    tab:'broadcast' },
+    ]
+  },
+  event_coordinator: {
+    icon: '🎨', desc: 'Ghat, timings & volunteers',
+    tiles: [
+      { icon:'🤝', title:'Volunteers',    sub:'Manage team',       tab:'volunteers' },
+      { icon:'⏰', title:'Arghya Timings',sub:'Event schedule',    tab:'timings' },
+      { icon:'🙏', title:'Prasad List',   sub:'Distribution',      tab:'prasad' },
+      { icon:'📸', title:'Gallery',       sub:'Upload photos',     tab:'gallery' },
+    ]
+  },
+  resident_coordinator: {
+    icon: '👥', desc: 'Contributors & resident directory',
+    tiles: [
+      { icon:'🙏', title:'Contributors',  sub:'Payment list',      tab:'contributors' },
+      { icon:'👥', title:'Directory',     sub:'Resident list',     tab:'directory' },
+      { icon:'🙏', title:'Prasad List',   sub:'Distribution',      tab:'prasad' },
+    ]
+  },
+  volunteer: {
+    icon: '🤝', desc: 'View your tasks & check in',
+    tiles: [
+      { icon:'🤝', title:'My Tasks',      sub:'Volunteer panel',   tab:'volunteers' },
+    ]
+  },
+};
+
+function getPortalUserRole() {
+  if (!currentUser) return null;
+  const m = _membersCache.find(x => x.email.toLowerCase() === currentUser.email.toLowerCase());
+  return m ? m.role : null;
+}
+
+function applyPortalRoleUI() {
+  const role = getPortalUserRole();
+  const meta = PORTAL_ROLE_META[role];
+  if (!meta) return; // plain resident — nothing extra
+
+  // Update badge
+  const badge = document.getElementById('wbBadge');
+  if (badge) { badge.textContent = ROLE_LABELS[role]; badge.style.display = ''; }
+
+  // Show role section
+  const sec = document.getElementById('roleSection');
+  if (!sec) return;
+  sec.style.display = 'block';
+
+  document.getElementById('roleIcon').textContent  = meta.icon;
+  document.getElementById('roleTitle').textContent = ROLE_LABELS[role];
+  document.getElementById('roleDesc').textContent  = meta.desc;
+
+  document.getElementById('roleTileGrid').innerHTML = meta.tiles.map(t => `
+    <div class="ph-tile" style="--tc:#e85c00" onclick="window.location.href='admin.html?tab=${t.tab}'">
+      <span class="ph-tile-icon" style="margin-top:.55rem">${t.icon}</span>
+      <div class="ph-tile-title">${t.title}</div>
+      <div class="ph-tile-sub">${t.sub}</div>
+    </div>`).join('');
+}
+
 /* Load members from server → in-memory cache (never localStorage) */
 let _membersCache = [];
 
@@ -1418,6 +1507,7 @@ async function loadMembers() {
     if (Array.isArray(d.members)) {
       _membersCache = d.members;
       renderMemberList();
+      applyPortalRoleUI(); // refresh role tiles once fresh data arrives
     }
   } catch(e) {}
 }
@@ -1527,13 +1617,15 @@ function showPortal() {
   document.getElementById('portalApp').style.display = 'block';
   document.getElementById('btnSignout').style.display = 'block';
 
-  // Check admin
+  // Load members for everyone — needed for role detection
+  loadMembers().then(() => applyPortalRoleUI());
+
+  // Check admin (superadmin list; committee admins handled after loadMembers)
   if (currentUser && isAdmin(currentUser.email)) {
     document.getElementById('wbBadge').style.display = 'none';
     document.getElementById('adminLink').style.display = 'inline-block';
     document.getElementById('adminTab').style.display = 'inline-block';
     renderMemberList();
-    loadMembers(); // async — syncs from server then re-renders
   }
 
   // Set avatar in nav — always show (picture or initials fallback)
