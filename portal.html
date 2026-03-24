@@ -1868,7 +1868,7 @@ async function _refreshHistoryCache(flat, mobile) {
       if (contribs && contribs.length) {
         _setCachedHistory(contribs);
         renderContributions(contribs.map(r => ({
-          year: r.year, amount: r.amount, method: r.method || '', date: r.date || '', status: r.status || '✅ Received'
+          year: r.year, amount: r.amount, method: r.method || '', date: r.date || '', status: r.status || '✅ Received', name: r.name || ''
         })));
         return;
       }
@@ -1887,7 +1887,7 @@ async function _refreshHistoryCache(flat, mobile) {
         const mine = _filterMyContribs(allH, flat, mobile);
         if (mine.length) {
           renderContributions(mine.map(r => ({
-            year: r.year, amount: r.amount, method: r.method || '', date: r.date || '', status: r.status || '✅ Received'
+            year: r.year, amount: r.amount, method: r.method || '', date: r.date || '', status: r.status || '✅ Received', name: r.name || ''
           })));
           return;
         }
