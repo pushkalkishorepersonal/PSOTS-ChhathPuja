@@ -282,6 +282,17 @@
 
   <!-- ═══ DASHBOARD TAB ═══ -->
   <div class="tab-panel active" id="tab-dashboard">
+
+    <!-- Year selector -->
+    <div id="dashYearBar" style="display:flex;align-items:center;gap:.6rem;margin-bottom:.85rem;flex-wrap:wrap">
+      <button onclick="shiftActiveYear(-1)" style="background:none;border:1.5px solid #f0d5b8;border-radius:8px;padding:.2rem .6rem;cursor:pointer;font-size:.85rem;color:var(--lbr)">‹</button>
+      <div style="font-size:.85rem;font-weight:700;color:var(--ink)">📅 <span id="dashYearLabel">—</span></div>
+      <button onclick="shiftActiveYear(1)"  style="background:none;border:1.5px solid #f0d5b8;border-radius:8px;padding:.2rem .6rem;cursor:pointer;font-size:.85rem;color:var(--lbr)">›</button>
+      <div id="dashYearSwitchBanner" style="display:none;font-size:.72rem;background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:.3rem .75rem;color:#856404;cursor:pointer" onclick="shiftActiveYear(1)">
+        🔔 Event is over — tap to switch to next year
+      </div>
+    </div>
+
     <div class="stat-grid" id="dashStats">
       <div class="stat-card"><div class="stat-val" id="s-total">—</div><div class="stat-lbl">Total Collected</div></div>
       <div class="stat-card"><div class="stat-val" id="s-count">—</div><div class="stat-lbl">Contributors</div></div>
@@ -297,7 +308,7 @@
     <div class="admin-card">
       <div class="ac-title">📅 Event Countdown</div>
       <div style="font-family:'DM Sans',sans-serif;font-size:2rem;font-weight:900;color:var(--or)" id="adminCountdown">—</div>
-      <div style="font-size:.8rem;color:var(--lbr);margin-top:.3rem">Days until Chhath Puja 2026 (Nov 1)</div>
+      <div id="adminCountdownLbl" style="font-size:.8rem;color:var(--lbr);margin-top:.3rem">Days until Chhath Puja (Nov 1)</div>
     </div>
 
     <div class="admin-card">
@@ -1163,6 +1174,7 @@ const SCRIPT_URL_KEY = 'psots_script_url';
 let allConData = [];
 let filterMode = 'all';
 let announcements = [];
+let ACTIVE_YEAR = parseInt(localStorage.getItem('psots_active_year')) || new Date().getFullYear();
 
 /* ═══════════════════════════════════════════════════
    AUTH — Google Sign-In
@@ -1853,10 +1865,22 @@ function exportCSV() {
 }
 
 /* ═══════════════════════════════════════════════════
+   ACTIVE YEAR
+═══════════════════════════════════════════════════ */
+function shiftActiveYear(delta) {
+  ACTIVE_YEAR += delta;
+  localStorage.setItem('psots_active_year', ACTIVE_YEAR);
+  updateDashStats();
+  updatePendingList();
+  updateAdminCountdown();
+}
+
+/* ═══════════════════════════════════════════════════
    DASHBOARD
 ═══════════════════════════════════════════════════ */
 function updateDashStats() {
-  const all      = allConData;
+  // Show current active year only
+  const all      = allConData.filter(r => (parseInt(r.year) || new Date().getFullYear()) === ACTIVE_YEAR);
   const verified = all.filter(r => r.status?.includes('Received'));
   const pending  = all.filter(r => !r.status?.includes('Received') && !r.status?.includes('Rejected'));
   const total    = verified.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
@@ -1864,10 +1888,24 @@ function updateDashStats() {
   document.getElementById('s-count').textContent    = all.length;
   document.getElementById('s-pending').textContent  = pending.length;
   document.getElementById('s-verified').textContent = verified.length;
+
+  // Year label
+  const lbl = document.getElementById('dashYearLabel');
+  if (lbl) lbl.textContent = `Chhath Puja ${ACTIVE_YEAR}`;
+
+  // Show switch banner if Dec 1 of ACTIVE_YEAR has passed
+  const banner = document.getElementById('dashYearSwitchBanner');
+  if (banner) {
+    const switchDate = new Date(ACTIVE_YEAR, 11, 1); // Dec 1
+    banner.style.display = (new Date() >= switchDate) ? 'inline-block' : 'none';
+  }
 }
 
 function updatePendingList() {
-  const pending = allConData.filter(r => !r.status?.includes('Received') && !r.status?.includes('Rejected'));
+  const pending = allConData.filter(r =>
+    (parseInt(r.year) || new Date().getFullYear()) === ACTIVE_YEAR &&
+    !r.status?.includes('Received') && !r.status?.includes('Rejected')
+  );
   const el = document.getElementById('pendingList');
   if (!pending.length) { el.innerHTML = '<p style="color:var(--green);font-size:.9rem">✅ No pending verifications!</p>'; return; }
   el.innerHTML = pending.slice(0,5).map((r,i) => `
@@ -1884,10 +1922,13 @@ function updatePendingList() {
 }
 
 function updateAdminCountdown() {
-  const diff = new Date('2026-11-01T06:00:00') - new Date();
+  const eventDate = new Date(`${ACTIVE_YEAR}-11-01T06:00:00`);
+  const diff = eventDate - new Date();
   const days = Math.floor(diff / 86400000);
-  const el = document.getElementById('adminCountdown');
-  if (el) el.textContent = days > 0 ? days + ' days' : '🎉 Event is here!';
+  const el  = document.getElementById('adminCountdown');
+  const lbl = document.getElementById('adminCountdownLbl');
+  if (el)  el.textContent  = days > 0 ? days + ' days' : (days === 0 ? '🎉 Today!' : `${Math.abs(days)}d ago`);
+  if (lbl) lbl.textContent = `${days > 0 ? 'Days until' : 'Days since'} Chhath Puja ${ACTIVE_YEAR} (Nov 1)`;
 }
 
 /* ═══════════════════════════════════════════════════
