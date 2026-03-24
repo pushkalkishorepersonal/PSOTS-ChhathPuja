@@ -8,6 +8,11 @@
   <link rel="stylesheet" href="../css/style.css"/>
   <script src="../js/config.js"></script>
   <script src="../js/auth-gate.js"></script>
+  <!-- Firebase SDK — Firestore as primary source -->
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/db.js"></script>
   <style>
   /* ── Year tab strip ── */
   .yr-tabs{display:flex;gap:.4rem;overflow-x:auto;padding:.1rem .05rem .6rem;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-bottom:1.1rem}
@@ -131,10 +136,15 @@
         <span>Opening Balance <span class="pill pill-green">carried from 2025</span></span>
         <strong style="color:var(--green)">₹1,04,670</strong>
       </div>
-      <div class="fin-row"><span>Collected 2026 (so far)</span><strong id="c26-collected" style="color:var(--or)">—</strong></div>
+      <div class="fin-row"><span>Collected 2026 — Verified ✅</span><strong id="c26-collected" style="color:var(--or)">—</strong></div>
+      <div class="fin-row" style="font-size:.78rem;opacity:.8"><span style="padding-left:.8rem">↳ Pending verification ⏳</span><span id="c26-pending" style="color:#b8860b">—</span></div>
+      <div class="fin-row" style="font-size:.78rem;opacity:.7" id="rejRow" style="display:none"><span style="padding-left:.8rem">↳ Rejected / invalid ❌</span><span id="c26-rejected" style="color:#c03000">—</span></div>
       <div class="fin-row subtotal"><span>Total Available</span><strong id="c26-available" style="color:var(--or)">₹1,04,670</strong></div>
       <div class="fin-row"><span>Expenses 2026 (so far)</span><strong id="c26-expenses">₹0</strong></div>
       <div class="fin-row total"><span>Current Balance</span><strong id="c26-balance" style="color:var(--green)">₹1,04,670</strong></div>
+
+      <!-- Duplicate warning — shown only when detected -->
+      <div id="dupWarn" style="display:none;margin:.7rem 0;padding:.6rem .9rem;background:#fff8e1;border:1px solid #ffe082;border-radius:10px;font-size:.76rem;color:#7a5000"></div>
 
       <div class="prog-wrap">
         <div class="prog-labels">
@@ -145,9 +155,11 @@
       </div>
 
       <div class="stat-chips">
-        <div class="chip"><strong id="c26-count">—</strong>Contributors</div>
-        <div class="chip"><strong id="c26-budget">₹6,00,000</strong>Budget</div>
+        <div class="chip"><strong id="c26-count">—</strong><span style="font-size:.65rem">Verified flats</span></div>
+        <div class="chip"><strong id="c26-pending-count">—</strong><span style="font-size:.65rem">Pending</span></div>
+        <div class="chip"><strong id="c26-budget">₹6,00,000</strong><span style="font-size:.65rem">Budget</span></div>
       </div>
+      <div id="srcNote" style="font-size:.65rem;color:rgba(0,0,0,.35);margin-top:.5rem;text-align:right"></div>
     </div>
 
     <!-- ══ Why ₹6L? — sentimental context ══ -->
@@ -341,16 +353,71 @@ const su = (window.PSOTS && window.PSOTS.scriptUrl) || localStorage.getItem('pso
 const CARRY = 104670;
 const fmt = n => '₹' + parseInt(n || 0).toLocaleString('en-IN');
 
-async function load2026() {
-  let collected = 0, count = 0, expenses = 0, budget = 600000;
+function _applyContribStats(rows2026) {
+  const verified = rows2026.filter(x => x.status?.includes('Received'));
+  const pending  = rows2026.filter(x => !x.status?.includes('Received') && !x.status?.toLowerCase().includes('reject'));
+  const rejected = rows2026.filter(x => x.status?.toLowerCase().includes('reject'));
 
-  try {
-    const r = await fetch(su + '?action=list_all');
-    const d = await r.json();
-    const rows2026 = (d.all || []).filter(x => Number(x.year) === 2026);
-    collected = rows2026.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
-    count = rows2026.length;
-  } catch (e) {}
+  const collectedAmt = verified.reduce((s,x) => s+(parseFloat(x.amount)||0), 0);
+  const pendingAmt   = pending.reduce((s,x)  => s+(parseFloat(x.amount)||0), 0);
+  const rejectedAmt  = rejected.reduce((s,x) => s+(parseFloat(x.amount)||0), 0);
+
+  // Count unique flats (verified)
+  const verFlats = new Set(verified.map(x => String(x.flat||'—').trim())).size;
+  const pendFlats = new Set(pending.map(x => String(x.flat||'—').trim())).size;
+
+  document.getElementById('c26-collected').textContent = fmt(collectedAmt);
+  document.getElementById('c26-pending').textContent   = pendingAmt > 0 ? fmt(pendingAmt) : '₹0';
+  document.getElementById('c26-rejected').textContent  = fmt(rejectedAmt);
+  if (rejectedAmt > 0) document.getElementById('rejRow').style.display = '';
+  document.getElementById('c26-count').textContent         = verFlats || '—';
+  document.getElementById('c26-pending-count').textContent = pendFlats || '0';
+
+  // Duplicate detection — same flat has >1 VERIFIED entries in 2026
+  const flatVerCount = {};
+  verified.forEach(x => {
+    const k = String(x.flat||'—').trim();
+    flatVerCount[k] = (flatVerCount[k]||0) + 1;
+  });
+  const dups = Object.entries(flatVerCount).filter(([,n]) => n > 1).map(([f]) => 'Flat '+f);
+  if (dups.length) {
+    document.getElementById('dupWarn').style.display = 'block';
+    document.getElementById('dupWarn').innerHTML =
+      `⚠️ <strong>Possible duplicate entries</strong> — ${dups.join(', ')} ha${dups.length>1?'ve':'s'} multiple verified payments. Please review in the admin panel.`;
+  }
+
+  return collectedAmt;
+}
+
+async function load2026() {
+  let collected = 0, expenses = 0, budget = 600000;
+
+  // 1 — Firestore (live, reflects deletes immediately)
+  let usedFirestore = false;
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    try {
+      const all = await PSOTS_DB.getAllContributions();
+      if (all && all.length >= 0) {
+        const rows2026 = all.filter(x => Number(x.year) === 2026);
+        collected = _applyContribStats(rows2026);
+        usedFirestore = true;
+        const note = document.getElementById('srcNote');
+        if (note) note.textContent = '🔥 Live from Firestore · ' + new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+      }
+    } catch(e) {}
+  }
+
+  // 2 — Apps Script fallback
+  if (!usedFirestore && su) {
+    try {
+      const r = await fetch(su + '?action=list_all');
+      const d = await r.json();
+      const rows2026 = (d.all || []).filter(x => Number(x.year) === 2026);
+      collected = _applyContribStats(rows2026);
+      const note = document.getElementById('srcNote');
+      if (note) note.textContent = '☁️ From Apps Script';
+    } catch (e) {}
+  }
 
   try {
     const r2 = await fetch(su + '?action=getFinance');
@@ -383,11 +450,10 @@ async function load2026() {
   const balance = available - expenses;
   const pct = budget > 0 ? Math.min(100, Math.round((collected / budget) * 100)) : 0;
 
-  document.getElementById('c26-collected').textContent = fmt(collected);
+  // c26-collected, c26-count, c26-pending-count already set by _applyContribStats
   document.getElementById('c26-available').textContent = fmt(available);
   document.getElementById('c26-expenses').textContent = fmt(expenses);
   document.getElementById('c26-balance').textContent = fmt(balance);
-  document.getElementById('c26-count').textContent = count || '—';
   document.getElementById('c26-budget').textContent = fmt(budget);
   document.getElementById('c26-budget-sm').textContent = parseInt(budget).toLocaleString('en-IN');
   const whyTitle = document.getElementById('why-budget-title'); if (whyTitle) whyTitle.textContent = fmt(budget);
@@ -428,7 +494,7 @@ async function load2026() {
   setTimeout(() => { bar.style.width = pct + '%'; }, 200);
 }
 
-if (su) load2026();
+load2026(); // Firestore-first; Apps Script is fallback only
 
 /* ── Year-over-year chart ── */
 const yoyData = [
