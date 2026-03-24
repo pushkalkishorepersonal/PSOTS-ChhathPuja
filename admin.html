@@ -3672,23 +3672,50 @@ function exportPrasadCSV() {
 let reminderTowerFilter = null;
 let allReminderData = [];
 
-function loadReminderList() {
-  // Build list of flats that haven't contributed (from directory vs verified contributors)
-  const contribs = allContributions || [];
-  const verifiedFlats = new Set(contribs.filter(c => c.status === 'Verified').map(c => (c.flat||'').toString().trim()).filter(Boolean));
-  const hist = JSON.parse(localStorage.getItem('psots_resident_history') || '{}');
+async function loadReminderList() {
+  const currentYear = new Date().getFullYear();
 
-  // Use directory residents (history) as "all residents"
-  allReminderData = Object.entries(hist)
-    .filter(([flat]) => !verifiedFlats.has(flat.trim()))
-    .map(([flat, h]) => ({
-      flat,
-      names: h.names || [],
-      tower: flat.replace(/\d+/,'').trim() || flat[0],
-      mobile: h.mobile || '',
-      lastYear: h.years ? Math.max(...h.years.filter(Number)) : null
+  // Verified flats for current year only
+  const verifiedFlats = new Set(
+    (allConData || [])
+      .filter(c => c.status?.includes('Received') && (parseInt(c.year) || currentYear) === currentYear)
+      .map(c => String(c.flat || '').trim())
+      .filter(Boolean)
+  );
+
+  // Residents: try Firestore first, fall back to localStorage
+  let residents = [];
+  try {
+    if (typeof firebase !== 'undefined' && firebase.apps.length) {
+      const snap = await firebase.firestore().collection('residents').get();
+      residents = snap.docs.map(d => d.data());
+    }
+  } catch(e) { console.warn('[loadReminderList] Firestore residents failed:', e.message); }
+
+  if (!residents.length) {
+    residents = JSON.parse(localStorage.getItem('psots_residents') || '[]');
+  }
+
+  if (!residents.length) {
+    document.getElementById('reminderStats').textContent = 'No residents directory loaded — sync residents first via Data Manager.';
+    document.getElementById('reminderBlastList').innerHTML = '';
+    allReminderData = [];
+    return;
+  }
+
+  allReminderData = residents
+    .filter(r => {
+      const flat = String(r.flat || '').trim();
+      return flat && !verifiedFlats.has(flat);
+    })
+    .map(r => ({
+      flat:     String(r.flat || ''),
+      names:    r.name ? [r.name] : [],
+      tower:    r.tower || '',
+      mobile:   r.mobile || '',
+      lastYear: r.lastYear || null,
     }))
-    .sort((a,b) => a.flat.localeCompare(b.flat, undefined, { numeric: true }));
+    .sort((a, b) => a.flat.localeCompare(b.flat, undefined, { numeric: true }));
 
   // Build tower chips
   const towers = [...new Set(allReminderData.map(x => x.tower))].filter(Boolean).sort();
