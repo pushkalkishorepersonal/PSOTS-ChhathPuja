@@ -458,35 +458,45 @@ async function load2026() {
   document.getElementById('c26-budget-sm').textContent = parseInt(budget).toLocaleString('en-IN');
   const whyTitle = document.getElementById('why-budget-title'); if (whyTitle) whyTitle.textContent = fmt(budget);
 
-  /* ── Budget allocation chart ── */
+  /* ── Budget allocation — proportional chart (no amounts) ── */
   const allocCats = [
-    { key: 'budTent',     label: 'Tent & Decoration', icon: '🏕️' },
-    { key: 'budKharna',   label: 'Kharna Prasad',     icon: '🍽️' },
-    { key: 'budThekua',   label: 'Thekua Prasad',     icon: '🪔' },
-    { key: 'budAV',       label: 'Audio & Visuals',   icon: '🎵' },
-    { key: 'budCultural', label: 'Cultural Prog.',    icon: '🎭' },
-    { key: 'budMisc',     label: 'Miscellaneous',     icon: '📦' },
+    { key: 'budTent',     label: 'Tent & Decoration', icon: '🏕️', color: '#e85c00' },
+    { key: 'budKharna',   label: 'Kharna Prasad',     icon: '🍽️', color: '#c8960c' },
+    { key: 'budThekua',   label: 'Thekua Prasad',     icon: '🪔',  color: '#d4870a' },
+    { key: 'budAV',       label: 'Audio & Visuals',   icon: '🎵', color: '#1a6a9a' },
+    { key: 'budCultural', label: 'Cultural Prog.',    icon: '🎭', color: '#7b3fa0' },
+    { key: 'budMisc',     label: 'Miscellaneous',     icon: '📦', color: '#5a7a5a' },
   ];
   const allocData = allocCats.map(c => ({ ...c, val: parseInt(f[c.key]) || 0 })).filter(c => c.val > 0);
   if (allocData.length > 0) {
-    const maxVal = Math.max(...allocData.map(c => c.val));
+    const totalAlloc = allocData.reduce((s,c) => s+c.val, 0);
     document.getElementById('why-alloc').style.display = 'block';
-    document.getElementById('why-alloc-bars').innerHTML = allocData.map(c => {
-      const sharePct = budget > 0 ? Math.round(c.val / budget * 100) : 0;
-      const barPct   = Math.round(c.val / maxVal * 100);
-      return `<div style="margin-bottom:.7rem">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.28rem">
-          <span style="font-size:.76rem;color:rgba(255,224,120,.9)">${c.icon} ${c.label}</span>
-          <span style="font-family:'DM Sans',sans-serif;font-size:.76rem;font-weight:700;color:var(--gold)">₹${c.val.toLocaleString('en-IN')} <span style="font-size:.62rem;opacity:.65">(${sharePct}%)</span></span>
-        </div>
-        <div style="height:7px;background:rgba(255,255,255,.08);border-radius:50px;overflow:hidden">
-          <div style="height:100%;width:0;background:linear-gradient(90deg,var(--or),var(--gold));border-radius:50px;transition:width 1.4s cubic-bezier(.25,.46,.45,.94)" data-bpct="${barPct}"></div>
-        </div>
+
+    // Stacked bar segments
+    const segments = allocData.map(c => {
+      const pct = totalAlloc > 0 ? (c.val / totalAlloc * 100).toFixed(1) : 0;
+      return `<div title="${c.icon} ${c.label} · ${pct}%" style="height:100%;width:0;background:${c.color};transition:width 1.2s cubic-bezier(.25,.46,.45,.94);flex-shrink:0" data-bpct="${pct}"></div>`;
+    }).join('');
+
+    // Legend grid — percentage only, no amounts
+    const legend = allocData.map(c => {
+      const pct = totalAlloc > 0 ? Math.round(c.val / totalAlloc * 100) : 0;
+      return `<div style="display:flex;align-items:center;gap:.45rem">
+        <div style="width:10px;height:10px;border-radius:3px;background:${c.color};flex-shrink:0"></div>
+        <span style="font-size:.72rem;color:rgba(255,224,120,.85);flex:1">${c.icon} ${c.label}</span>
+        <span style="font-family:'DM Sans',sans-serif;font-size:.72rem;font-weight:700;color:var(--gold)">${pct}%</span>
       </div>`;
     }).join('');
+
+    document.getElementById('why-alloc-bars').innerHTML = `
+      <div style="display:flex;height:14px;border-radius:50px;overflow:hidden;gap:2px;margin-bottom:1rem;background:rgba(255,255,255,.06)" id="allocStackBar">
+        ${segments}
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.5rem .9rem">${legend}</div>`;
+
     setTimeout(() => {
-      document.querySelectorAll('#why-alloc-bars [data-bpct]').forEach(el => { el.style.width = el.dataset.bpct + '%'; });
-    }, 500);
+      document.querySelectorAll('#allocStackBar [data-bpct]').forEach(el => { el.style.width = el.dataset.bpct + '%'; });
+    }, 400);
   }
   document.getElementById('c26-pct').textContent = pct + '%';
   const bar = document.getElementById('c26-bar');
