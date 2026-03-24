@@ -1605,24 +1605,31 @@ function dismissNudge() {
   localStorage.setItem('psots_nudge_snooze_v1', String(until));
 }
 
+const PROFILE_FETCH_TTL = 60 * 60 * 1000; // 1 hour — skip server fetch if profile was synced recently
+
 async function fetchProfileFromSheet() {
   if (C.scriptUrl.includes('YOUR_APPS_SCRIPT')) return;
+
+  // Skip the network round-trip if we have a recently-synced copy in cache
+  if (userProfile._fetchedAt && (Date.now() - userProfile._fetchedAt) < PROFILE_FETCH_TTL) return;
+
   try {
     const res = await fetch(`${C.scriptUrl}?action=getProfile&uid=${encodeURIComponent(currentUser.id)}`);
     const data = await res.json();
     if (data.profile) {
-      const hadFlat = !!userProfile.flat;
+      const hadFlat   = !!userProfile.flat;
       const hadMobile = !!userProfile.mobile;
-      userProfile = { ...userProfile, ...data.profile };
+      userProfile = { ...userProfile, ...data.profile, _fetchedAt: Date.now() };
+      // Persist updated profile + timestamp so next load skips server
+      localStorage.setItem('psots_profile_' + currentUser.id, JSON.stringify(userProfile));
       fillProfileUI();
-      // Sync WA banner and localStorage from server-sourced waOptIn
+      // Sync WA banner from server-sourced waOptIn
       if (typeof data.profile.waOptIn === 'boolean') {
         const waKey = 'psots_wa_' + currentUser.id;
         localStorage.setItem(waKey, String(data.profile.waOptIn));
         updateWABanner(data.profile.waOptIn);
       }
       // If flat/mobile just became available, reload contributions
-      // (they ran earlier with an empty profile and show dashes/prompt)
       if ((!hadFlat || !hadMobile) && (userProfile.flat || userProfile.mobile)) {
         loadContributions();
       }
@@ -1651,6 +1658,8 @@ async function saveProfile() {
                   : '',
   };
 
+  // Stamp fetch time so fetchProfileFromSheet won't overwrite immediately after save
+  userProfile._fetchedAt = Date.now();
   const key = 'psots_profile_' + currentUser.id;
   localStorage.setItem(key, JSON.stringify(userProfile));
   fillProfileUI();
@@ -1797,6 +1806,7 @@ async function lookupByFlat() {
       if (data.name && !userProfile.name) userProfile.name = data.name;
       if (data.mobile && !userProfile.mobile) userProfile.mobile = data.mobile;
     }
+    userProfile._fetchedAt = Date.now();
 
     const key = 'psots_profile_' + currentUser.id;
     localStorage.setItem(key, JSON.stringify(userProfile));
