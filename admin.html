@@ -591,7 +591,23 @@
         </div>
       </div>
 
-      <!-- 9. Team Members -->
+      <!-- 9. Committee -->
+      <div class="feat-tile" style="--tc:#6d3c8f" onclick="switchTab('settings');setTimeout(()=>document.querySelector('#tab-settings .admin-card:nth-child(2)')?.scrollIntoView({behavior:'smooth'}),300)">
+        <div class="ft-head">
+          <div class="ft-icon">🎭</div>
+          <div class="ft-badge" id="ft-badge-cmte"></div>
+        </div>
+        <div class="ft-title">Committee Roles</div>
+        <div class="ft-val" id="ft-val-cmte">—</div>
+        <div class="ft-sub" id="ft-sub-cmte">roles assigned</div>
+        <div class="ft-progress-wrap" style="display:none"></div>
+        <div class="ft-actions">
+          <button class="ft-btn primary" onclick="event.stopPropagation();switchTab('settings');setTimeout(()=>document.getElementById('cmteRoleCard')?.scrollIntoView({behavior:'smooth'}),300)">Manage Roles</button>
+          <button class="ft-btn" onclick="event.stopPropagation();switchTab('settings');setTimeout(()=>{document.getElementById('cmteRoleCard')?.scrollIntoView({behavior:'smooth'});addCmteRole();},350)">+ Add</button>
+        </div>
+      </div>
+
+      <!-- 10. Team Members -->
       <div class="feat-tile" style="--tc:#2471a3" onclick="switchTab('settings');setTimeout(()=>document.getElementById('teamMembersCard')?.scrollIntoView({behavior:'smooth'}),300)">
         <div class="ft-head">
           <div class="ft-icon">👥</div>
@@ -1129,9 +1145,9 @@
       <button class="btn-primary" onclick="saveSettings()">💾 Save Settings</button>
     </div>
 
-    <div class="admin-card">
+    <div class="admin-card" id="cmteRoleCard">
       <div class="ac-title">🎭 Committee Role Assignment</div>
-      <div class="ac-sub">Assign residents to committee roles by name or flat number. Roles are saved to the backend and shown on the committee page.</div>
+      <div class="ac-sub">Enter flat number — name auto-fills from DB. Shown on the committee page.</div>
       <div id="cmteRoleList" style="display:flex;flex-direction:column;gap:.9rem;margin-top:1rem"></div>
       <div style="display:flex;gap:.7rem;margin-top:1rem;flex-wrap:wrap;align-items:center">
         <button class="btn-secondary" onclick="addCmteRole()">＋ Add Role</button>
@@ -1140,19 +1156,22 @@
     </div>
 
     <div class="admin-card" style="border-left:3px solid #25d366">
-      <div class="ac-title">📲 Fonnte WhatsApp API</div>
-      <div class="ac-sub">Fonnte powers automated WhatsApp messages — payment confirmations, broadcast blasts, and payment reminders — without you having to manually open WhatsApp.</div>
-      <div id="fonnteStatusBadge" style="display:inline-flex;align-items:center;gap:.45rem;padding:.38rem .85rem;border-radius:50px;font-size:.78rem;font-weight:600;margin-bottom:1rem;background:#f0f0f0;color:#666">
-        ⏳ Not checked yet
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap">
+        <div class="ac-title" style="margin:0">📲 Fonnte WhatsApp API</div>
+        <div id="fonnteStatusBadge" style="display:inline-flex;align-items:center;gap:.45rem;padding:.3rem .75rem;border-radius:50px;font-size:.75rem;font-weight:600;background:#f0f0f0;color:#666">
+          ⏳ Not checked yet
+        </div>
       </div>
-      <div style="background:#f0fff4;border:1px solid #a5d6a7;border-radius:12px;padding:1rem 1.1rem;font-size:.8rem;color:#1a3a1a;line-height:1.7;margin-bottom:1rem">
-        <strong>Setup (one-time, done in Apps Script):</strong><br/>
-        1. Go to <strong>script.google.com</strong> → open your project → <strong>Project Settings → Script Properties</strong><br/>
-        2. Add a property: <strong>Name =</strong> <code>FONNTE_TOKEN</code> &nbsp;<strong>Value =</strong> your Fonnte API token<br/>
-        3. Get your token at <strong>fonnte.com</strong> → add device → scan QR with your WhatsApp → copy the token<br/>
-        4. Run <code>authorizeExternalRequests()</code> once to grant HTTP permission
+      <div style="margin-top:.7rem;display:flex;gap:.6rem;flex-wrap:wrap;align-items:center">
+        <button class="btn-secondary" onclick="checkFonnteStatus()" style="font-size:.82rem">🔄 Check Status</button>
+        <span style="font-size:.75rem;color:var(--lbr);cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">▸ Setup instructions</span>
+        <div style="display:none;width:100%;background:#f0fff4;border:1px solid #a5d6a7;border-radius:10px;padding:.8rem 1rem;font-size:.78rem;color:#1a3a1a;line-height:1.65;margin-top:.4rem">
+          1. <strong>script.google.com</strong> → Project Settings → Script Properties<br/>
+          2. Add property: <code>FONNTE_TOKEN</code> = your Fonnte API token<br/>
+          3. Get token at <strong>fonnte.com</strong> → add device → scan QR<br/>
+          4. Run <code>authorizeExternalRequests()</code> once
+        </div>
       </div>
-      <button class="btn-secondary" onclick="checkFonnteStatus()" style="font-size:.82rem">🔄 Check Fonnte Status</button>
     </div>
 
     <div class="admin-card">
@@ -2280,6 +2299,12 @@ function updateDashStats() {
   _set('ft-val-pra', prasadAll.length);
   _set('ft-sub-pra', `on list · ${vratiCount} vrat${vratiCount !== 1 ? 'is' : 'i'}`);
 
+  // ── Committee tile ────────────────────────────────
+  const filledRoles = cmteRoles.filter(r => r.role && r.name);
+  _set('ft-val-cmte', filledRoles.length || cmteRoles.length || '—');
+  _set('ft-sub-cmte', filledRoles.length ? filledRoles.slice(0,2).map(r=>r.role).join(' · ') + (filledRoles.length > 2 ? ` +${filledRoles.length-2}` : '') : 'no roles assigned yet');
+  _badge('ft-badge-cmte', filledRoles.length ? `${filledRoles.length} filled` : null, filledRoles.length ? 'good' : '');
+
   // ── Team Members tile ──────────────────────────────
   const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
   const totalTeam = base.length + _membersCache.length;
@@ -2936,66 +2961,63 @@ function renderCmteRoles() {
   const el = document.getElementById('cmteRoleList');
   if (!el) return;
   el.innerHTML = cmteRoles.map((r, i) => `
-    <div style="background:#fff8f2;border:1px solid #f0d5b8;border-radius:12px;padding:.85rem 1rem;display:flex;flex-wrap:wrap;gap:.6rem;align-items:flex-end">
-      <div style="flex:1;min-width:140px">
-        <label style="font-size:.72rem;color:var(--lbr);display:block;margin-bottom:.25rem">Role</label>
-        <input list="cmteRoleOptions" value="${r.role}" onchange="cmteRoles[${i}].role=this.value"
-          style="width:100%;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff"/>
-        <datalist id="cmteRoleOptions">${DEFAULT_ROLES.map(d=>`<option value="${d}">`).join('')}</datalist>
-      </div>
-      <div style="flex:1;min-width:130px">
-        <label style="font-size:.72rem;color:var(--lbr);display:block;margin-bottom:.25rem">Name</label>
-        <input id="cmte-name-${i}" value="${r.name}" placeholder="Resident name" oninput="cmteRoles[${i}].name=this.value"
-          style="width:100%;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff"/>
-      </div>
-      <div style="flex:0 0 100px">
-        <label style="font-size:.72rem;color:var(--lbr);display:block;margin-bottom:.25rem">Flat No.</label>
-        <input id="cmte-flat-${i}" value="${r.flat}" placeholder="e.g. 15167" oninput="cmteRoles[${i}].flat=this.value"
-          style="width:100%;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff"/>
-      </div>
-      <button onclick="lookupCmteResident(${i})" title="Lookup by flat"
-        style="background:#fff0e0;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .75rem;font-size:.78rem;cursor:pointer;color:var(--or);font-weight:600;white-space:nowrap">🔍 Lookup</button>
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;padding:.7rem .9rem;background:#fff8f2;border:1px solid #f0d5b8;border-radius:12px">
+      <input list="cmteRoleOptions${i}" value="${r.role}" onchange="cmteRoles[${i}].role=this.value" placeholder="Role (e.g. Treasurer)"
+        style="flex:1;min-width:130px;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff"/>
+      <datalist id="cmteRoleOptions${i}">${DEFAULT_ROLES.map(d=>`<option value="${d}">`).join('')}</datalist>
+      <input id="cmte-flat-${i}" value="${r.flat}" placeholder="Flat no." oninput="cmteRoles[${i}].flat=this.value" onblur="if(this.value.trim())lookupCmteResident(${i})"
+        style="width:90px;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff"/>
+      <input id="cmte-name-${i}" value="${r.name}" placeholder="Name (auto-fills on flat lookup)"
+        oninput="cmteRoles[${i}].name=this.value"
+        style="flex:1;min-width:130px;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:${r.name?'#fff':'#fffaf5'}"/>
       <button onclick="cmteRoles.splice(${i},1);renderCmteRoles()" title="Remove"
-        style="background:none;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .6rem;font-size:.85rem;cursor:pointer;color:#c03000">✕</button>
+        style="background:none;border:none;padding:.3rem .5rem;font-size:1rem;cursor:pointer;color:#c03000;line-height:1">✕</button>
     </div>`).join('');
 }
 
 async function lookupCmteResident(i) {
-  const flat = cmteRoles[i].flat || document.getElementById('cmte-flat-' + i)?.value.trim();
-  const nameInput = document.getElementById('cmte-name-' + i)?.value.trim();
+  const flat      = (cmteRoles[i].flat || document.getElementById('cmte-flat-' + i)?.value || '').trim();
+  const nameInput = (document.getElementById('cmte-name-' + i)?.value || '').trim();
   if (!flat && !nameInput) { toast('Enter a flat number or name first', 'error'); return; }
 
-  if (flat) {
-    try {
-      const res = await fetch(`${url}?action=findByFlat&flat=${encodeURIComponent(flat)}`);
-      const d = await res.json();
-      if (d.found) {
-        cmteRoles[i].name = d.name || cmteRoles[i].name;
-        cmteRoles[i].flat = d.flat || flat;
-        cmteRoles[i].mobile = d.mobile || '';
-        renderCmteRoles();
-        toast('✅ Found: ' + (d.name || flat), 'success');
-        return;
-      }
-    } catch(e) {}
+  function _applyResult(found) {
+    cmteRoles[i].name   = found.name   || cmteRoles[i].name;
+    cmteRoles[i].flat   = found.flat   || flat;
+    cmteRoles[i].mobile = found.mobile || '';
+    renderCmteRoles();
+    toast('✅ Found: ' + (found.name || flat), 'success');
   }
 
-  // Search by name through all contributors
-  if (nameInput) {
-    try {
-      const res = await fetch(`${url}?action=list_all`);
-      const d = await res.json();
-      const match = (d.all||[]).find(r => r.name.toLowerCase().includes(nameInput.toLowerCase()));
-      if (match) {
-        cmteRoles[i].name = match.name;
-        cmteRoles[i].flat = match.flat || cmteRoles[i].flat;
-        cmteRoles[i].mobile = match.mobile || '';
-        renderCmteRoles();
-        toast('✅ Found: ' + match.name + ' · Flat ' + match.flat, 'success');
-        return;
-      }
-    } catch(e) {}
+  if (flat) {
+    // 1. Firestore residents directory (primary, fastest)
+    if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+      try {
+        const r = await PSOTS_DB.getResident(flat);
+        if (r && r.name) { _applyResult(r); return; }
+      } catch(e) {}
+    }
+
+    // 2. In-memory allConData (already loaded, zero network)
+    const inMem = allConData.find(r => String(r.flat) === String(flat) && r.name);
+    if (inMem) { _applyResult(inMem); return; }
+
+    // 3. Apps Script findByFlat
+    const scriptUrl = getScriptUrl();
+    if (scriptUrl) {
+      try {
+        const res = await fetch(`${scriptUrl}?action=findByFlat&flat=${encodeURIComponent(flat)}`);
+        const d   = await res.json();
+        if (d.found && d.name) { _applyResult(d); return; }
+      } catch(e) {}
+    }
   }
+
+  // 4. Name search through allConData
+  if (nameInput) {
+    const match = allConData.find(r => r.name && r.name.toLowerCase().includes(nameInput.toLowerCase()));
+    if (match) { _applyResult(match); return; }
+  }
+
   toast('Resident not found — you can still type manually', 'error');
 }
 
