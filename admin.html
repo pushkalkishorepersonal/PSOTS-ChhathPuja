@@ -1014,6 +1014,8 @@ const CACHE_TTL = {
   role_perms:  10 * 60_000,
   volunteers:   2 * 60_000,
   cmte_roles:  10 * 60_000,
+  contributors: 5 * 60_000,
+  directory:    5 * 60_000,
 };
 
 const PsotsCache = (() => {
@@ -1343,19 +1345,47 @@ function switchTab(id) {
 let dirTowerFilter = null;
 
 async function loadDirectory() {
-  // Try to load from global data if localStorage is empty
-  let residents = JSON.parse(localStorage.getItem('psots_residents') || '[]');
-  let history = JSON.parse(localStorage.getItem('psots_history') || '[]');
+  // Check session cache for residents/history
+  const cachedResidents = PsotsCache.get('dir_residents');
+  const cachedHistory   = PsotsCache.get('dir_history');
+
+  let residents = cachedResidents || JSON.parse(localStorage.getItem('psots_residents') || '[]');
+  let history   = cachedHistory   || JSON.parse(localStorage.getItem('psots_history')   || '[]');
+
   if (residents.length === 0 || history.length === 0) {
     try {
       const gRes = await fetch('data/history.json');
       if (gRes.ok) {
         const g = await gRes.json();
-        if (history.length === 0 && g.history) { localStorage.setItem('psots_history', JSON.stringify(g.history)); history = g.history; }
+        if (history.length === 0 && g.history)     { localStorage.setItem('psots_history',   JSON.stringify(g.history));   history   = g.history; }
         if (residents.length === 0 && g.residents) { localStorage.setItem('psots_residents', JSON.stringify(g.residents)); residents = g.residents; }
       }
     } catch(e) {}
   }
+
+  // Cache parsed data to avoid repeated JSON.parse on re-renders
+  if (residents.length) PsotsCache.set('dir_residents', residents, CACHE_TTL.directory);
+  if (history.length)   PsotsCache.set('dir_history',   history,   CACHE_TTL.directory);
+
+  // If allConData not yet loaded (Contributors tab not visited), fetch it now
+  if (!allConData.length) {
+    const url = getScriptUrl();
+    if (url) {
+      try {
+        const res  = await fetch(url + '?action=list_all');
+        const data = await res.json();
+        allConData = data.all || [];
+      } catch(e) {
+        // Fallback to cached history if server unreachable
+        allConData = history.map(r => ({
+          ts: r.date||'', name: r.name||'', flat: r.flat||'',
+          mobile: r.mobile||'', amount: r.amount||0, method: r.method||'',
+          date: r.date||'', status: r.status||'✅ Received', year: r.year||2025
+        }));
+      }
+    }
+  }
+
   // Build tower filter chips from available data
   const towers = [...new Set(residents.map(r => parseFlatNumber(r.flat).tower).filter(Boolean))].sort((a,b)=>a-b);
   const filtersEl = document.getElementById('dirTowerFilters');
@@ -1381,18 +1411,27 @@ function renderDirCards() {
   const histMap = {};
   history.forEach(r => {
     const f = String(r.flat).trim();
-    if (!histMap[f]) histMap[f] = { total: 0, years: [], names: [] };
-    histMap[f].total += r.amount || 0;
-    if (r.year && !histMap[f].years.includes(r.year)) histMap[f].years.push(r.year);
+    if (!histMap[f]) histMap[f] = { total: 0, years: [], yearAmts: {}, names: [] };
+    const amt = r.amount || 0;
+    histMap[f].total += amt;
+    if (r.year && amt > 0) {
+      if (!histMap[f].years.includes(r.year)) histMap[f].years.push(r.year);
+      histMap[f].yearAmts[r.year] = (histMap[f].yearAmts[r.year] || 0) + amt;
+    }
     if (r.name && !histMap[f].names.some(n => n.toLowerCase() === r.name.toLowerCase())) histMap[f].names.push(r.name);
   });
-  // Also include 2026 from live contributor data (verified only)
+  // Also include current year from live contributor data (verified only, amount > 0)
+  const currentYear = new Date().getFullYear();
   allConData.forEach(r => {
     if (!r.flat || !(r.status||'').includes('Received')) return;
+    const amt = parseFloat(r.amount) || 0;
+    if (amt <= 0) return;
     const f = String(r.flat).trim();
-    if (!histMap[f]) histMap[f] = { total: 0, years: [], names: [] };
-    histMap[f].total += parseFloat(r.amount) || 0;
-    if (!histMap[f].years.includes(2026)) histMap[f].years.push(2026);
+    if (!histMap[f]) histMap[f] = { total: 0, years: [], yearAmts: {}, names: [] };
+    histMap[f].total += amt;
+    const yr = r.year || currentYear;
+    if (!histMap[f].years.includes(yr)) histMap[f].years.push(yr);
+    histMap[f].yearAmts[yr] = (histMap[f].yearAmts[yr] || 0) + amt;
     if (r.name && !histMap[f].names.some(n => n.toLowerCase() === r.name.toLowerCase())) histMap[f].names.push(r.name);
   });
 
@@ -1415,15 +1454,18 @@ function renderDirCards() {
 
   cards.innerHTML = filtered.map(r => {
     const fp = parseFlatNumber(r.flat);
-    const h  = histMap[String(r.flat)] || { total: 0, years: [] };
+    const h  = histMap[String(r.flat)] || { total: 0, years: [], yearAmts: {} };
     const initials = (r.name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
     const isVrati  = r.isVrati === 'yes';
-    const has2026  = h.years.includes(2026);
-    const yearBadges = h.years.sort((a,b)=>b-a).map(y =>
-      `<span style="background:${y===2026?'#dcfce7':'#f0f0f0'};color:${y===2026?'var(--green)':'#666'};border-radius:50px;font-size:.6rem;padding:.1rem .38rem">${y}</span>`).join('');
+    const has2026  = h.years.includes(currentYear);
+    const yearBadges = h.years.sort((a,b)=>b-a).map(y => {
+      const yAmt = (h.yearAmts || {})[y] || 0;
+      const isCurrentYr = y === currentYear;
+      return `<span onclick="var lbl=this.querySelector('.yr-amt-lbl');if(lbl)lbl.style.display=lbl.style.display==='none'?'inline':'none'" title="${y}: ₹${yAmt.toLocaleString('en-IN')}" style="cursor:pointer;user-select:none;background:${isCurrentYr?'#dcfce7':'#f0f0f0'};color:${isCurrentYr?'var(--green)':'#666'};border-radius:50px;font-size:.6rem;padding:.1rem .38rem;white-space:nowrap">${y}<span class="yr-amt-lbl" style="display:none;margin-left:.22rem;font-weight:700"> · ₹${yAmt.toLocaleString('en-IN')}</span></span>`;
+    }).join('');
     return `
     <div style="background:var(--white);border:1.5px solid rgba(200,100,0,${has2026?'.25':'.1'});border-radius:14px;padding:1rem;position:relative">
-      ${has2026 ? `<div style="position:absolute;top:.55rem;right:.6rem;background:#dcfce7;color:var(--green);font-size:.58rem;font-weight:700;border-radius:50px;padding:.12rem .45rem">2026 ✅</div>` : ''}
+      ${has2026 ? `<div style="position:absolute;top:.55rem;right:.6rem;background:#dcfce7;color:var(--green);font-size:.58rem;font-weight:700;border-radius:50px;padding:.12rem .45rem">${currentYear} ✅</div>` : ''}
       <div style="display:flex;align-items:center;gap:.65rem;margin-bottom:.65rem">
         <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--or),#c93800);display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-weight:900;font-size:.9rem;color:#fff;flex-shrink:0">${initials}</div>
         <div style="flex:1;min-width:0">
@@ -1476,6 +1518,16 @@ function escAdm(s) { return String(s||'').replace(/'/g,"\\'"); }
 async function loadAdminCon() {
   const url = getScriptUrl();
   const tbody = document.getElementById('conTableBody');
+
+  // Check session cache first
+  const cachedCon = PsotsCache.get('contributors_all');
+  if (cachedCon) {
+    allConData = cachedCon;
+    renderConTable(allConData);
+    updateDashStats();
+    return;
+  }
+
   tbody.innerHTML = '<tr><td colspan="9" class="loading-state">🌅 Loading from Google Sheets…</td></tr>';
 
   if (!url) {
@@ -1509,6 +1561,7 @@ async function loadAdminCon() {
     const res = await fetch(url + '?action=list_all');
     const data = await res.json();
     allConData = data.all || [];
+    PsotsCache.set('contributors_all', allConData, CACHE_TTL.contributors);
     renderConTable(allConData);
     updateDashStats();
   } catch(e) {
