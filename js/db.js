@@ -329,6 +329,30 @@ const PSOTS_DB = (() => {
   }
 
   /**
+   * deleteContribution(record) → { ok }
+   *
+   * Deletes a contribution document from Firestore using the same deterministic
+   * key as syncContributions so it matches the stored document ID.
+   */
+  async function deleteContribution(r) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      const key = [
+        r.year,
+        String(r.flat  || '').replace(/\//g, '-'),
+        String(r.name  || '').replace(/\s+/g, '').toLowerCase().slice(0, 12),
+        r.amount,
+      ].join('_').replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 120);
+      if (!key) return { ok: false, error: 'Could not derive document ID' };
+      await _db.collection('contributions').doc(key).delete();
+      return { ok: true };
+    } catch (e) {
+      console.warn('[PSOTS_DB] deleteContribution failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /**
    * getAllContributions() → array of all contribution records or null
    *
    * Fetches every document in the contributions collection.
@@ -466,7 +490,7 @@ const PSOTS_DB = (() => {
 
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, syncContributions, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, syncContributions, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();
