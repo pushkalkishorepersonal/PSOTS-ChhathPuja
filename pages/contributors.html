@@ -287,23 +287,23 @@ function setTower(t, el) {
   renderList();
 }
 
-/* ── Podium ── */
-function buildPodiumHTML(sorted) {
-  const top = sorted.slice(0, 3);
+/* ── Podium (flat-grouped) ── */
+function buildPodiumHTML(flatGroups) {
+  const top = flatGroups.slice(0, 3);
   if (top.length < 2) return '';
   const medals = ['🥇','🥈','🥉'];
   const order = top.length >= 2 ? [1, 0, 2] : [0];
   const items = order.filter(i => top[i]);
   return `<div style="font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:var(--or);font-weight:700;text-align:center;margin-bottom:.6rem">🏆 Top Contributors</div>
   <div class="podium">${items.map(idx => {
-    const c = top[idx];
-    const col = avColor(c.name);
-    const tower = parseTower(c.flat);
+    const g = top[idx];
+    const col = avColor(g.names[0] || g.flat);
+    const tower = g.tower;
     return `<div class="pod-item">
-      <div class="pod-av" style="background:linear-gradient(135deg,${col},${col}cc)">${initial(c.name)}</div>
-      <div class="pod-name">${c.name.split(' ')[0]}</div>
-      <div class="pod-flat">Flat ${c.flat}${tower?' · T'+tower:''}</div>
-      <div class="pod-amt">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div>
+      <div class="pod-av" style="background:linear-gradient(135deg,${col},${col}cc)">${initial(g.names[0] || g.flat)}</div>
+      <div class="pod-name">${(g.names[0] || g.flat).split(' ')[0]}</div>
+      <div class="pod-flat">Flat ${g.flat}${tower?' · T'+tower:''}</div>
+      <div class="pod-amt">₹${Math.round(g.amount).toLocaleString('en-IN')}</div>
       <div class="pod-pedestal pod-${idx+1}"><div class="pod-rank">${medals[idx]}</div></div>
     </div>`;
   }).join('')}</div>`;
@@ -321,24 +321,46 @@ function animateCount(el, target) {
   requestAnimationFrame(tick);
 }
 
-/* ── Card rows ── */
-function cardsHTML(list) {
-  return list.map((c, i) => {
-    const isV = c.status?.includes('Received');
-    const col = avColor(c.name);
-    const tower = parseTower(c.flat);
+/* ── Group raw records by flat ── */
+function groupByFlat(records) {
+  const map = {};
+  records.forEach(r => {
+    const flat = String(r.flat || '—').trim();
+    if (!map[flat]) map[flat] = { flat, names: [], amount: 0, anyVerified: false, tower: parseTower(flat), accountType: r.accountType || '' };
+    const g = map[flat];
+    if (r.name && !g.names.includes(r.name)) g.names.push(r.name);
+    g.amount += parseFloat(r.amount) || 0;
+    if (r.status?.includes('Received')) g.anyVerified = true;
+  });
+  return Object.values(map);
+}
+
+function flatDisplayName(names) {
+  if (!names.length) return '—';
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return names[0] + ' & ' + names[1].split(' ')[0];
+  return names[0] + ' +' + (names.length - 1) + ' more';
+}
+
+/* ── Card rows (flat-grouped) ── */
+function cardsHTML(flatGroups) {
+  return flatGroups.map((g, i) => {
+    const col = avColor(g.names[0] || g.flat);
+    const tower = g.tower;
     const rankLabel = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
     const delay = Math.min(i * 30, 300);
-    return `<div class="con-card" style="animation-delay:${delay}ms">
+    const displayName = flatDisplayName(g.names);
+    const namesTooltip = g.names.length > 1 ? g.names.join(', ') : '';
+    return `<div class="con-card" style="animation-delay:${delay}ms"${namesTooltip ? ` title="${namesTooltip}"` : ''}>
       <div class="ci-rank">${rankLabel}</div>
-      <div class="ci-av" style="background:linear-gradient(135deg,${col},${col}cc)">${initial(c.name)}</div>
+      <div class="ci-av" style="background:linear-gradient(135deg,${col},${col}cc)">${initial(g.names[0] || g.flat)}</div>
       <div style="flex:1;min-width:0">
-        <div class="ci-name">${c.name}</div>
-        <div class="ci-sub">Flat ${c.flat}${tower?' · Tower '+tower:''}</div>
+        <div class="ci-name">${displayName}</div>
+        <div class="ci-sub">Flat ${g.flat}${tower?' · Tower '+tower:''}</div>
       </div>
       <div class="ci-right">
-        <div class="ci-amt">₹${parseInt(c.amount||0).toLocaleString('en-IN')}</div>
-        <div class="ci-dot ${isV?'':'p'}" title="${isV?'Verified ✅':'Pending verification'}"></div>
+        <div class="ci-amt">₹${Math.round(g.amount).toLocaleString('en-IN')}</div>
+        <div class="ci-dot ${g.anyVerified?'':'p'}" title="${g.anyVerified?'Verified ✅':'Pending verification'}"></div>
       </div>
     </div>`;
   }).join('');
@@ -355,21 +377,28 @@ function toggleYear(yr) {
 function renderList() {
   const q = document.getElementById('searchInp').value.toLowerCase();
 
+  // Filter raw records
   let f = allData.filter(r => {
     if (towerFilter && parseTower(r.flat) !== towerFilter) return false;
-    const m = !q || (r.name||'').toLowerCase().includes(q) || String(r.flat).toLowerCase().includes(q);
-    if (!m) return false;
-    if (filterMode==='verified') return r.status?.includes('Received');
-    if (filterMode==='portal')   return r.accountType?.includes('Portal');
-    if (filterMode==='guest')    return r.accountType?.includes('Guest');
+    if (filterMode==='verified' && !r.status?.includes('Received')) return false;
+    if (filterMode==='portal'   && !r.accountType?.includes('Portal')) return false;
+    if (filterMode==='guest'    && !r.accountType?.includes('Guest')) return false;
+    if (q) {
+      const nameMatch = (r.name||'').toLowerCase().includes(q);
+      const flatMatch = String(r.flat).toLowerCase().includes(q);
+      if (!nameMatch && !flatMatch) return false;
+    }
     return true;
   });
 
-  const grandVerified = f.filter(r => r.status?.includes('Received'));
-  const grandTotal = grandVerified.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
-  document.getElementById('subLine').textContent = f.length + ' contributors across all years · ₹' + grandTotal.toLocaleString('en-IN') + ' total';
-  animateCount(document.getElementById('totalAmt'), grandTotal);
-  document.getElementById('verCount').textContent = grandVerified.length + ' verified contributions';
+  // Grand totals from verified raw records
+  const grandVerifiedAmt = f.filter(r => r.status?.includes('Received')).reduce((s,r) => s+(parseFloat(r.amount)||0), 0);
+  // Grand unique flats
+  const grandFlats = new Set(f.map(r => String(r.flat||'—').trim()+'_'+(r.year||2026))).size;
+
+  document.getElementById('subLine').textContent = grandFlats + ' household' + (grandFlats!==1?'s':'') + ' across all years · ₹' + Math.round(grandVerifiedAmt).toLocaleString('en-IN') + ' total';
+  animateCount(document.getElementById('totalAmt'), grandVerifiedAmt);
+  document.getElementById('verCount').textContent = new Set(f.filter(r=>r.status?.includes('Received')).map(r=>String(r.flat||'')+'_'+(r.year||2026))).size + ' verified households';
 
   const byYear = {};
   f.forEach(r => { const yr = r.year || 2026; (byYear[yr] = byYear[yr] || []).push(r); });
@@ -391,26 +420,27 @@ function renderList() {
   const currentYear = new Date().getFullYear();
 
   document.getElementById('conList').innerHTML = years.map(yr => {
-    const list = byYear[yr].sort((a,b) => (parseFloat(b.amount)||0)-(parseFloat(a.amount)||0));
-    const verList = list.filter(r => r.status?.includes('Received'));
-    const yrTotal = verList.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
-    const isOpen = yr === currentYear;
-    const podium = isOpen && verList.length >= 2 ? buildPodiumHTML(verList) : '';
+    // Group by flat for this year
+    const flatGroups = groupByFlat(byYear[yr]).sort((a,b) => b.amount - a.amount);
+    const verGroups  = flatGroups.filter(g => g.anyVerified);
+    const yrTotal    = verGroups.reduce((s,g) => s+g.amount, 0);
+    const isOpen     = yr === currentYear;
+    const podium     = isOpen && verGroups.length >= 2 ? buildPodiumHTML(verGroups) : '';
 
     return `<div class="year-section">
       <div class="year-header ${isOpen ? 'open' : ''}" id="yh-${yr}" onclick="toggleYear(${yr})">
         <div class="year-header-left">
           <span class="year-badge">${yr}</span>
-          <span class="year-meta">${list.length} contributor${list.length!==1?'s':''} · ${verList.length} verified</span>
+          <span class="year-meta">${flatGroups.length} flat${flatGroups.length!==1?'s':''} · ${verGroups.length} verified</span>
         </div>
         <div style="display:flex;align-items:center;gap:.6rem">
-          <span class="year-total">₹${yrTotal.toLocaleString('en-IN')}</span>
+          <span class="year-total">₹${Math.round(yrTotal).toLocaleString('en-IN')}</span>
           <span class="year-chevron">▼</span>
         </div>
       </div>
       <div class="year-body ${isOpen ? 'open' : ''}" id="yb-${yr}">
         ${podium}
-        ${cardsHTML(list)}
+        ${cardsHTML(flatGroups)}
       </div>
     </div>`;
   }).join('');
