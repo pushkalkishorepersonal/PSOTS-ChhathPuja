@@ -127,32 +127,70 @@
   /* ── PORTAL APP ─── */
   #portalApp{display:none}
 
-  /* Welcome bar */
-  .welcome-bar{
-    background:linear-gradient(135deg,#c94000,#ff8c00);
-    padding:1.5rem 1.4rem;display:flex;align-items:center;gap:1rem;
-    flex-wrap:wrap;
+  /* ── Login animation ── */
+  #loginScreen{position:relative;overflow:hidden}
+  #loginScreen::before{
+    content:'';position:absolute;inset:0;pointer-events:none;
+    background:
+      radial-gradient(circle at 15% 45%,rgba(255,150,30,.14) 0%,transparent 55%),
+      radial-gradient(circle at 85% 20%,rgba(255,200,50,.09) 0%,transparent 50%),
+      radial-gradient(circle at 55% 85%,rgba(200,70,0,.1) 0%,transparent 45%);
   }
-  .wb-avatar{width:52px;height:52px;border-radius:50%;border:2px solid rgba(255,255,255,.5);overflow:hidden;flex-shrink:0}
-  .wb-avatar img{width:100%;height:100%;object-fit:cover}
-  .wb-avatar-ph{width:52px;height:52px;border-radius:50%;border:2px solid rgba(255,255,255,.5);background:rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-size:1.3rem;font-weight:900;color:#fff;flex-shrink:0}
-  .wb-info{flex:1}
-  .wb-name{font-family:'DM Sans',sans-serif;font-size:1.15rem;font-weight:700;color:#fff}
-  .wb-flat{font-size:.78rem;color:rgba(255,255,255,.75);margin-top:.12rem}
-  .wb-sub{font-size:.65rem;color:rgba(255,255,255,.55);letter-spacing:.1em;text-transform:uppercase;margin-top:.08rem}
-  .wb-right{display:flex;gap:.6rem;align-items:center}
-  .wb-badge{background:rgba(255,255,255,.2);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:50px;padding:.3rem .85rem;font-size:.72rem;font-weight:600}
+  .login-box{animation:loginBoxIn .55s cubic-bezier(.34,1.2,.64,1) both}
+  @keyframes loginBoxIn{from{opacity:0;transform:translateY(28px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
 
-  /* Tabs */
-  .portal-tabs{display:flex;gap:0;background:#fff;border-bottom:1px solid #f0d5b8;overflow-x:auto;position:sticky;top:52px;z-index:100}
+  /* ── Portal Hero ── */
+  .portal-hero{background:linear-gradient(160deg,#0f0500,#2c0e00 55%,#3d1200);position:relative;overflow:hidden}
+  .portal-hero::after{content:'🌅';position:absolute;font-size:7rem;right:-1rem;top:-1rem;opacity:.07;pointer-events:none;line-height:1}
+  .ph-inner{display:flex;align-items:center;gap:1rem;padding:1.4rem 1.4rem 1.2rem;flex-wrap:wrap}
+  .ph-avatar{
+    width:52px;height:52px;border-radius:50%;
+    border:2.5px solid rgba(255,194,0,.5);background:rgba(255,255,255,.12);
+    display:flex;align-items:center;justify-content:center;
+    font-family:'DM Sans',sans-serif;font-size:1.3rem;font-weight:900;
+    color:#fff;flex-shrink:0;overflow:hidden;
+    box-shadow:0 0 0 5px rgba(255,194,0,.08);
+  }
+  .ph-avatar img{width:100%;height:100%;object-fit:cover;display:none}
+  .ph-info{flex:1;min-width:0}
+  .ph-greeting{font-size:.6rem;color:rgba(255,194,0,.55);letter-spacing:.14em;text-transform:uppercase;margin-bottom:.1rem}
+  .ph-name{font-family:'DM Sans',sans-serif;font-size:1.1rem;font-weight:900;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .ph-meta{font-size:.72rem;color:rgba(255,255,255,.48);margin-top:.12rem}
+  .ph-right{display:flex;flex-direction:column;gap:.45rem;align-items:flex-end;flex-shrink:0}
+  .ph-badge{background:rgba(255,194,0,.12);color:rgba(255,220,100,.9);border:1px solid rgba(255,194,0,.25);border-radius:50px;padding:.25rem .75rem;font-size:.68rem;font-weight:700}
+  .ph-status-bar{background:rgba(0,0,0,.22);border-top:1px solid rgba(255,194,0,.08);padding:.58rem 1.4rem;display:flex;align-items:center;gap:1rem;flex-wrap:wrap}
+  .ph-si{display:flex;align-items:center;gap:.38rem;font-size:.71rem;color:rgba(255,220,120,.6)}
+  .ph-si-val{font-weight:600;color:rgba(255,220,120,.85)}
+  .ph-divider{width:1px;height:12px;background:rgba(255,194,0,.12);flex-shrink:0}
+
+  /* ── Tabs (dark, matches hero) ── */
+  .portal-tabs{display:flex;gap:0;background:rgba(10,4,0,.97);border-bottom:1px solid rgba(255,194,0,.1);overflow-x:auto;position:sticky;top:52px;z-index:100}
   .portal-tabs::-webkit-scrollbar{display:none}
-  .ptab{padding:.85rem 1.3rem;font-size:.76rem;font-weight:600;color:var(--lbr);background:none;border:none;border-bottom:3px solid transparent;cursor:pointer;white-space:nowrap;transition:all .2s}
-  .ptab.active{color:var(--or);border-bottom-color:var(--or)}
-  .ptab:hover{color:var(--or)}
+  .ptab{padding:.78rem 1.05rem;font-size:.72rem;font-weight:600;color:rgba(255,200,120,.36);background:none;border:none;border-bottom:2.5px solid transparent;cursor:pointer;white-space:nowrap;transition:color .2s,border-color .2s;letter-spacing:.02em}
+  .ptab.active{color:var(--gold);border-bottom-color:var(--gold)}
+  .ptab:hover{color:rgba(255,200,120,.72)}
 
-  /* Panel */
-  .portal-panel{display:none;max-width:820px;margin:0 auto;padding:2rem 1.2rem}
-  .portal-panel.active{display:block}
+  /* ── Panel (fade+slide animation on tab switch) ── */
+  .portal-panel{display:none;max-width:820px;margin:0 auto;padding:1.8rem 1.2rem}
+  .portal-panel.active{display:block;animation:panelIn .28s ease both}
+  @keyframes panelIn{from{opacity:0;transform:translateY(9px)}to{opacity:1;transform:translateY(0)}}
+
+  /* ── Home tab grid ── */
+  .ph-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.8rem;margin-bottom:1.4rem}
+  .ph-tile{
+    background:#fff;border-radius:16px;padding:1.1rem 1rem .9rem;
+    border:1.5px solid rgba(200,100,0,.09);cursor:pointer;
+    text-align:center;position:relative;overflow:hidden;
+    transition:transform .18s,box-shadow .18s;animation:panelIn .38s ease both;
+  }
+  .ph-tile::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--tc,var(--or));border-radius:16px 16px 0 0}
+  .ph-tile:hover{transform:translateY(-4px);box-shadow:0 10px 28px rgba(0,0,0,.1)}
+  .ph-tile:nth-child(1){animation-delay:.04s}.ph-tile:nth-child(2){animation-delay:.08s}
+  .ph-tile:nth-child(3){animation-delay:.12s}.ph-tile:nth-child(4){animation-delay:.16s}
+  .ph-tile:nth-child(5){animation-delay:.20s}.ph-tile:nth-child(6){animation-delay:.24s}
+  .ph-tile-icon{font-size:1.7rem;line-height:1;margin-bottom:.4rem;display:block}
+  .ph-tile-title{font-size:.78rem;font-weight:700;color:var(--ink);margin-bottom:.12rem}
+  .ph-tile-sub{font-size:.63rem;color:var(--lbr)}
 
   /* Cards */
   .pcard{background:#fff;border-radius:16px;padding:1.5rem;box-shadow:var(--shadow);border:1px solid rgba(200,100,0,.08);margin-bottom:1.3rem}
@@ -206,11 +244,54 @@
   .no-contrib{text-align:center;padding:2.5rem;color:var(--lbr)}
   .no-contrib .nc-icon{font-size:2.5rem;margin-bottom:.6rem}
 
-  /* All-years summary */
-  .summary-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:.8rem;margin-bottom:1.5rem}
-  .sg-card{background:var(--warm);border:1px solid #f0d5b8;border-radius:12px;padding:.9rem;text-align:center}
-  .sg-val{font-family:'DM Sans',sans-serif;font-size:1.2rem;font-weight:900;color:var(--or);line-height:1}
-  .sg-lbl{font-size:.62rem;color:var(--lbr);margin-top:.18rem}
+  /* ── Contribution Summary (dark card) ── */
+  .csum-card{background:linear-gradient(135deg,#1a0800,#3d1200);border-radius:16px;padding:1.4rem 1.5rem;color:#fff;margin-bottom:1.2rem;position:relative;overflow:hidden;border:1px solid rgba(255,194,0,.12)}
+  .csum-card::before{content:'';position:absolute;top:-40px;right:-40px;width:140px;height:140px;background:radial-gradient(circle,rgba(255,194,0,.1) 0%,transparent 70%);pointer-events:none}
+  .csum-total{font-family:'DM Sans',sans-serif;font-size:2rem;font-weight:900;color:#fff;line-height:1;margin-bottom:.12rem}
+  .csum-lbl{font-size:.62rem;color:rgba(255,220,120,.5);letter-spacing:.1em;text-transform:uppercase;margin-bottom:1rem}
+  .csum-meta{display:flex;gap:1.5rem;margin-bottom:1rem;flex-wrap:wrap}
+  .csum-meta-val{font-family:'DM Sans',sans-serif;font-size:.92rem;font-weight:700;color:rgba(255,220,100,.95);display:block}
+  .csum-meta-lbl{font-size:.62rem;color:rgba(255,220,120,.5);margin-top:.08rem;display:block}
+  .loyalty-badge{display:inline-flex;align-items:center;gap:.35rem;background:rgba(255,194,0,.1);border:1px solid rgba(255,194,0,.2);border-radius:50px;padding:.28rem .8rem;font-size:.68rem;font-weight:700;color:rgba(255,220,100,.9)}
+
+  /* Year streak dots */
+  .year-streak{display:flex;align-items:center;gap:.55rem;flex-wrap:wrap;margin-top:.75rem}
+  .ys-item{display:flex;flex-direction:column;align-items:center;gap:.18rem}
+  .ys-dot{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.6rem;font-weight:700;border:2px solid rgba(255,194,0,.2);transition:all .35s ease}
+  .ys-dot.paid{background:rgba(255,194,0,.18);border-color:rgba(255,194,0,.55);color:rgba(255,220,100,.95)}
+  .ys-dot.current-paid{background:rgba(46,125,50,.3);border-color:#4caf50;color:#81c784;animation:pulseDot 2s ease-in-out infinite}
+  .ys-dot.current-unpaid{background:rgba(232,92,0,.2);border-color:rgba(232,92,0,.5);color:rgba(255,160,80,.9);animation:pulseDot 2s ease-in-out infinite}
+  .ys-dot.empty{background:rgba(255,255,255,.04);color:rgba(255,255,255,.2);border-color:rgba(255,255,255,.08)}
+  @keyframes pulseDot{0%,100%{box-shadow:0 0 0 0 rgba(76,175,80,.4)}50%{box-shadow:0 0 0 7px rgba(76,175,80,0)}}
+  .ys-yr{font-size:.5rem;color:rgba(255,220,120,.38);letter-spacing:.02em}
+
+  /* Expandable year cards */
+  .yr-card{background:#fff;border-radius:14px;border:1.5px solid rgba(200,100,0,.1);margin-bottom:.8rem;overflow:hidden}
+  .yr-header{display:flex;align-items:center;justify-content:space-between;padding:.9rem 1.1rem;cursor:pointer;user-select:none;background:var(--warm);transition:background .15s;gap:.7rem}
+  .yr-header:hover{background:#fff0e0}
+  .yr-hl{display:flex;align-items:center;gap:.65rem}
+  .yr-num{font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:900;color:var(--ink)}
+  .yr-badge{font-size:.6rem;font-weight:700;border-radius:50px;padding:.12rem .48rem}
+  .yr-badge.v{background:#dcfce7;color:#166534}.yr-badge.p{background:#fff8dc;color:#a07000}
+  .yr-total{font-family:'DM Sans',sans-serif;font-size:.92rem;font-weight:700;color:var(--or)}
+  .yr-chevron{font-size:.72rem;color:var(--lbr);transition:transform .25s ease;flex-shrink:0}
+  .yr-card.open .yr-chevron{transform:rotate(180deg)}
+  .yr-body{max-height:0;overflow:hidden;transition:max-height .35s cubic-bezier(.4,0,.2,1)}
+  .yr-card.open .yr-body{max-height:800px}
+  .yr-entries{padding:.55rem .85rem .75rem;display:flex;flex-direction:column;gap:.4rem}
+
+  /* Individual entry row */
+  .cr-entry{display:flex;align-items:center;gap:.7rem;padding:.65rem .85rem;border-radius:10px;background:#fffdf9;border:1px solid rgba(200,100,0,.07);animation:panelIn .28s ease both}
+  .cr-method-tag{font-size:.68rem;font-weight:700;padding:.12rem .45rem;border-radius:6px;background:rgba(200,100,0,.07);color:var(--lbr);white-space:nowrap;flex-shrink:0}
+  .cr-info{flex:1;min-width:0}
+  .cr-date{font-size:.72rem;color:var(--lbr)}
+  .cr-note-txt{font-size:.65rem;color:#c8a880;margin-top:.06rem}
+  .cr-amount{font-family:'DM Sans',sans-serif;font-size:.95rem;font-weight:700;color:var(--or);white-space:nowrap}
+  .cr-vstatus{font-size:.6rem;font-weight:700;border-radius:50px;padding:.12rem .42rem;white-space:nowrap;flex-shrink:0}
+  .cr-vstatus.v{background:#dcfce7;color:#166534}.cr-vstatus.p{background:#fff8dc;color:#a07000}
+
+  /* Keep old summary-grid IDs working silently */
+  .summary-grid,.sg-card,.sg-val,.sg-lbl{display:none}
 
   /* WhatsApp subscription */
   .wa-status{display:flex;align-items:center;gap:.8rem;padding:1rem 1.2rem;border-radius:12px;border:1.5px solid;margin-bottom:1.2rem}
@@ -427,52 +508,116 @@
 <!-- ════ PORTAL APP ════ -->
 <div id="portalApp">
 
-  <!-- Welcome bar -->
-  <div class="welcome-bar">
-    <div id="wbAvatar" class="wb-avatar-ph">?</div>
-    <div class="wb-info">
-      <div class="wb-name" id="wbName">Welcome!</div>
-      <div class="wb-flat" id="wbFlat">Complete your profile to get started</div>
-      <div class="wb-sub">PSOTS Resident · Chhath 2026</div>
+  <!-- Portal Hero -->
+  <div class="portal-hero">
+    <div class="ph-inner">
+      <div id="wbAvatar" class="ph-avatar">?</div>
+      <div class="ph-info">
+        <div class="ph-greeting">नमस्ते 🙏</div>
+        <div class="ph-name" id="wbName">Welcome!</div>
+        <div class="ph-meta" id="wbFlat">Complete your profile to get started</div>
+      </div>
+      <div class="ph-right">
+        <div class="ph-badge" id="wbBadge">🌅 Member</div>
+        <a id="adminLink" href="admin.html" style="display:none;background:rgba(232,92,0,.75);color:#fff;border:none;border-radius:50px;padding:.25rem .75rem;font-size:.66rem;font-weight:600;text-decoration:none">⚙️ Admin</a>
+      </div>
     </div>
-    <div class="wb-right">
-      <div class="wb-badge" id="wbBadge">🌅 Member</div>
-      <a id="adminLink" href="admin.html" style="display:none;margin-top:.4rem;background:#e85c00;color:#fff;border:none;border-radius:50px;padding:.3rem .85rem;font-size:.72rem;font-weight:600;text-decoration:none;cursor:pointer">⚙️ Admin</a>
+    <div class="ph-status-bar">
+      <div class="ph-si">💰 <span class="ph-si-val" id="phStatus">Loading…</span></div>
+      <div class="ph-divider"></div>
+      <div class="ph-si">📅 <span id="phCountdown">…</span></div>
+      <div class="ph-divider"></div>
+      <div class="ph-si">🏠 <span id="phFlat">—</span></div>
     </div>
   </div>
 
   <!-- Tabs -->
   <div class="portal-tabs">
-    <button class="ptab active" onclick="switchTab('contributions')">💰 My Contributions</button>
-    <button class="ptab" onclick="switchTab('profile')">👤 My Profile</button>
-    <button class="ptab" onclick="switchTab('notifications')">📲 Notifications</button>
-    <button class="ptab" onclick="switchTab('messages')">💬 Message Admin</button>
-    <button class="ptab" onclick="switchTab('quickpay')">⚡ Quick Pay</button>
+    <button class="ptab active" onclick="switchTab('home')">🏠 Home</button>
+    <button class="ptab" onclick="switchTab('contributions')">💰 Contributions</button>
+    <button class="ptab" onclick="switchTab('quickpay')">⚡ Pay</button>
     <button class="ptab" onclick="switchTab('receipt')">🎫 Receipt</button>
+    <button class="ptab" onclick="switchTab('profile')">👤 Profile</button>
+    <button class="ptab" onclick="switchTab('notifications')">📲 Notifs</button>
+    <button class="ptab" onclick="switchTab('messages')">💬 Message</button>
     <button class="ptab" onclick="switchTab('volunteer')">🤝 Volunteer</button>
     <button class="ptab" id="adminTab" style="display:none" onclick="switchTab('adminmgmt')">⚙️ Admin</button>
   </div>
 
-  <!-- ═══ CONTRIBUTIONS TAB ═══ -->
-  <div class="portal-panel active" id="tab-contributions">
+  <!-- ═══ HOME TAB ═══ -->
+  <div class="portal-panel active" id="tab-home">
 
-    <!-- Summary -->
-    <div class="pcard">
-      <div class="pcard-title">📊 My Contribution Summary</div>
-      <div class="summary-grid">
-        <div class="sg-card"><div class="sg-val" id="totalGiven">—</div><div class="sg-lbl">Total Given</div></div>
-        <div class="sg-card"><div class="sg-val" id="yearsCount">—</div><div class="sg-lbl">Years Contributed</div></div>
-        <div class="sg-card"><div class="sg-val" id="lastGiven">—</div><div class="sg-lbl">Last Given</div></div>
-        <div class="sg-card"><div class="sg-val" id="thisYear">—</div><div class="sg-lbl">2026 Contribution</div></div>
+    <!-- 2026 status card -->
+    <div style="background:linear-gradient(135deg,#1a0800,#3d1200);border-radius:16px;padding:1.4rem 1.5rem;margin-bottom:1.3rem;border:1px solid rgba(255,194,0,.12);position:relative;overflow:hidden">
+      <div style="position:absolute;font-size:5rem;right:.5rem;top:-.8rem;opacity:.07;pointer-events:none;line-height:1">🌅</div>
+      <div style="font-size:.62rem;font-weight:700;color:rgba(255,194,0,.5);letter-spacing:.13em;text-transform:uppercase;margin-bottom:.45rem">Your Chhath 2026 Status</div>
+      <div style="font-size:1.05rem;font-weight:700;color:#fff;margin-bottom:.22rem" id="homeContribTitle">Checking…</div>
+      <div style="font-size:.75rem;color:rgba(255,220,120,.58);margin-bottom:.9rem;min-height:1rem" id="homeContribSub"></div>
+      <div style="display:flex;gap:.7rem;flex-wrap:wrap;align-items:center">
+        <button id="homePayBtn" style="display:none;background:linear-gradient(135deg,#e85c00,#c93800);color:#fff;border:none;border-radius:10px;padding:.55rem 1.1rem;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:700;cursor:pointer" onclick="switchTab('quickpay')">⚡ Pay Now</button>
+        <button id="homeReceiptBtn" style="display:none;background:rgba(255,194,0,.12);color:rgba(255,220,100,.85);border:1px solid rgba(255,194,0,.25);border-radius:10px;padding:.5rem 1rem;font-family:'DM Sans',sans-serif;font-size:.78rem;font-weight:600;cursor:pointer" onclick="switchTab('receipt')">🎫 Download Receipt</button>
       </div>
     </div>
 
-    <!-- History -->
-    <div class="pcard">
-      <div class="pcard-title">🗂 Year-wise History</div>
-      <div class="pcard-sub">All your contributions across every Chhath Puja. Green dot = verified by committee.</div>
-      <div id="contribHistory"><div class="loading">🌅 Loading your contribution history…</div></div>
+    <!-- Quick action tiles -->
+    <div style="font-size:.67rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--lbr);margin-bottom:.6rem">Quick Actions</div>
+    <div class="ph-grid">
+      <div class="ph-tile" style="--tc:#c0392b" onclick="switchTab('quickpay')">
+        <div style="font-size:.58rem;font-weight:700;background:rgba(232,92,0,.08);color:var(--or);border-radius:50px;padding:.08rem .45rem;margin:0 auto .4rem;width:fit-content;letter-spacing:.06em">POPULAR</div>
+        <span class="ph-tile-icon">⚡</span>
+        <div class="ph-tile-title">Quick Pay</div>
+        <div class="ph-tile-sub">Contribute 2026</div>
+      </div>
+      <div class="ph-tile" style="--tc:#2980b9" onclick="switchTab('contributions')">
+        <span class="ph-tile-icon" style="margin-top:.55rem">💰</span>
+        <div class="ph-tile-title">My History</div>
+        <div class="ph-tile-sub" id="htYears">All years</div>
+      </div>
+      <div class="ph-tile" style="--tc:#f39c12" onclick="switchTab('receipt')">
+        <span class="ph-tile-icon" style="margin-top:.55rem">🎫</span>
+        <div class="ph-tile-title">Receipt</div>
+        <div class="ph-tile-sub">Download yours</div>
+      </div>
+      <div class="ph-tile" style="--tc:#25d366" onclick="switchTab('notifications')">
+        <span class="ph-tile-icon" style="margin-top:.55rem">📲</span>
+        <div class="ph-tile-title">Notifications</div>
+        <div class="ph-tile-sub">WhatsApp prefs</div>
+      </div>
+      <div class="ph-tile" style="--tc:#8e44ad" onclick="switchTab('messages')">
+        <span class="ph-tile-icon" style="margin-top:.55rem">💬</span>
+        <div class="ph-tile-title">Message</div>
+        <div class="ph-tile-sub">Contact committee</div>
+      </div>
+      <div class="ph-tile" style="--tc:#16a085" onclick="switchTab('volunteer')">
+        <span class="ph-tile-icon" style="margin-top:.55rem">🤝</span>
+        <div class="ph-tile-title">Volunteer</div>
+        <div class="ph-tile-sub">Sign up</div>
+      </div>
     </div>
+  </div>
+
+  <!-- ═══ CONTRIBUTIONS TAB ═══ -->
+  <div class="portal-panel" id="tab-contributions">
+
+    <!-- Summary dark card -->
+    <div class="csum-card">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:.8rem;flex-wrap:wrap">
+        <div>
+          <div class="csum-total" id="totalGiven">—</div>
+          <div class="csum-lbl">Total Contributed</div>
+        </div>
+        <div id="csumBadge" class="loyalty-badge" style="display:none">🏅 <span id="csumBadgeText"></span></div>
+      </div>
+      <div class="csum-meta">
+        <div><span class="csum-meta-val" id="yearsCount">—</span><span class="csum-meta-lbl">Years</span></div>
+        <div><span class="csum-meta-val" id="lastGiven">—</span><span class="csum-meta-lbl">Last Contributed</span></div>
+        <div><span class="csum-meta-val" id="thisYear">—</span><span class="csum-meta-lbl">2026</span></div>
+      </div>
+      <div class="year-streak" id="yearStreak"></div>
+    </div>
+
+    <!-- Year-wise history (expandable cards) -->
+    <div id="contribHistory"><div class="loading">🌅 Loading your contribution history…</div></div>
 
   </div>
 
@@ -1446,11 +1591,22 @@ function fillProfileUI() {
   const initials = (p.name || currentUser?.name || '?').charAt(0).toUpperCase();
   const avEl = document.getElementById('wbAvatar');
   if (currentUser?.picture) {
-    avEl.innerHTML = `<img src="${currentUser.picture}" style="width:52px;height:52px;object-fit:cover;border-radius:50%"/>`;
-    avEl.className = 'wb-avatar';
+    avEl.innerHTML = `<img src="${currentUser.picture}" style="width:52px;height:52px;object-fit:cover;border-radius:50%;display:block"/>`;
   } else {
     avEl.textContent = initials;
   }
+
+  // Hero status bar
+  const flat = p.flat || '';
+  const flatEl = document.getElementById('phFlat');
+  if (flatEl) flatEl.textContent = flat ? `Flat ${flat}` : '—';
+  const cntEl = document.getElementById('phCountdown');
+  if (cntEl) {
+    const diff = Math.floor((new Date('2026-11-01') - new Date()) / 86400000);
+    cntEl.textContent = diff > 0 ? `${diff} days to Chhath 2026` : '🎉 Event is here!';
+  }
+  const homeFlatEl = document.getElementById('homeFlat');
+  if (homeFlatEl) homeFlatEl.textContent = flat || '—';
 
   // Profile form — name/email always from Google, rest from saved profile
   document.getElementById('p-name').value   = p.name  || currentUser?.name  || '';
@@ -1972,66 +2128,139 @@ async function lookupByFlat() {
   }
 }
 
-function renderContributions(data) {
-  const el = document.getElementById('contribHistory');
-  if (!data.length) {
-    el.innerHTML = '<div class="no-contrib"><div class="nc-icon">🌅</div><p>No contributions recorded yet for this account.<br/>Make your first contribution this year!</p><br/><a href="index.html#payment"><button class="btn-primary">Contribute Now →</button></a></div>';
-    updateSummary([]);
-    return;
-  }
-
-  // Group by year
-  const byYear = {};
-  data.forEach(c => { (byYear[c.year] = byYear[c.year]||[]).push(c); });
-
-  const html = Object.keys(byYear).sort((a,b) => b-a).map(yr => {
-    const rows = byYear[yr];
-    const total = rows.reduce((s,r) => s+(parseFloat(r.amount)||0), 0);
-    return `
-      <div class="year-group">
-        <div class="yg-head">
-          <span class="yg-year">🌅 ${yr}</span>
-          <span class="yg-total">₹${total.toLocaleString('en-IN')}</span>
-        </div>
-        ${rows.map(r => {
-          const isV = r.status?.includes('Received');
-          return `<div class="contrib-row">
-            <div class="cr-main">
-              <div class="cr-desc">Chhath Puja ${r.year} Contribution</div>
-              <div class="cr-meta">${r.date} · ${r.method||'UPI'}</div>
-            </div>
-            <div class="cr-app">${appIcon(r.method)}</div>
-            <div class="cr-amt">₹${parseInt(r.amount||0).toLocaleString('en-IN')}</div>
-            <span class="status-tag ${isV?'v':'p'}">${isV?'✅ Verified':'⏳ Pending'}</span>
-          </div>`;
-        }).join('')}
-      </div>`;
-  }).join('');
-
-  el.innerHTML = html;
-  updateSummary(data);
+function fmtDate(raw) {
+  if (!raw) return '';
+  const d = new Date(raw);
+  if (!isNaN(d.getTime())) return d.toLocaleDateString('en-IN', { day:'numeric', month:'short', year:'numeric' });
+  // Fallback: strip timezone noise
+  return String(raw).replace(/\s+GMT[^\s]*/i,'').replace(/\s+\(.*\)/,'').trim();
 }
 
-function appIcon(method) {
+function appLabel(method) {
   const m = (method||'').toLowerCase();
   if (m.includes('gpay')||m.includes('google')) return '🟢 GPay';
   if (m.includes('phone')) return '🟣 PhonePe';
   if (m.includes('paytm')||m.includes('patym')) return '🔵 Paytm';
   if (m.includes('cash')) return '💵 Cash';
+  if (m.includes('neft')||m.includes('transfer')) return '🏦 Transfer';
   return '📲 UPI';
 }
 
-function updateSummary(data) {
-  const verified = data.filter(d => d.status?.includes('Received'));
-  const total = data.reduce((s,d) => s+(parseFloat(d.amount)||0), 0);
-  const years = [...new Set(data.map(d => d.year))].length;
-  const lastAmt = verified.length ? verified[0].amount : '—';
-  const thisYr = data.filter(d => d.year==2026).reduce((s,d) => s+(parseFloat(d.amount)||0), 0);
+function toggleYear(el) {
+  const card = el.closest('.yr-card');
+  card.classList.toggle('open');
+}
 
-  document.getElementById('totalGiven').textContent = total ? '₹'+total.toLocaleString('en-IN') : '—';
-  document.getElementById('yearsCount').textContent = years || '—';
-  document.getElementById('lastGiven').textContent  = lastAmt !== '—' ? '₹'+parseInt(lastAmt).toLocaleString('en-IN') : '—';
-  document.getElementById('thisYear').textContent   = thisYr ? '₹'+thisYr.toLocaleString('en-IN') : '—';
+function renderContributions(data) {
+  const el = document.getElementById('contribHistory');
+  if (!data.length) {
+    el.innerHTML = `<div class="no-contrib"><div class="nc-icon">🌅</div>
+      <p>No contributions recorded yet.<br/>Be part of Chhath Puja 2026!</p><br/>
+      <button class="btn-primary" onclick="switchTab('quickpay')">⚡ Contribute Now</button></div>`;
+    updateSummary([]);
+    return;
+  }
+
+  const byYear = {};
+  data.forEach(c => { (byYear[c.year] = byYear[c.year]||[]).push(c); });
+  const years = Object.keys(byYear).sort((a,b) => b-a);
+
+  el.innerHTML = years.map((yr, yi) => {
+    const rows  = byYear[yr];
+    const total = rows.reduce((s,r) => s+(parseFloat(r.amount)||0), 0);
+    const hasV  = rows.some(r => r.status?.includes('Received'));
+    const allV  = rows.every(r => r.status?.includes('Received'));
+    const isOpen = yi === 0; // latest year open by default
+
+    const entries = rows.map((r,ri) => {
+      const isV = r.status?.includes('Received');
+      const delay = ri * 0.05;
+      return `<div class="cr-entry" style="animation-delay:${delay}s">
+        <div class="cr-method-tag">${appLabel(r.method)}</div>
+        <div class="cr-info">
+          <div class="cr-date">${fmtDate(r.date)}</div>
+          ${r.note ? `<div class="cr-note-txt">${r.note}</div>` : ''}
+        </div>
+        <div class="cr-amount">₹${parseInt(r.amount||0).toLocaleString('en-IN')}</div>
+        <span class="cr-vstatus ${isV?'v':'p'}">${isV?'✅ Verified':'⏳ Pending'}</span>
+      </div>`;
+    }).join('');
+
+    const badgeTxt = allV ? '✅ Verified' : (hasV ? '⚠️ Partial' : '⏳ Pending');
+    const badgeCls = allV ? 'v' : 'p';
+    return `<div class="yr-card ${isOpen?'open':''}">
+      <div class="yr-header" onclick="toggleYear(this)">
+        <div class="yr-hl">
+          <span class="yr-num">🌅 ${yr}</span>
+          <span class="yr-badge ${badgeCls}">${badgeTxt}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.6rem">
+          <span class="yr-total">₹${total.toLocaleString('en-IN')}</span>
+          <span class="yr-chevron">▼</span>
+        </div>
+      </div>
+      <div class="yr-body"><div class="yr-entries">${entries}</div></div>
+    </div>`;
+  }).join('');
+
+  updateSummary(data);
+}
+
+function updateSummary(data) {
+  const verified  = data.filter(d => d.status?.includes('Received'));
+  const total     = verified.reduce((s,d) => s+(parseFloat(d.amount)||0), 0);
+  const allYears  = [...new Set(data.map(d => d.year))].filter(Boolean).sort();
+  const verYears  = [...new Set(verified.map(d => d.year))].filter(Boolean);
+  const lastEntry = verified[0];
+  const thisYr    = verified.filter(d => d.year==2026).reduce((s,d) => s+(parseFloat(d.amount)||0), 0);
+
+  // Stat values
+  const _s = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
+  _s('totalGiven', total ? '₹'+total.toLocaleString('en-IN') : '—');
+  _s('yearsCount', verYears.length || '—');
+  _s('lastGiven',  lastEntry ? fmtDate(lastEntry.date) : '—');
+  _s('thisYear',   thisYr ? '₹'+thisYr.toLocaleString('en-IN') : '—');
+
+  // Loyalty badge
+  const badge = document.getElementById('csumBadge');
+  const badgeTxt = document.getElementById('csumBadgeText');
+  if (badge && badgeTxt) {
+    const labels = ['','First Contributor','2-Year Member','3-Year Veteran','4-Year Veteran','5-Year Champion','Legacy Member'];
+    const n = verYears.length;
+    if (n > 0) { badgeTxt.textContent = labels[Math.min(n,6)] || `${n}-Year Member`; badge.style.display='inline-flex'; }
+    else badge.style.display='none';
+  }
+
+  // Year streak dots (2022 → current year)
+  const streak = document.getElementById('yearStreak');
+  if (streak) {
+    const curYr = new Date().getFullYear();
+    const startYr = Math.min(2022, ...allYears.map(Number));
+    let dots = '';
+    for (let y = startYr; y <= curYr; y++) {
+      const paid = verYears.map(Number).includes(y);
+      const isCur = y === curYr;
+      const cls = isCur ? (paid?'current-paid':'current-unpaid') : (paid?'paid':'empty');
+      dots += `<div class="ys-item"><div class="ys-dot ${cls}">${paid?'✓':'○'}</div><div class="ys-yr">${y}</div></div>`;
+    }
+    streak.innerHTML = dots;
+  }
+
+  // Home tab status card
+  _s('homeContribTitle', thisYr ? '✅ Paid for Chhath Puja 2026' : '🌅 Contribute for Chhath Puja 2026');
+  _s('homeContribSub', thisYr
+    ? `₹${thisYr.toLocaleString('en-IN')} verified · Thank you! 🙏`
+    : 'Deadline: 25th October 2026 · Every contribution counts');
+  const payBtn = document.getElementById('homePayBtn');
+  const recBtn = document.getElementById('homeReceiptBtn');
+  if (payBtn) payBtn.style.display = thisYr ? 'none' : 'inline-block';
+  if (recBtn) recBtn.style.display = thisYr ? 'inline-block' : 'none';
+
+  // Hero status strip
+  _s('phStatus', thisYr ? `✅ Paid ₹${thisYr.toLocaleString('en-IN')}` : 'Not contributed yet');
+
+  // Home tile "My History" sub-label
+  _s('htYears', verYears.length ? `${verYears.length} year${verYears.length!==1?'s':''} · ₹${total.toLocaleString('en-IN')}` : 'No history yet');
 }
 
 /* ═══════════════════════════════════════════════════
@@ -2205,7 +2434,7 @@ function switchTab(id) {
   document.getElementById('tab-' + id).classList.add('active');
   // Find matching tab button
   const buttons = document.querySelectorAll('.ptab');
-  const tabMap = { contributions:0, profile:1, notifications:2, messages:3, quickpay:4, receipt:5, volunteer:6, adminmgmt:7 };
+  const tabMap = { home:0, contributions:1, quickpay:2, receipt:3, profile:4, notifications:5, messages:6, volunteer:7, adminmgmt:8 };
   if (tabMap[id] !== undefined) buttons[tabMap[id]].classList.add('active');
   if (id === 'receipt') loadReceipt();
   if (id === 'volunteer') loadVolunteerStatus();
