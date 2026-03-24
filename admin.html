@@ -591,7 +591,23 @@
         </div>
       </div>
 
-      <!-- 9. Settings -->
+      <!-- 9. Team Members -->
+      <div class="feat-tile" style="--tc:#2471a3" onclick="switchTab('settings');setTimeout(()=>document.getElementById('teamMembersCard')?.scrollIntoView({behavior:'smooth'}),300)">
+        <div class="ft-head">
+          <div class="ft-icon">👥</div>
+          <div class="ft-badge" id="ft-badge-team"></div>
+        </div>
+        <div class="ft-title">Team Members</div>
+        <div class="ft-val" id="ft-val-team">—</div>
+        <div class="ft-sub" id="ft-sub-team">committee · roles assigned</div>
+        <div class="ft-progress-wrap" style="display:none"></div>
+        <div class="ft-actions">
+          <button class="ft-btn primary" onclick="event.stopPropagation();switchTab('settings');setTimeout(()=>document.getElementById('teamMembersCard')?.scrollIntoView({behavior:'smooth'}),300)">Manage Team</button>
+          <button class="ft-btn" onclick="event.stopPropagation();openAddMemberModal()">+ Add</button>
+        </div>
+      </div>
+
+      <!-- 10. Settings -->
       <div class="feat-tile" style="--tc:#7f8c8d" onclick="switchTab('settings')">
         <div class="ft-head">
           <div class="ft-icon">⚙️</div>
@@ -606,6 +622,32 @@
         </div>
       </div>
 
+    </div>
+
+    <!-- Add Member Quick Modal -->
+    <div id="addMemberModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center">
+      <div style="background:#fff8f0;border-radius:18px;padding:1.6rem 1.8rem;max-width:420px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.25);animation:ftIn .3s ease">
+        <div style="font-size:1.1rem;font-weight:800;color:var(--ink);margin-bottom:1rem">👥 Add Team Member</div>
+        <div style="display:grid;gap:.6rem">
+          <input id="modal-am-email" type="email" placeholder="Gmail address (e.g. name@gmail.com)"
+            style="padding:.7rem 1rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;width:100%;box-sizing:border-box"/>
+          <input id="modal-am-name" type="text" placeholder="Display name (optional)"
+            style="padding:.7rem 1rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;width:100%;box-sizing:border-box"/>
+          <select id="modal-am-role"
+            style="padding:.7rem 1rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;background:#fff8f0">
+            <option value="admin">🔑 Admin — full access</option>
+            <option value="treasurer">💰 Treasurer — finance only</option>
+            <option value="event_coordinator">🏮 Event Coordinator — ghat &amp; timings</option>
+            <option value="resident_coordinator">👥 Resident Coordinator — contributors &amp; directory</option>
+            <option value="volunteer_lead">🤝 Volunteer Lead — volunteers only</option>
+            <option value="viewer">👁 Viewer — read only</option>
+          </select>
+          <div style="display:flex;gap:.6rem;margin-top:.3rem">
+            <button onclick="modalAddMember()" style="flex:1;background:var(--or);color:#fff;border:none;border-radius:10px;padding:.7rem;font-weight:700;font-size:.9rem;cursor:pointer">+ Add Member</button>
+            <button onclick="document.getElementById('addMemberModal').style.display='none'" style="background:#f5e8d8;color:var(--ink);border:none;border-radius:10px;padding:.7rem 1rem;font-weight:600;font-size:.9rem;cursor:pointer">Cancel</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Pending verifications (compact, below tiles) -->
@@ -2238,6 +2280,19 @@ function updateDashStats() {
   _set('ft-val-pra', prasadAll.length);
   _set('ft-sub-pra', `on list · ${vratiCount} vrat${vratiCount !== 1 ? 'is' : 'i'}`);
 
+  // ── Team Members tile ──────────────────────────────
+  const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
+  const totalTeam = base.length + _membersCache.length;
+  const roleBreakdown = _membersCache.reduce((acc, m) => {
+    const lbl = (ROLE_META[m.role] || {}).label || m.role;
+    acc[lbl] = (acc[lbl] || 0) + 1;
+    return acc;
+  }, {});
+  const roleStr = Object.entries(roleBreakdown).map(([r,c]) => `${c} ${r}`).join(' · ') || 'superadmin only';
+  _set('ft-val-team', totalTeam);
+  _set('ft-sub-team', roleStr);
+  _badge('ft-badge-team', totalTeam > 1 ? `${totalTeam} members` : '1 member', 'good');
+
   // ── Settings tile — Fonnte status ─────────────────
   const fSt = document.getElementById('fonnteStatusBadge');
   const fTxt = fSt ? fSt.textContent.trim() : '';
@@ -3077,7 +3132,34 @@ function renderAmList() {
   el.innerHTML = baseRows + (members.length
     ? memberRows
     : '<div style="font-size:.82rem;color:#c8a880;padding:.5rem 0">No members yet — add one above or edit the Members sheet directly.</div>');
+  // Sync tile count on dashboard
+  updateDashStats();
 }
+
+function openAddMemberModal() {
+  const m = document.getElementById('addMemberModal');
+  if (m) { m.style.display = 'flex'; document.getElementById('modal-am-email').focus(); }
+}
+function modalAddMember() {
+  const email = (document.getElementById('modal-am-email').value||'').trim().toLowerCase();
+  const name  = (document.getElementById('modal-am-name').value||'').trim();
+  const role  = document.getElementById('modal-am-role').value;
+  if (!email || !email.includes('@')) return toast('Enter a valid email', 'error');
+  const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
+  if (base.includes(email) || _membersCache.some(m => m.email === email)) return toast('Already in team', 'error');
+  const updated = [..._membersCache, { email, name, role, addedBy: currentAdminUser?.email||'', addedAt: Date.now() }];
+  document.getElementById('modal-am-email').value = '';
+  document.getElementById('modal-am-name').value = '';
+  document.getElementById('addMemberModal').style.display = 'none';
+  adminSaveMembers(updated);
+  toast('✅ ' + (name||email) + ' added as ' + (ROLE_META[role]?.label || role), 'success');
+  updateDashStats();
+}
+// Close modal on backdrop click
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('addMemberModal');
+  if (modal && e.target === modal) modal.style.display = 'none';
+});
 
 function adminAddMember() {
   const email = (document.getElementById('am-email').value||'').trim().toLowerCase();
