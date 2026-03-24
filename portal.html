@@ -593,6 +593,11 @@
         <div class="ph-tile-title">Volunteer</div>
         <div class="ph-tile-sub">Sign up</div>
       </div>
+      <div class="ph-tile" style="--tc:#e85c00" onclick="window.location.href='pages/contributors.html'">
+        <span class="ph-tile-icon" style="margin-top:.55rem">🙏</span>
+        <div class="ph-tile-title">Contributors</div>
+        <div class="ph-tile-sub">See who contributed</div>
+      </div>
     </div>
   </div>
 
@@ -1524,7 +1529,7 @@ function showPortal() {
 
   // Check admin
   if (currentUser && isAdmin(currentUser.email)) {
-    document.getElementById('wbBadge').textContent = '⚙️ Admin';
+    document.getElementById('wbBadge').style.display = 'none';
     document.getElementById('adminLink').style.display = 'inline-block';
     document.getElementById('adminTab').style.display = 'inline-block';
     renderMemberList();
