@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PSOTS — DB Connection Tests</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #0f172a; color: #e2e8f0;
+      padding: 2rem; min-height: 100vh;
+    }
+    h1 { font-size: 1.5rem; font-weight: 700; color: #f8fafc; margin-bottom: .25rem; }
+    .subtitle { color: #94a3b8; font-size: .9rem; margin-bottom: 2rem; }
+    .section { margin-bottom: 2rem; }
+    .section-title {
+      font-size: .75rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: #64748b; margin-bottom: .75rem;
+    }
+    .card {
+      background: #1e293b; border-radius: 10px; padding: 1rem 1.25rem;
+      display: flex; align-items: center; gap: 1rem;
+      margin-bottom: .5rem; border: 1px solid #334155;
+    }
+    .badge {
+      flex-shrink: 0; width: 80px; text-align: center;
+      padding: .25rem .5rem; border-radius: 6px; font-size: .75rem;
+      font-weight: 700; letter-spacing: .04em;
+    }
+    .badge.pending   { background: #334155; color: #94a3b8; }
+    .badge.running   { background: #1d4ed8; color: #bfdbfe; }
+    .badge.pass      { background: #166534; color: #86efac; }
+    .badge.fail      { background: #991b1b; color: #fca5a5; }
+    .badge.warn      { background: #854d0e; color: #fde68a; }
+    .test-name { font-size: .95rem; font-weight: 600; flex: 1; }
+    .test-detail { font-size: .8rem; color: #94a3b8; margin-top: .2rem; }
+    #run-btn {
+      background: #3b82f6; color: #fff; border: none; border-radius: 8px;
+      padding: .75rem 1.5rem; font-size: 1rem; font-weight: 600;
+      cursor: pointer; margin-bottom: 2rem;
+    }
+    #run-btn:hover { background: #2563eb; }
+    #run-btn:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+    #summary {
+      margin-top: 1.5rem; padding: 1rem 1.25rem;
+      background: #1e293b; border-radius: 10px; border: 1px solid #334155;
+      font-size: .95rem; display: none;
+    }
+    .sum-pass { color: #86efac; }
+    .sum-fail { color: #fca5a5; }
+    .sum-warn { color: #fde68a; }
+    pre { font-size: .75rem; color: #64748b; white-space: pre-wrap; word-break: break-all; }
+  </style>
+</head>
+<body>
+
+<h1>PSOTS — Database Connection Tests</h1>
+<p class="subtitle">Verifies all DB layers: Firebase config · Firestore init · Collection access · Apps Script endpoint</p>
+
+<button id="run-btn" onclick="runAll()">▶ Run All Tests</button>
+
+<div class="section">
+  <div class="section-title">Layer 0 — Firebase SDK &amp; Config</div>
+  <div id="t-sdk"       class="card"><span class="badge pending" id="b-sdk">PENDING</span><div><div class="test-name">Firebase SDK loaded</div><div class="test-detail" id="d-sdk">Checks window.firebase exists</div></div></div>
+  <div id="t-cfg"       class="card"><span class="badge pending" id="b-cfg">PENDING</span><div><div class="test-name">Firebase config present &amp; not placeholder</div><div class="test-detail" id="d-cfg">Checks window.PSOTS_FIREBASE_CONFIG</div></div></div>
+  <div id="t-init"      class="card"><span class="badge pending" id="b-init">PENDING</span><div><div class="test-name">Firebase app initializes without error</div><div class="test-detail" id="d-init">firebase.initializeApp(config)</div></div></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Layer 3 — Firestore Connectivity</div>
+  <div id="t-fs-init"   class="card"><span class="badge pending" id="b-fs-init">PENDING</span><div><div class="test-name">Firestore instance created</div><div class="test-detail" id="d-fs-init">firebase.firestore()</div></div></div>
+  <div id="t-profiles"  class="card"><span class="badge pending" id="b-profiles">PENDING</span><div><div class="test-name">Collection: <em>profiles</em> — read probe</div><div class="test-detail" id="d-profiles">Query limit(1) to verify read access</div></div></div>
+  <div id="t-contribs"  class="card"><span class="badge pending" id="b-contribs">PENDING</span><div><div class="test-name">Collection: <em>contributions</em> — read probe</div><div class="test-detail" id="d-contribs">Query limit(1) to verify read access</div></div></div>
+  <div id="t-residents" class="card"><span class="badge pending" id="b-residents">PENDING</span><div><div class="test-name">Collection: <em>residents</em> — read probe</div><div class="test-detail" id="d-residents">Query limit(1) to verify read access</div></div></div>
+  <div id="t-announce"  class="card"><span class="badge pending" id="b-announce">PENDING</span><div><div class="test-name">Collection: <em>announcements</em> — read probe</div><div class="test-detail" id="d-announce">Query limit(1) to verify read access</div></div></div>
+  <div id="t-write"     class="card"><span class="badge pending" id="b-write">PENDING</span><div><div class="test-name">Firestore write &amp; delete (canary doc)</div><div class="test-detail" id="d-write">Writes _test_connection_probe then deletes it</div></div></div>
+  <div id="t-persist"   class="card"><span class="badge pending" id="b-persist">PENDING</span><div><div class="test-name">Offline persistence enabled</div><div class="test-detail" id="d-persist">enablePersistence({ synchronizeTabs: true })</div></div></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Layer 4 — PSOTS_DB Service &amp; Apps Script</div>
+  <div id="t-psots-db"  class="card"><span class="badge pending" id="b-psots-db">PENDING</span><div><div class="test-name">PSOTS_DB service loaded</div><div class="test-detail" id="d-psots-db">window.PSOTS_DB exists and isFirestoreReady</div></div></div>
+  <div id="t-gas-url"   class="card"><span class="badge pending" id="b-gas-url">PENDING</span><div><div class="test-name">Apps Script URL configured</div><div class="test-detail" id="d-gas-url">window.PSOTS.scriptUrl is a valid URL</div></div></div>
+  <div id="t-gas-ping"  class="card"><span class="badge pending" id="b-gas-ping">PENDING</span><div><div class="test-name">Apps Script endpoint reachable (ping)</div><div class="test-detail" id="d-gas-ping">GET scriptUrl?action=ping — expects JSON response</div></div></div>
+</div>
+
+<div class="section">
+  <div class="section-title">Layer 1 &amp; 2 — Cache Layers</div>
+  <div id="t-mem"  class="card"><span class="badge pending" id="b-mem">PENDING</span><div><div class="test-name">Memory cache (Layer 1) — read/write round-trip</div><div class="test-detail" id="d-mem">saveProfile → getProfile hits memory</div></div></div>
+  <div id="t-ls"   class="card"><span class="badge pending" id="b-ls">PENDING</span><div><div class="test-name">localStorage (Layer 2) — available &amp; writable</div><div class="test-detail" id="d-ls">localStorage.setItem / getItem probe</div></div></div>
+</div>
+
+<div id="summary"></div>
+
+<!-- Firebase SDK (compat) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+<!-- PSOTS scripts -->
+<script src="../js/firebase-config.js"></script>
+<script src="../js/config.js"></script>
+<script src="../js/db.js"></script>
+
+<script>
+/* ── Helpers ─────────────────────────────────── */
+function setStatus(id, status, detail) {
+  const badge = document.getElementById('b-' + id);
+  if (!badge) return;
+  badge.textContent = status.toUpperCase();
+  badge.className = 'badge ' + status;
+  if (detail !== undefined) {
+    const d = document.getElementById('d-' + id);
+    if (d) d.textContent = detail;
+  }
+}
+
+function pass(id, detail)  { setStatus(id, 'pass',    detail); }
+function fail(id, detail)  { setStatus(id, 'fail',    detail); }
+function warn(id, detail)  { setStatus(id, 'warn',    detail); }
+function run(id, detail)   { setStatus(id, 'running', detail || 'Running…'); }
+
+const results = {};
+function record(id, status, detail) {
+  results[id] = { status, detail };
+  setStatus(id, status, detail);
+}
+
+/* ── Individual tests ────────────────────────── */
+async function testSdk() {
+  run('sdk');
+  if (typeof firebase !== 'undefined' && firebase.SDK_VERSION) {
+    record('sdk', 'pass', 'firebase v' + firebase.SDK_VERSION);
+  } else {
+    record('sdk', 'fail', 'window.firebase not found — SDK script failed to load');
+    throw new Error('Firebase SDK missing');
+  }
+}
+
+async function testConfig() {
+  run('cfg');
+  const cfg = window.PSOTS_FIREBASE_CONFIG;
+  if (!cfg) { record('cfg', 'fail', 'window.PSOTS_FIREBASE_CONFIG is undefined'); throw new Error('No config'); }
+  const missing = ['apiKey','authDomain','projectId','storageBucket','messagingSenderId','appId']
+    .filter(k => !cfg[k] || cfg[k] === 'FILL_IN');
+  if (missing.length) {
+    record('cfg', 'fail', 'Placeholder values for: ' + missing.join(', '));
+    throw new Error('Config incomplete');
+  }
+  record('cfg', 'pass', 'projectId: ' + cfg.projectId + ' | appId: ' + cfg.appId.slice(-10));
+}
+
+let _testApp = null;
+async function testInit() {
+  run('init');
+  try {
+    const cfg = window.PSOTS_FIREBASE_CONFIG;
+    // Use a separate named app so we don't collide with db.js's default app
+    try {
+      _testApp = firebase.app('psots-test');
+    } catch {
+      _testApp = firebase.initializeApp(cfg, 'psots-test');
+    }
+    record('init', 'pass', 'App "' + _testApp.name + '" initialized');
+  } catch (e) {
+    record('init', 'fail', e.message);
+    throw e;
+  }
+}
+
+async function testFirestoreInit() {
+  run('fs-init');
+  try {
+    if (!_testApp) throw new Error('No test Firebase app');
+    const db = _testApp.firestore();
+    if (!db) throw new Error('firestore() returned null');
+    record('fs-init', 'pass', 'Firestore instance created');
+    return db;
+  } catch (e) {
+    record('fs-init', 'fail', e.message);
+    throw e;
+  }
+}
+
+async function testCollectionRead(db, collectionName, testId) {
+  run(testId);
+  try {
+    const snap = await db.collection(collectionName).limit(1).get();
+    const count = snap.size;
+    record(testId, 'pass', count === 0
+      ? 'Collection empty (0 docs) — access OK'
+      : count + ' doc(s) returned — access OK'
+    );
+  } catch (e) {
+    const isPermission = e.code === 'permission-denied';
+    record(testId, isPermission ? 'fail' : 'warn',
+      isPermission ? 'PERMISSION DENIED — check firestore.rules' : e.message
+    );
+  }
+}
+
+async function testFirestoreWrite(db) {
+  run('write');
+  const docRef = db.collection('_test_connection_probe').doc('canary');
+  try {
+    await docRef.set({ ts: Date.now(), by: 'test-db-connections.html' });
+    await docRef.delete();
+    record('write', 'pass', 'Write + delete round-trip succeeded');
+  } catch (e) {
+    const isPermission = e.code === 'permission-denied';
+    record('write', isPermission ? 'fail' : 'warn',
+      isPermission ? 'PERMISSION DENIED on write — check firestore.rules' : e.message
+    );
+  }
+}
+
+async function testPersistence(db) {
+  run('persist');
+  try {
+    await db.enablePersistence({ synchronizeTabs: true });
+    record('persist', 'pass', 'Offline persistence enabled');
+  } catch (e) {
+    if (e.code === 'failed-precondition') {
+      record('persist', 'warn', 'FAILED_PRECONDITION — multiple tabs open (normal)');
+    } else if (e.code === 'unimplemented') {
+      record('persist', 'warn', 'UNIMPLEMENTED — browser does not support IndexedDB');
+    } else if (e.message && e.message.toLowerCase().includes('already been started')) {
+      record('persist', 'warn', 'Persistence already enabled (called more than once)');
+    } else {
+      record('persist', 'warn', e.message);
+    }
+  }
+}
+
+async function testPsotsDb() {
+  run('psots-db');
+  if (typeof PSOTS_DB === 'undefined') {
+    record('psots-db', 'fail', 'window.PSOTS_DB not found — check db.js is loaded');
+    return;
+  }
+  const ready = PSOTS_DB.isFirestoreReady;
+  if (ready) {
+    record('psots-db', 'pass', 'PSOTS_DB loaded and isFirestoreReady = true');
+  } else {
+    record('psots-db', 'warn', 'PSOTS_DB loaded but isFirestoreReady = false (Firebase config may be placeholder)');
+  }
+}
+
+async function testGasUrl() {
+  run('gas-url');
+  const url = window.PSOTS && window.PSOTS.scriptUrl;
+  if (!url) { record('gas-url', 'fail', 'window.PSOTS.scriptUrl is not set'); return; }
+  if (url === 'FILL_IN' || !url.startsWith('https://script.google.com')) {
+    record('gas-url', 'warn', 'scriptUrl looks like a placeholder: ' + url);
+    return;
+  }
+  record('gas-url', 'pass', url.slice(0, 72) + '…');
+}
+
+async function testGasPing() {
+  run('gas-ping');
+  const url = window.PSOTS && window.PSOTS.scriptUrl;
+  if (!url || !url.startsWith('https://')) { record('gas-ping', 'warn', 'No valid scriptUrl — skipping ping'); return; }
+  try {
+    const res = await fetch(url + '?action=ping', {
+      method: 'GET',
+      mode:   'cors',
+      signal: AbortSignal.timeout(8000),
+    });
+    if (res.ok) {
+      let body = await res.text();
+      body = body.slice(0, 100);
+      record('gas-ping', 'pass', 'HTTP ' + res.status + ' — ' + body);
+    } else {
+      record('gas-ping', 'warn', 'HTTP ' + res.status + ' — endpoint responded but non-2xx');
+    }
+  } catch (e) {
+    if (e.name === 'TypeError' && e.message.includes('CORS')) {
+      record('gas-ping', 'warn', 'CORS blocked — Apps Script may need "Execute as Me, Access: Anyone"');
+    } else if (e.name === 'TimeoutError' || e.name === 'AbortError') {
+      record('gas-ping', 'warn', 'Request timed out after 8s — endpoint may be slow or down');
+    } else {
+      record('gas-ping', 'warn', e.message);
+    }
+  }
+}
+
+async function testMemCache() {
+  run('mem');
+  if (typeof PSOTS_DB === 'undefined') { record('mem', 'fail', 'PSOTS_DB not loaded'); return; }
+  const uid = '__test_cache_probe__';
+  try {
+    await PSOTS_DB.saveProfile(uid, { name: 'Cache Test', _test: true });
+    const profile = await PSOTS_DB.getProfile(uid);
+    PSOTS_DB.invalidateProfile(uid);
+    if (profile && profile.name === 'Cache Test') {
+      record('mem', 'pass', 'Write → Read returned correct data; cache cleared');
+    } else {
+      record('mem', 'fail', 'getProfile returned unexpected value: ' + JSON.stringify(profile));
+    }
+  } catch (e) {
+    record('mem', 'fail', e.message);
+  }
+}
+
+async function testLocalStorage() {
+  run('ls');
+  try {
+    const key = '__psots_ls_test__';
+    localStorage.setItem(key, '1');
+    const val = localStorage.getItem(key);
+    localStorage.removeItem(key);
+    if (val === '1') {
+      record('ls', 'pass', 'localStorage read/write OK (' + (localStorage.length) + ' existing keys)');
+    } else {
+      record('ls', 'fail', 'Read-back mismatch');
+    }
+  } catch (e) {
+    record('ls', 'fail', 'localStorage unavailable: ' + e.message);
+  }
+}
+
+/* ── Main runner ─────────────────────────────── */
+async function runAll() {
+  const btn = document.getElementById('run-btn');
+  btn.disabled = true;
+  btn.textContent = '⏳ Running…';
+
+  // Reset all badges
+  document.querySelectorAll('.badge').forEach(b => {
+    b.textContent = 'PENDING'; b.className = 'badge pending';
+  });
+  document.getElementById('summary').style.display = 'none';
+
+  let db = null;
+
+  try { await testSdk();       } catch { btn.disabled = false; btn.textContent = '▶ Run All Tests'; showSummary(); return; }
+  try { await testConfig();    } catch { /* still continue with remaining tests */ }
+  try { await testInit();      } catch { /* still continue */ }
+
+  try {
+    db = await testFirestoreInit();
+  } catch {
+    // mark remaining Firestore tests as skipped
+    ['profiles','contribs','residents','announce','write','persist'].forEach(id =>
+      record(id, 'warn', 'Skipped — Firestore instance unavailable')
+    );
+  }
+
+  if (db) {
+    await testCollectionRead(db, 'profiles',      'profiles');
+    await testCollectionRead(db, 'contributions', 'contribs');
+    await testCollectionRead(db, 'residents',     'residents');
+    await testCollectionRead(db, 'announcements', 'announce');
+    await testFirestoreWrite(db);
+    await testPersistence(db);
+  }
+
+  await testPsotsDb();
+  await testGasUrl();
+  await testGasPing();
+  await testMemCache();
+  await testLocalStorage();
+
+  showSummary();
+  btn.disabled = false;
+  btn.textContent = '↺ Re-run Tests';
+}
+
+function showSummary() {
+  const all     = Object.values(results);
+  const passes  = all.filter(r => r.status === 'pass').length;
+  const fails   = all.filter(r => r.status === 'fail').length;
+  const warns   = all.filter(r => r.status === 'warn').length;
+  const total   = all.length;
+  const overall = fails > 0 ? 'fail' : warns > 0 ? 'warn' : 'pass';
+  const emoji   = overall === 'pass' ? '✅' : overall === 'warn' ? '⚠️' : '❌';
+  const el = document.getElementById('summary');
+  el.innerHTML = `<strong>${emoji} Summary</strong> &nbsp;
+    <span class="sum-pass">${passes} passed</span> &nbsp;
+    <span class="sum-warn">${warns} warnings</span> &nbsp;
+    <span class="sum-fail">${fails} failed</span>
+    &nbsp;/ ${total} total`;
+  el.style.display = 'block';
+}
+</script>
+</body>
+</html>

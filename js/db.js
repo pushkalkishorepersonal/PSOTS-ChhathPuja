@@ -305,6 +305,7 @@ const PSOTS_DB = (() => {
             String(r.name  || '').replace(/\s+/g, '').toLowerCase().slice(0, 12),
             r.amount,
           ].join('_').replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 120);
+          if (!key) return;  // skip records that would produce an empty document ID
           const ref = _db.collection('contributions').doc(key);
           batch.set(ref, {
             flat:   String(r.flat   || ''),
