@@ -662,9 +662,43 @@ const PSOTS_DB = (() => {
     }
   }
 
+  /**
+   * savePendingContribution(record) → { ok }
+   *
+   * Saves a single self-reported contribution with status "Pending Verification".
+   * Uses a timestamp-based key so duplicate taps don't overwrite each other.
+   */
+  async function savePendingContribution(record) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      const key = [
+        record.year,
+        String(record.flat  || '').replace(/\//g, '-'),
+        String(record.name  || '').replace(/\s+/g, '').toLowerCase().slice(0, 12),
+        record.amount,
+        Date.now(),
+      ].join('_').replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 120);
+      await _db.collection('contributions').doc(key).set({
+        flat:        String(record.flat   || ''),
+        year:        Number(record.year)  || 0,
+        name:        record.name   || '',
+        amount:      Number(record.amount) || 0,
+        date:        record.date   || '',
+        method:      record.method || 'UPI',
+        status:      'Pending Verification',
+        mobile:      record.mobile || '',
+        submittedAt: Date.now(),
+      });
+      return { ok: true };
+    } catch (e) {
+      console.warn('[PSOTS_DB] savePendingContribution failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, syncContributions, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, syncContributions, savePendingContribution, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();

@@ -2516,17 +2516,61 @@ function qpLaunch(app) {
   const links = { gpay:`gpay://upi/pay?${p}`, phonepe:`phonepe://pay?${p}`, paytm:`paytmmp://pay?${p}`, bhim:`upi://pay?${p}`, any:`upi://pay?${p}` };
   const isMobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
   if (!isMobile) { showUpiQr(amt); return false; }
+  // Open UPI app then show confirmation banner
   window.location.href = links[app];
-
-  // Auto-record payment after UPI app opens
-  setTimeout(() => {
-    const name   = userProfile.name || currentUser.name;
-    const flat   = userProfile.flat || '—';
-    const mobile = userProfile.mobile || '—';
-    const waMsg = `🌅 *Chhath 2026 — Payment Done*\n\n👤 ${name}  🏠 ${flat}\n📱 ${mobile}\n💰 ₹${parseInt(amt).toLocaleString('en-IN')}\n📲 UPI\n\nPlease verify 🙏`;
-    openWA(C.waOrg, waMsg);
-  }, 2500);
+  setTimeout(() => showMobileIvePaid(amt), 1200);
   return false;
+}
+
+/* Shared: save self-reported payment to Firestore as Pending Verification */
+async function submitPendingPayment(amt) {
+  const name   = (userProfile && userProfile.name)   || (currentUser && currentUser.name) || '—';
+  const flat   = (userProfile && userProfile.flat)   || '—';
+  const mobile = (userProfile && userProfile.mobile) || '—';
+  const year   = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
+  const record = {
+    name, flat, mobile, year,
+    amount: parseInt(amt),
+    method: 'UPI',
+    date:   new Date().toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }),
+  };
+  let saved = false;
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    const res = await PSOTS_DB.savePendingContribution(record);
+    saved = res.ok;
+  }
+  if (saved) {
+    toast('✅ Recorded! Admin will verify and confirm your payment.', 'success');
+  } else {
+    toast('⚠️ Could not reach server — contact admin to verify manually.', 'error');
+  }
+  closeUpiQr();
+  closeMobileIvePaid();
+  switchTab('receipt');
+}
+
+/* Mobile: show a bottom banner after UPI app opens */
+function showMobileIvePaid(amt) {
+  _qrAmt = amt;
+  let el = document.getElementById('mobileIvePaidBanner');
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'mobileIvePaidBanner';
+    el.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:9999;background:#fff;border-top:2px solid #e8c97a;border-radius:1.2rem 1.2rem 0 0;padding:1.4rem 1.2rem 2rem;box-shadow:0 -6px 30px rgba(0,0,0,.18);text-align:center;font-family:\'DM Sans\',sans-serif;';
+    el.innerHTML = `
+      <div style="font-size:1rem;font-weight:700;color:#7c3a00;margin-bottom:.3rem">Paid via UPI? ✅</div>
+      <div style="font-size:.82rem;color:#888;margin-bottom:1rem">Tap below so admin can verify your payment</div>
+      <button onclick="submitPendingPayment(_qrAmt)" style="width:100%;background:linear-gradient(135deg,#1a7a1a,#28a428);color:#fff;font-weight:700;font-size:1rem;padding:.85rem;border-radius:.85rem;border:none;cursor:pointer;box-shadow:0 4px 14px rgba(0,100,0,.28);margin-bottom:.6rem">
+        ✅ I've Paid — Record My Payment
+      </button>
+      <button onclick="closeMobileIvePaid()" style="background:none;border:none;color:#aaa;font-size:.8rem;cursor:pointer">Not yet / Cancel</button>`;
+    document.body.appendChild(el);
+  }
+  el.style.display = 'block';
+}
+function closeMobileIvePaid() {
+  const el = document.getElementById('mobileIvePaidBanner');
+  if (el) el.style.display = 'none';
 }
 
 /* ═══════════════════════════════════════════════════
@@ -2995,13 +3039,7 @@ function closeUpiQr() {
   document.getElementById('upiQrModal').style.display = 'none';
 }
 function qrIvePaid() {
-  closeUpiQr();
-  const name   = (userProfile && userProfile.name)   || (currentUser && currentUser.name) || '—';
-  const flat   = (userProfile && userProfile.flat)   || '—';
-  const mobile = (userProfile && userProfile.mobile) || '—';
-  const waMsg = `🌅 *Chhath ${window.PSOTS && window.PSOTS.activeYear || new Date().getFullYear()} — Payment Done*\n\n👤 ${name}  🏠 ${flat}\n📱 ${mobile}\n💰 ₹${parseInt(_qrAmt).toLocaleString('en-IN')}\n📲 UPI (QR scan)\n\nPlease verify 🙏`;
-  openWA(C.waOrg, waMsg);
-  toast('WhatsApp opened — ask committee to verify your payment ✅', 'success');
+  submitPendingPayment(_qrAmt);
 }
 /* ── Set Pay button label and hint based on device ── */
 (function() {
@@ -3012,8 +3050,8 @@ function qrIvePaid() {
   if (icon) icon.textContent = mobile ? '📲' : '📷';
   if (action) action.textContent = mobile ? 'Open My UPI App — Pay' : 'Scan QR Code to Pay';
   if (hint) hint.textContent = mobile
-    ? 'After paying, WhatsApp is sent to committee for verification ✅'
-    : 'Scan QR, pay, then tap "I\'ve Paid" in the popup to notify the committee ✅';
+    ? 'After paying, tap "I\'ve Paid" to record — admin will verify ✅'
+    : 'Scan QR, pay, then tap "I\'ve Paid" to record — admin will verify ✅';
 })();
 </script>
 
