@@ -1,9 +1,17 @@
 /**
  * ════════════════════════════════════════════════════
- *  PSOTS CHHATH 2026 — CENTRAL CONFIGURATION
+ *  PSOTS CHHATH — CENTRAL CONFIGURATION
  *  Edit THIS ONE FILE to update everything site-wide.
  *
- *  Only 2 values need filling after setup:
+ *  ── For a new year (e.g. 2026 → 2027) ─────────────
+ *  1. Update eventName, eventStart, deadline, arghyaEvening,
+ *     arghyaMorning, kharnaTime to next year's values.
+ *  2. Move current year's actuals into history (see below).
+ *  3. In Admin → Finance tab, click "Year Rollover" to
+ *     archive this year's data and carry forward the balance.
+ *  That's it — everything else derives from these values.
+ *
+ *  Only 2 values need filling after initial setup:
  *    1. scriptUrl      → after Google Sheet setup
  *    2. googleClientId → after Google Cloud setup
  * ════════════════════════════════════════════════════
@@ -40,12 +48,21 @@ window.PSOTS = {
     { name:'Prasad Coord.',   role:'Prasad & Food',     phone:'',           wa:'',             initial:'P' },
   ],
 
-  /* ── 2025 FINANCE (actual) ────── */
-  fin25: {
-    contributors: 141, vratis: 15,
-    collected: 235553, expenses: 198383, carry: 104670, budget: 282000,
-    tent: 62801, kharna: 60201, thekua: 52908, misc: 22473,
-    yoy: { 2022:125300, 2023:183630, 2024:217048, 2025:198383 },
+  /* ── HISTORICAL FINANCE ─────────
+   *  Add the completed year's actuals here each year-end.
+   *  The Finance page YoY chart and the Year Rollover tool
+   *  both read from this object.
+   * ──────────────────────────────── */
+  history: {
+    2022: { expenses: 125300 },
+    2023: { expenses: 183630 },
+    2024: { expenses: 217048 },
+    2025: {
+      contributors: 141, vratis: 15,
+      collected: 235553, expenses: 198383, carry: 104670, budget: 282000,
+      tent: 62801, kharna: 60201, thekua: 52908, misc: 22473,
+    },
+    // 2026 will be added here after year-end rollover
   },
 
   /* ── WHATSAPP CHANNEL ─────────── */
@@ -64,6 +81,7 @@ window.PSOTS = {
   googleClientId: '681152691156-g1q8bmionkcim033fhjhtn57jbiq1nij.apps.googleusercontent.com',
 };
 
-/* Helpers */
-window.PSOTS.fmt      = n => '₹' + parseInt(n||0).toLocaleString('en-IN');
-window.PSOTS.daysLeft = () => Math.max(0, Math.ceil((new Date(PSOTS.eventStart)-new Date())/86400000));
+/* ── Derived helpers (do not edit) ── */
+window.PSOTS.activeYear = new Date(window.PSOTS.eventStart).getFullYear();
+window.PSOTS.fmt        = n => '₹' + parseInt(n||0).toLocaleString('en-IN');
+window.PSOTS.daysLeft   = () => Math.max(0, Math.ceil((new Date(PSOTS.eventStart)-new Date())/86400000));

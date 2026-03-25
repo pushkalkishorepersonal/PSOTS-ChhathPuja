@@ -348,74 +348,32 @@ const ob = new IntersectionObserver(e => {
 }, { threshold: 0.2 });
 document.querySelectorAll('.yr-panel').forEach(p => ob.observe(p));
 
-/* ── Load 2026 live data ── */
+/* ── Load current year live data ── */
 const su = (window.PSOTS && window.PSOTS.scriptUrl) || localStorage.getItem('psots_script_url') || '';
-const CARRY = 104670;
+const ACTIVE_YEAR = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
 const fmt = n => '₹' + parseInt(n || 0).toLocaleString('en-IN');
 
-function _applyContribStats(rows2026) {
-  const verified = rows2026.filter(x => x.status?.includes('Received'));
-  const pending  = rows2026.filter(x => !x.status?.includes('Received') && !x.status?.toLowerCase().includes('reject'));
-  const rejected = rows2026.filter(x => x.status?.toLowerCase().includes('reject'));
+async function loadCurrentYear() {
+  let collected = 0, count = 0, expenses = 0, budget = 0, carry = 0;
 
-  const collectedAmt = verified.reduce((s,x) => s+(parseFloat(x.amount)||0), 0);
-  const pendingAmt   = pending.reduce((s,x)  => s+(parseFloat(x.amount)||0), 0);
-  const rejectedAmt  = rejected.reduce((s,x) => s+(parseFloat(x.amount)||0), 0);
-
-  // Count unique flats (verified)
-  const verFlats = new Set(verified.map(x => String(x.flat||'—').trim())).size;
-  const pendFlats = new Set(pending.map(x => String(x.flat||'—').trim())).size;
-
-  document.getElementById('c26-collected').textContent = fmt(collectedAmt);
-  document.getElementById('c26-pending').textContent   = pendingAmt > 0 ? fmt(pendingAmt) : '₹0';
-  document.getElementById('c26-rejected').textContent  = fmt(rejectedAmt);
-  if (rejectedAmt > 0) document.getElementById('rejRow').style.display = '';
-  document.getElementById('c26-count').textContent         = verFlats || '—';
-  document.getElementById('c26-pending-count').textContent = pendFlats || '0';
-
-  // Duplicate detection — same flat has >1 VERIFIED entries in 2026
-  const flatVerCount = {};
-  verified.forEach(x => {
-    const k = String(x.flat||'—').trim();
-    flatVerCount[k] = (flatVerCount[k]||0) + 1;
-  });
-  const dups = Object.entries(flatVerCount).filter(([,n]) => n > 1).map(([f]) => 'Flat '+f);
-  if (dups.length) {
-    document.getElementById('dupWarn').style.display = 'block';
-    document.getElementById('dupWarn').innerHTML =
-      `⚠️ <strong>Possible duplicate entries</strong> — ${dups.join(', ')} ha${dups.length>1?'ve':'s'} multiple verified payments. Please review in the admin panel.`;
-  }
-
-  return collectedAmt;
-}
-
-async function load2026() {
-  let collected = 0, expenses = 0, budget = 600000;
-
-  // 1 — Firestore (live, reflects deletes immediately)
-  let usedFirestore = false;
+  // Contributions — Firestore first, Apps Script fallback
   if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
     try {
       const all = await PSOTS_DB.getAllContributions();
-      if (all && all.length >= 0) {
-        const rows2026 = all.filter(x => Number(x.year) === 2026);
-        collected = _applyContribStats(rows2026);
-        usedFirestore = true;
-        const note = document.getElementById('srcNote');
-        if (note) note.textContent = '🔥 Live from Firestore · ' + new Date().toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+      if (all) {
+        const rows = all.filter(x => Number(x.year) === ACTIVE_YEAR && (x.status || '').includes('Received'));
+        collected = rows.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
+        count = rows.length;
       }
-    } catch(e) {}
+    } catch (e) {}
   }
-
-  // 2 — Apps Script fallback
-  if (!usedFirestore && su) {
+  if (!collected && su) {
     try {
       const r = await fetch(su + '?action=list_all');
       const d = await r.json();
-      const rows2026 = (d.all || []).filter(x => Number(x.year) === 2026);
-      collected = _applyContribStats(rows2026);
-      const note = document.getElementById('srcNote');
-      if (note) note.textContent = '☁️ From Apps Script';
+      const rows = (d.all || []).filter(x => Number(x.year) === ACTIVE_YEAR && (x.status || '').includes('Received'));
+      collected = rows.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
+      count = rows.length;
     } catch (e) {}
   }
 
@@ -433,8 +391,9 @@ async function load2026() {
   }
   const f = _financeObj || {};
   try {
+    if (f.carry    && Number(f.carry)    > 0) carry    = parseInt(f.carry);
     if (f.expenses && Number(f.expenses) > 0) expenses = parseInt(f.expenses);
-    if (f.budget && Number(f.budget) > 0) budget = parseInt(f.budget);
+    if (f.budget   && Number(f.budget)   > 0) budget   = parseInt(f.budget);
 
     /* Expense breakdown from backend */
     const cats = [
@@ -456,7 +415,7 @@ async function load2026() {
     }
   } catch (e) {}
 
-  const available = CARRY + collected;
+  const available = carry + collected;
   const balance = available - expenses;
   const pct = budget > 0 ? Math.min(100, Math.round((collected / budget) * 100)) : 0;
 
@@ -512,65 +471,84 @@ async function load2026() {
   const bar = document.getElementById('c26-bar');
   bar.dataset.pct = pct;
   setTimeout(() => { bar.style.width = pct + '%'; }, 200);
+
+  // Update current-year YoY bar
+  const liveBar = document.getElementById('ybar-' + ACTIVE_YEAR);
+  if (liveBar && expenses > 0) {
+    liveBar.title = ACTIVE_YEAR + ': ₹' + expenses.toLocaleString('en-IN');
+    liveBar.dataset.amt = '₹' + (expenses/1000).toFixed(0) + 'K';
+    liveBar.style.opacity = '1';
+    const allBars = document.querySelectorAll('.yoy-bar[data-pct]');
+    allBars.forEach(b => { const h = b.style.height; if (h) b.style.height = h; }); // refresh
+    _refreshYoY();
+  }
 }
 
-load2026(); // Firestore-first; Apps Script is fallback only
+function _refreshYoY() {
+  const bars = document.querySelectorAll('.yoy-bar');
+  const amts = Array.from(bars).map(b => parseInt(b.dataset.fullamt) || 0);
+  const max = Math.max(...amts, 1);
+  bars.forEach(b => {
+    const a = parseInt(b.dataset.fullamt) || 0;
+    const pct = a > 0 ? Math.max(8, Math.round((a/max)*100)) : 4;
+    b.dataset.pct = pct;
+    if (b.style.height !== '0px' && b.style.height !== '0') b.style.height = pct + '%';
+  });
+}
 
-/* ── Year-over-year chart ── */
-const yoyData = [
-  { yr:'2022', amt:125300, color:'linear-gradient(180deg,#c94d00,#8b2800)' },
-  { yr:'2023', amt:183630, color:'linear-gradient(180deg,#b34500,#7a1e00)' },
-  { yr:'2024', amt:217048, color:'linear-gradient(180deg,#8b2800,#5a1200)' },
-  { yr:'2025', amt:198383, color:'linear-gradient(180deg,var(--or),#c93800)' },
-  { yr:'2026', amt:0,      color:'linear-gradient(180deg,#ffc200,#e07000)', live:true },
-];
-const maxAmt = Math.max(...yoyData.map(d=>d.amt), 1);
-const chartEl = document.getElementById('yoyChart');
-yoyData.forEach(d => {
-  const pct = d.amt > 0 ? Math.max(8, Math.round((d.amt/maxAmt)*100)) : 4;
-  const shortAmt = d.amt > 0 ? '₹'+(d.amt/1000).toFixed(0)+'K' : 'Live';
-  chartEl.innerHTML += `
-    <div class="yoy-bar-wrap">
-      <div class="yoy-bar-track">
-        <div class="yoy-bar" id="ybar-${d.yr}" data-pct="${pct}" data-amt="${shortAmt}"
-             style="background:${d.color};height:0${d.live?';opacity:.5':''}"
-             title="${d.yr}: ₹${d.amt.toLocaleString('en-IN')}"></div>
-      </div>
-      <div class="yoy-yr">${d.yr}${d.live?'<br/><span style="font-size:.6rem;color:var(--or)">live</span>':''}</div>
-    </div>`;
-});
+loadCurrentYear();
+
+/* ── Year-over-year chart — built from PSOTS.history + current year ── */
+(function buildYoYChart() {
+  const colors = [
+    'linear-gradient(180deg,#c94d00,#8b2800)',
+    'linear-gradient(180deg,#b34500,#7a1e00)',
+    'linear-gradient(180deg,#8b2800,#5a1200)',
+    'linear-gradient(180deg,var(--or),#c93800)',
+    'linear-gradient(180deg,#ffc200,#e07000)',
+    'linear-gradient(180deg,#e8a000,#c07000)',
+  ];
+  const hist = (window.PSOTS && window.PSOTS.history) || {};
+  const years = Object.keys(hist).map(Number).sort((a,b)=>a-b);
+  const yoyData = years.map((yr, i) => ({
+    yr: String(yr),
+    amt: hist[yr].expenses || 0,
+    color: colors[i % colors.length],
+    live: false,
+  }));
+  // Add current year as live bar
+  yoyData.push({ yr: String(ACTIVE_YEAR), amt: 0, color: colors[yoyData.length % colors.length], live: true });
+
+  const maxAmt = Math.max(...yoyData.map(d=>d.amt), 1);
+  const chartEl = document.getElementById('yoyChart');
+  chartEl.innerHTML = '';
+  yoyData.forEach(d => {
+    const pct = d.amt > 0 ? Math.max(8, Math.round((d.amt/maxAmt)*100)) : 4;
+    const shortAmt = d.amt > 0 ? '₹'+(d.amt/1000).toFixed(0)+'K' : 'Live';
+    chartEl.innerHTML += `
+      <div class="yoy-bar-wrap">
+        <div class="yoy-bar-track">
+          <div class="yoy-bar" id="ybar-${d.yr}" data-pct="${pct}" data-amt="${shortAmt}" data-fullamt="${d.amt}"
+               style="background:${d.color};height:0${d.live?';opacity:.5':''}"
+               title="${d.yr}: ₹${d.amt.toLocaleString('en-IN')}"></div>
+        </div>
+        <div class="yoy-yr">${d.yr}${d.live?'<br/><span style="font-size:.6rem;color:var(--or)">live</span>':''}</div>
+      </div>`;
+  });
+})();
 /* Animate bars when chart enters viewport */
 const chartOb = new IntersectionObserver(entries => {
   entries.forEach(e => {
     if (e.isIntersecting) {
-      yoyData.forEach((d,i) => {
-        const bar = document.getElementById('ybar-' + d.yr);
-        if (bar) setTimeout(() => { bar.style.height = bar.dataset.pct + '%'; }, i * 80);
+      document.querySelectorAll('.yoy-bar').forEach((bar, i) => {
+        setTimeout(() => { bar.style.height = bar.dataset.pct + '%'; }, i * 80);
       });
       chartOb.unobserve(e.target);
     }
   });
 }, { threshold: 0.3 });
+const chartEl = document.getElementById('yoyChart');
 if (chartEl) chartOb.observe(chartEl);
-/* Update 2026 bar when live data loads */
-const _origLoad = load2026;
-const _load2026Wrapped = async function(){
-  await _origLoad();
-  /* read updated collected from DOM after load */
-  setTimeout(() => {
-    const bar26 = document.getElementById('ybar-2026');
-    if (!bar26) return;
-    const colEl = document.getElementById('c26-collected');
-    const raw = colEl ? colEl.textContent.replace(/[₹,]/g,'') : '0';
-    const val = parseInt(raw) || 0;
-    if (val > 0) {
-      const pct = Math.max(8, Math.round((val/maxAmt)*100));
-      bar26.dataset.amt = '₹'+(val/1000).toFixed(0)+'K';
-      bar26.style.height = pct + '%';
-      bar26.style.opacity = '1';
-    }
-  }, 800);
-};
 </script>
 </body>
 </html>

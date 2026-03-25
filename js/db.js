@@ -578,9 +578,55 @@ const PSOTS_DB = (() => {
     }
   }
 
+  /* ════════════════════════════════════════════════════
+     YEAR HISTORY API
+  ════════════════════════════════════════════════════ */
+
+  /**
+   * archiveYear(year, data) → { ok }
+   *
+   * Saves a completed year's finance summary to Firestore as
+   * finance/history_{year}. Called by the admin Year Rollover tool.
+   */
+  async function archiveYear(year, data) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      await _db.collection('finance').doc('history_' + year).set(
+        { ...data, year: Number(year), archivedAt: Date.now() },
+        { merge: true }
+      );
+      return { ok: true };
+    } catch (e) {
+      console.warn('[PSOTS_DB] archiveYear failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /**
+   * getFinanceHistory() → object keyed by year, or null
+   *
+   * Reads all archived year finance docs from Firestore.
+   * Returns e.g. { 2025: { collected, expenses, ... }, 2026: {...} }
+   */
+  async function getFinanceHistory() {
+    if (!_db) return null;
+    try {
+      const snap = await _db.collection('finance').get();
+      const history = {};
+      snap.docs.filter(d => d.id.startsWith('history_')).forEach(d => {
+        const yr = d.id.replace('history_', '');
+        history[Number(yr)] = d.data();
+      });
+      return Object.keys(history).length > 0 ? history : null;
+    } catch (e) {
+      console.warn('[PSOTS_DB] getFinanceHistory failed:', e.message);
+      return null;
+    }
+  }
+
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, syncContributions, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, syncContributions, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();

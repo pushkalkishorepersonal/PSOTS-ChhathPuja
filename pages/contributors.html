@@ -401,7 +401,8 @@ function renderList() {
   document.getElementById('verCount').textContent = new Set(f.filter(r=>r.status?.includes('Received')).map(r=>String(r.flat||'')+'_'+(r.year||2026))).size + ' verified households';
 
   const byYear = {};
-  f.forEach(r => { const yr = r.year || 2026; (byYear[yr] = byYear[yr] || []).push(r); });
+  const _activeYr = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
+  f.forEach(r => { const yr = r.year || _activeYr; (byYear[yr] = byYear[yr] || []).push(r); });
   const years = Object.keys(byYear).map(Number).sort((a,b) => b-a);
 
   if (!years.length) {
