@@ -2516,9 +2516,16 @@ function qpLaunch(app) {
   const links = { gpay:`gpay://upi/pay?${p}`, phonepe:`phonepe://pay?${p}`, paytm:`paytmmp://pay?${p}`, bhim:`upi://pay?${p}`, any:`upi://pay?${p}` };
   const isMobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
   if (!isMobile) { showUpiQr(amt); return false; }
-  // Open UPI app then show confirmation banner
+  // Open UPI app; show "I've Paid" banner when user switches back to browser
+  _qrAmt = amt;
+  function _onReturn() {
+    if (document.visibilityState === 'visible') {
+      document.removeEventListener('visibilitychange', _onReturn);
+      showMobileIvePaid(_qrAmt);
+    }
+  }
+  document.addEventListener('visibilitychange', _onReturn);
   window.location.href = links[app];
-  setTimeout(() => showMobileIvePaid(amt), 1200);
   return false;
 }
 
