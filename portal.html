@@ -2512,7 +2512,8 @@ function waDirectMsg() {
 function qpLaunch(app) {
   const amt = document.getElementById('qp-amount').value;
   if (!amt || parseInt(amt) < 1) { document.getElementById('qp-amount').focus(); toast('Please enter the amount first', 'error'); return false; }
-  const p = `pa=${encodeURIComponent(C.upiId)}&pn=${encodeURIComponent(C.payeeName)}&am=${amt}&cu=INR&tn=ChhathPuja2026`;
+  const _yr = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
+  const p = `pa=${encodeURIComponent(C.upiId)}&pn=${encodeURIComponent(C.payeeName)}&am=${amt}&cu=INR&tn=ChhathPuja${_yr}`;
   const links = { gpay:`gpay://upi/pay?${p}`, phonepe:`phonepe://pay?${p}`, paytm:`paytmmp://pay?${p}`, bhim:`upi://pay?${p}`, any:`upi://pay?${p}` };
   const isMobile = /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
   if (!isMobile) { showUpiQr(amt); return false; }
@@ -3030,7 +3031,8 @@ function dismissStorageNotice() {
 let _qrAmt = 0;
 function showUpiQr(amt) {
   _qrAmt = amt;
-  const upiStr = `upi://pay?pa=${encodeURIComponent(C.upiId)}&pn=${encodeURIComponent(C.payeeName)}&am=${amt}&cu=INR&tn=ChhathPuja2026`;
+  const _yr2 = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
+  const upiStr = `upi://pay?pa=${encodeURIComponent(C.upiId)}&pn=${encodeURIComponent(C.payeeName)}&am=${amt}&cu=INR&tn=ChhathPuja${_yr2}`;
   const div = document.getElementById('upiQrDiv');
   div.innerHTML = '';
   if (typeof QRCode !== 'undefined') {
