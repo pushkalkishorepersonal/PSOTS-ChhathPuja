@@ -843,7 +843,7 @@
       <button id="qp-launch-btn" style="display:block;width:100%;background:linear-gradient(135deg,#c94d00,#ff8c00);color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-style:italic;font-size:1.1rem;padding:1rem;border-radius:13px;border:none;cursor:pointer;box-shadow:0 6px 26px rgba(201,77,0,.38);margin-bottom:.8rem" onclick="qpLaunch('any');return false">
         <span id="qp-btn-icon">📲</span> <span id="qp-btn-action">Open My UPI App — Pay</span> ₹<span id="qp-btn-lbl">—</span>
       </button>
-      <p style="text-align:center;font-size:.7rem;color:#c8a880">After paying, your confirmation is auto-recorded from your profile ✅</p>
+      <p id="qp-hint" style="text-align:center;font-size:.7rem;color:#c8a880">After paying, your confirmation is auto-recorded from your profile ✅</p>
     </div>
   </div>
 
@@ -2976,7 +2976,9 @@ function dismissStorageNotice() {
 }
 
 /* ── Desktop UPI QR Modal ── */
+let _qrAmt = 0;
 function showUpiQr(amt) {
+  _qrAmt = amt;
   const upiStr = `upi://pay?pa=${encodeURIComponent(C.upiId)}&pn=${encodeURIComponent(C.payeeName)}&am=${amt}&cu=INR&tn=ChhathPuja2026`;
   const div = document.getElementById('upiQrDiv');
   div.innerHTML = '';
@@ -2992,13 +2994,26 @@ function showUpiQr(amt) {
 function closeUpiQr() {
   document.getElementById('upiQrModal').style.display = 'none';
 }
-/* ── Set Pay button label based on device ── */
+function qrIvePaid() {
+  closeUpiQr();
+  const name   = (userProfile && userProfile.name)   || (currentUser && currentUser.name) || '—';
+  const flat   = (userProfile && userProfile.flat)   || '—';
+  const mobile = (userProfile && userProfile.mobile) || '—';
+  const waMsg = `🌅 *Chhath ${window.PSOTS && window.PSOTS.activeYear || new Date().getFullYear()} — Payment Done*\n\n👤 ${name}  🏠 ${flat}\n📱 ${mobile}\n💰 ₹${parseInt(_qrAmt).toLocaleString('en-IN')}\n📲 UPI (QR scan)\n\nPlease verify 🙏`;
+  openWA(C.waOrg, waMsg);
+  toast('WhatsApp opened — ask committee to verify your payment ✅', 'success');
+}
+/* ── Set Pay button label and hint based on device ── */
 (function() {
   const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
   const icon = document.getElementById('qp-btn-icon');
   const action = document.getElementById('qp-btn-action');
+  const hint = document.getElementById('qp-hint');
   if (icon) icon.textContent = mobile ? '📲' : '📷';
   if (action) action.textContent = mobile ? 'Open My UPI App — Pay' : 'Scan QR Code to Pay';
+  if (hint) hint.textContent = mobile
+    ? 'After paying, WhatsApp is sent to committee for verification ✅'
+    : 'Scan QR, pay, then tap "I\'ve Paid" in the popup to notify the committee ✅';
 })();
 </script>
 
@@ -3011,7 +3026,9 @@ function closeUpiQr() {
     <div id="upiQrDiv" style="width:260px;height:260px;border:1px solid #eee;border-radius:.5rem;margin:0 auto;display:flex;align-items:center;justify-content:center"></div>
     <div style="margin-top:1rem;font-size:1.2rem;font-weight:700;color:#c0392b">Amount: <span id="upiQrAmt"></span></div>
     <div style="font-size:.75rem;color:#888;margin-top:.25rem">UPI ID: <span id="upiQrId" style="font-weight:600;color:#444"></span></div>
-    <div style="font-size:.72rem;color:#aaa;margin-top:.75rem">After paying, come back and WhatsApp the committee to confirm.</div>
+    <button onclick="qrIvePaid()" style="margin-top:1.1rem;width:100%;background:linear-gradient(135deg,#1a7a1a,#28a428);color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-size:1rem;padding:.75rem 1rem;border-radius:.75rem;border:none;cursor:pointer;box-shadow:0 4px 14px rgba(0,100,0,.28)">
+      ✅ I've Paid — Notify Committee
+    </button>
   </div>
 </div>
 
