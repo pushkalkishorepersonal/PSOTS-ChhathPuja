@@ -74,16 +74,19 @@
   .btn-logout { background: rgba(255,255,255,.12); color: rgba(255,255,255,.7); border: 1px solid rgba(255,255,255,.2); border-radius: 50px; padding: .38rem .9rem; font-size: .72rem; cursor: pointer; }
 
   /* ── TABS ─────────────────────────── */
-  .tabs { display: flex; gap: 0; background: var(--white); border-bottom: 1px solid #f0d5b8; overflow-x: auto; position: sticky; top: 56px; z-index: 99; }
-  .tabs::-webkit-scrollbar { display: none; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 0; background: var(--white); border-bottom: 1px solid #f0d5b8; position: sticky; top: 56px; z-index: 99; }
   .tab-btn {
-    padding: .9rem 1.4rem; font-size: .78rem; font-weight: 600; color: var(--lbr);
+    flex: 1 1 auto;
+    padding: .75rem .85rem; font-size: .74rem; font-weight: 600; color: var(--lbr);
     background: none; border: none; border-bottom: 3px solid transparent;
     cursor: pointer; white-space: nowrap; transition: all .2s;
-    letter-spacing: .04em;
+    letter-spacing: .03em; text-align: center;
   }
   .tab-btn.active { color: var(--or); border-bottom-color: var(--or); }
   .tab-btn:hover { color: var(--or); }
+  @media (max-width: 600px) {
+    .tab-btn { padding: .6rem .55rem; font-size: .67rem; }
+  }
 
   /* ── TAB CONTENT ──────────────────── */
   .tab-panel { display: none; max-width: 900px; margin: 0 auto; padding: 2rem 1.2rem; }
@@ -1946,6 +1949,7 @@ function switchTab(id) {
   if (id === 'prasad') loadPrasadList();
   if (id === 'finance') loadReceipts();
   if (id === 'contributors') setTimeout(loadReminderList, 400);
+  if (id === 'broadcast') loadSubscribers();
   if (id === 'settings') { loadCmteRoles(); renderAmList(); loadMembersAdmin(); loadRolePerms().then(renderPermMatrix); loadEventConfig(); }
 }
 
@@ -2150,12 +2154,12 @@ async function loadAdminCon() {
 
   container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.88rem">🌅 Loading contributors…</div>';
 
-  // 1. Firestore — primary source
+  // 1. Firestore — primary source (even empty array is a valid result)
   if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
     try {
       const rows = await PSOTS_DB.getAllContributions();
-      if (rows && rows.length) {
-        allConData = rows.map(_mapConRow);
+      if (rows !== null) {
+        allConData = (rows || []).map(_mapConRow);
         PsotsCache.set('contributors_all', allConData, CACHE_TTL.contributors);
         renderConTable(allConData);
         updateDashStats();
@@ -3039,7 +3043,11 @@ async function loadSubscribers() {
 
   count.textContent = subs.length + ' subscriber' + (subs.length !== 1 ? 's' : '');
   if (subs.length === 0) {
-    el.innerHTML = '<div style="color:var(--lbr);font-size:.85rem;padding:.5rem 0">No subscribers yet — they opt in from their portal account.</div>';
+    el.innerHTML = '<div style="background:#fff8f0;border:1px solid #f0d5b8;border-radius:.75rem;padding:1rem;font-size:.84rem;color:#7c3a00;line-height:1.6">' +
+      '<strong>No subscribers yet.</strong><br>' +
+      'Residents opt in from their Portal → Notifications tab → WhatsApp Subscription toggle.<br>' +
+      '<span style="color:var(--lbr);font-size:.78rem">Once they subscribe, their numbers will appear here and you can broadcast to them.</span>' +
+      '</div>';
     document.getElementById('copyNumsBtn').style.display = 'none';
     window._subscribers = [];
     return;
