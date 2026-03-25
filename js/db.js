@@ -195,7 +195,7 @@ const PSOTS_DB = (() => {
       const snap = await _db.collection('contributions')
         .where('flat', '==', String(flat))
         .get();
-      return snap.docs.map(d => d.data());
+      return snap.docs.map(d => ({ _id: d.id, ...d.data() }));
     } catch (e) {
       console.warn('[PSOTS_DB] getContributions failed:', e.message);
       return null;
@@ -340,14 +340,18 @@ const PSOTS_DB = (() => {
   async function deleteContribution(r) {
     if (!_db) return { ok: false, error: 'Firestore not ready' };
     try {
-      const key = [
-        r.year,
-        String(r.flat  || '').replace(/\//g, '-'),
-        String(r.name  || '').replace(/\s+/g, '').toLowerCase().slice(0, 12),
-        r.amount,
-      ].join('_').replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 120);
-      if (!key) return { ok: false, error: 'Could not derive document ID' };
-      await _db.collection('contributions').doc(key).delete();
+      // Prefer the actual Firestore document ID stored on the record
+      const docId = r._id || (() => {
+        const k = [
+          r.year,
+          String(r.flat  || '').replace(/\//g, '-'),
+          String(r.name  || '').replace(/\s+/g, '').toLowerCase().slice(0, 12),
+          r.amount,
+        ].join('_').replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 120);
+        return k || null;
+      })();
+      if (!docId) return { ok: false, error: 'Could not derive document ID' };
+      await _db.collection('contributions').doc(docId).delete();
       return { ok: true };
     } catch (e) {
       console.warn('[PSOTS_DB] deleteContribution failed:', e.message);
@@ -366,7 +370,7 @@ const PSOTS_DB = (() => {
     if (!_db) return null;
     try {
       const snap = await _db.collection('contributions').get();
-      return snap.docs.map(d => d.data());
+      return snap.docs.map(d => ({ _id: d.id, ...d.data() }));
     } catch (e) {
       console.warn('[PSOTS_DB] getAllContributions failed:', e.message);
       return null;

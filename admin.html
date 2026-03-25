@@ -696,7 +696,7 @@
       <div class="total-bar"><span class="tl">Total Verified</span><span class="tv" id="conVerifiedTotal">—</span></div>
       <div id="dupAlert" style="display:none;background:#fff5e8;border:1.5px solid rgba(232,92,0,.3);border-radius:12px;padding:.8rem 1rem;margin-top:.8rem;font-size:.82rem;color:var(--br)"></div>
       <div style="margin-top:.8rem;display:flex;gap:.7rem;flex-wrap:wrap">
-        <button class="btn-primary" onclick="loadAdminCon()">🔄 Refresh List</button>
+        <button class="btn-primary" onclick="PsotsCache.invalidate('contributors_all');loadAdminCon()">🔄 Refresh List</button>
         <button class="btn-secondary" onclick="exportCSV()">📥 Export CSV</button>
         <button class="btn-secondary" onclick="bulkVerifyVisible()">✅ Verify All Visible</button>
       </div>
@@ -1948,7 +1948,7 @@ function switchTab(id) {
   if (id === 'volunteers') loadVolunteers();
   if (id === 'prasad') loadPrasadList();
   if (id === 'finance') loadReceipts();
-  if (id === 'contributors') setTimeout(loadReminderList, 400);
+  if (id === 'contributors') { PsotsCache.invalidate('contributors_all'); loadAdminCon(); setTimeout(loadReminderList, 400); }
   if (id === 'broadcast') loadSubscribers();
   if (id === 'settings') { loadCmteRoles(); renderAmList(); loadMembersAdmin(); loadRolePerms().then(renderPermMatrix); loadEventConfig(); }
 }
@@ -2134,6 +2134,7 @@ function escAdm(s) { return String(s||'').replace(/'/g,"\\'"); }
 ═══════════════════════════════════════════════════ */
 function _mapConRow(r) {
   return {
+    _id: r._id || '',                          // Firestore doc ID — needed for reliable delete
     ts: r.ts || r.date || '', name: r.name || '', flat: r.flat || '',
     mobile: r.mobile || '', amount: r.amount || 0, method: r.method || '',
     date: r.date || '', status: r.status || '', year: r.year || new Date().getFullYear()
