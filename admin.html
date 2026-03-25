@@ -1948,7 +1948,7 @@ function switchTab(id) {
   if (id === 'volunteers') loadVolunteers();
   if (id === 'prasad') loadPrasadList();
   if (id === 'finance') loadReceipts();
-  if (id === 'contributors') { PsotsCache.invalidate('contributors_all'); loadAdminCon(); setTimeout(loadReminderList, 400); }
+  if (id === 'contributors') setTimeout(loadReminderList, 400);
   if (id === 'broadcast') loadSubscribers();
   if (id === 'settings') { loadCmteRoles(); renderAmList(); loadMembersAdmin(); loadRolePerms().then(renderPermMatrix); loadEventConfig(); }
 }
@@ -2156,6 +2156,10 @@ async function loadAdminCon() {
   container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.88rem">🌅 Loading contributors…</div>';
 
   // 1. Firestore — primary source (even empty array is a valid result)
+  // If not ready yet, wait up to 3s for Firebase to initialise
+  if (typeof PSOTS_DB !== 'undefined' && !PSOTS_DB.isFirestoreReady) {
+    await new Promise(r => setTimeout(r, 1500));
+  }
   if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
     try {
       const rows = await PSOTS_DB.getAllContributions();
@@ -2166,7 +2170,11 @@ async function loadAdminCon() {
         updateDashStats();
         return;
       }
-    } catch(e) { console.warn('Firestore contributors load failed:', e); }
+    } catch(e) {
+      console.error('Firestore contributors load failed:', e);
+      // Show real error to help debug
+      container.innerHTML = `<div style="text-align:center;padding:1.5rem;color:#c03000;font-size:.82rem">⚠️ Firestore error: ${e.message}<br><small>Check browser console for details</small></div>`;
+    }
   }
 
   // 2. Local history.json — bundled static data
