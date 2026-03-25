@@ -1195,6 +1195,50 @@
       </div>
     </div>
 
+    <!-- Event Configuration (replaces editing config.js by hand) -->
+    <div class="admin-card" style="margin-top:1rem;border-left:4px solid var(--or)">
+      <div class="ac-title">🗓 Event Configuration</div>
+      <div class="ac-sub">Set the event name, dates and ritual timings here. These values apply site-wide instantly — no file editing needed. Saved to Firestore and cached locally.</div>
+
+      <div class="fg" style="margin-top:.8rem">
+        <div class="ff" style="grid-column:1/-1">
+          <label>Event Name (shows in page titles & emails)</label>
+          <input type="text" id="cfg-eventName" placeholder="PSOTS Chhath Puja 2026 — पंच वर्ष महोत्सव"/>
+        </div>
+        <div class="ff"><label>UPI Payee Name</label><input type="text" id="cfg-payeeName" placeholder="ChhathPuja2026PSOTS"/></div>
+        <div class="ff"><label>Event Start (Day 1 — Nahay Khay)</label><input type="datetime-local" id="cfg-eventStart"/></div>
+        <div class="ff"><label>Contribution Deadline</label><input type="datetime-local" id="cfg-deadline"/></div>
+      </div>
+
+      <div style="font-size:.78rem;font-weight:700;color:var(--or);margin:.9rem 0 .4rem">🌅 Sandhya Arghya (Day 3)</div>
+      <div class="fg">
+        <div class="ff"><label>Time</label><input type="time" id="cfg-eveTime" value="17:45"/></div>
+        <div class="ff"><label>Date</label><input type="date" id="cfg-eveDate"/></div>
+      </div>
+
+      <div style="font-size:.78rem;font-weight:700;color:var(--or);margin:.9rem 0 .4rem">🌄 Usha Arghya (Day 4)</div>
+      <div class="fg">
+        <div class="ff"><label>Time</label><input type="time" id="cfg-mornTime" value="06:15"/></div>
+        <div class="ff"><label>Date</label><input type="date" id="cfg-mornDate"/></div>
+      </div>
+
+      <div style="font-size:.78rem;font-weight:700;color:var(--or);margin:.9rem 0 .4rem">🍽️ Kharna Prasad (Day 2)</div>
+      <div class="fg">
+        <div class="ff"><label>Time</label><input type="time" id="cfg-kharnaTime" value="19:00"/></div>
+        <div class="ff"><label>Date</label><input type="date" id="cfg-kharnaDate"/></div>
+        <div class="ff" style="grid-column:1/-1"><label>Location</label><input type="text" id="cfg-kharnaLoc" placeholder="Community Hall"/></div>
+      </div>
+
+      <div style="display:flex;gap:.7rem;align-items:center;margin-top:1rem;flex-wrap:wrap">
+        <button class="btn-primary" onclick="saveEventConfig()">💾 Save Event Config</button>
+        <button class="btn-secondary" onclick="loadEventConfig()">🔄 Load Saved Config</button>
+        <span id="cfgStatus" style="font-size:.75rem;color:var(--lbr)"></span>
+      </div>
+      <div style="margin-top:.6rem;font-size:.73rem;color:var(--lbr);background:#fff8f0;border-radius:8px;padding:.5rem .75rem;line-height:1.6">
+        💡 After saving, refresh any open browser tab to see the updated event dates everywhere on the site.
+      </div>
+    </div>
+
     <!-- Team Members -->
     <div class="admin-card" id="teamMembersCard" style="margin-top:1rem">
       <div class="ac-title">👥 Team Members</div>
@@ -1732,12 +1776,161 @@ function loadScriptUrl() {
 function saveSettings() {
   const url = document.getElementById('s-scriptUrl').value.trim();
   if (url) localStorage.setItem(SCRIPT_URL_KEY, url);
-  // Save other settings to localStorage
   ['upiId','waOrg','waOrg2','eventDate','deadline'].forEach(k => {
     const el = document.getElementById('s-' + k);
     if (el) localStorage.setItem('psots_' + k, el.value);
   });
   toast('✅ Settings saved!', 'success');
+}
+
+/* ─── Event Config (replaces editing config.js by hand) ─── */
+
+function _cfgVal(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+function _populateEventConfigForm(cfg) {
+  const _s = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null) el.value = v; };
+  _s('cfg-eventName',  cfg.eventName);
+  _s('cfg-payeeName',  cfg.payeeName);
+  // datetime-local needs "YYYY-MM-DDTHH:mm"
+  if (cfg.eventStart) _s('cfg-eventStart', cfg.eventStart.slice(0,16));
+  if (cfg.deadline)   _s('cfg-deadline',   cfg.deadline.slice(0,16));
+  if (cfg.arghyaEvening) {
+    if (cfg.arghyaEvening.date) {
+      // Convert "Nov 3, 2026" → "2026-11-03" for date input
+      const d = new Date(cfg.arghyaEvening.date);
+      if (!isNaN(d)) _s('cfg-eveDate', d.toISOString().slice(0,10));
+    }
+    if (cfg.arghyaEvening.time) {
+      // "5:45 PM" → "17:45"
+      const t = _parseTimeTo24(cfg.arghyaEvening.time);
+      if (t) _s('cfg-eveTime', t);
+    }
+  }
+  if (cfg.arghyaMorning) {
+    if (cfg.arghyaMorning.date) {
+      const d = new Date(cfg.arghyaMorning.date);
+      if (!isNaN(d)) _s('cfg-mornDate', d.toISOString().slice(0,10));
+    }
+    if (cfg.arghyaMorning.time) {
+      const t = _parseTimeTo24(cfg.arghyaMorning.time);
+      if (t) _s('cfg-mornTime', t);
+    }
+  }
+  if (cfg.kharnaTime) {
+    if (cfg.kharnaTime.date) {
+      const d = new Date(cfg.kharnaTime.date);
+      if (!isNaN(d)) _s('cfg-kharnaDate', d.toISOString().slice(0,10));
+    }
+    if (cfg.kharnaTime.time) {
+      const t = _parseTimeTo24(cfg.kharnaTime.time);
+      if (t) _s('cfg-kharnaTime', t);
+    }
+    _s('cfg-kharnaLoc', cfg.kharnaTime.location);
+  }
+}
+
+function _parseTimeTo24(str) {
+  // "5:45 PM" → "17:45", "06:15 AM" → "06:15"
+  const m = String(str).match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!m) return null;
+  let h = parseInt(m[1]), min = m[2], ampm = (m[3]||'').toUpperCase();
+  if (ampm === 'PM' && h < 12) h += 12;
+  if (ampm === 'AM' && h === 12) h = 0;
+  return String(h).padStart(2,'0') + ':' + min;
+}
+
+function _fmt12(timeVal) {
+  // "17:45" → "5:45 PM"
+  if (!timeVal) return '';
+  const [h, m] = timeVal.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12  = h % 12 || 12;
+  return h12 + ':' + String(m).padStart(2,'0') + ' ' + ampm;
+}
+
+function _fmtDisplayDate(dateVal) {
+  // "2026-11-03" → "Nov 3, 2026"
+  if (!dateVal) return '';
+  const d = new Date(dateVal + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+async function loadEventConfig() {
+  const statusEl = document.getElementById('cfgStatus');
+  if (statusEl) statusEl.textContent = 'Loading…';
+  // Try Firestore first
+  let cfg = null;
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    cfg = await PSOTS_DB.getSiteConfig();
+  }
+  // Fall back to localStorage
+  if (!cfg) {
+    try { cfg = JSON.parse(localStorage.getItem('psots_live_config') || 'null'); } catch(e) {}
+  }
+  // Fall back to current window.PSOTS
+  if (!cfg) cfg = window.PSOTS || {};
+  _populateEventConfigForm(cfg);
+  if (statusEl) statusEl.textContent = cfg.updatedAt
+    ? '✅ Loaded — last saved ' + new Date(cfg.updatedAt).toLocaleString('en-IN')
+    : '📄 Loaded from site defaults';
+  setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 4000);
+}
+
+async function saveEventConfig() {
+  const statusEl = document.getElementById('cfgStatus');
+  if (statusEl) statusEl.textContent = 'Saving…';
+
+  const eveDateVal   = _cfgVal('cfg-eveDate');
+  const mornDateVal  = _cfgVal('cfg-mornDate');
+  const kharnaDateVal= _cfgVal('cfg-kharnaDate');
+
+  const cfg = {
+    eventName:  _cfgVal('cfg-eventName'),
+    payeeName:  _cfgVal('cfg-payeeName'),
+    eventStart: _cfgVal('cfg-eventStart') ? _cfgVal('cfg-eventStart') + ':00' : '',
+    deadline:   _cfgVal('cfg-deadline')   ? _cfgVal('cfg-deadline')   + ':00' : '',
+    arghyaEvening: {
+      time: _fmt12(_cfgVal('cfg-eveTime')),
+      date: _fmtDisplayDate(eveDateVal),
+    },
+    arghyaMorning: {
+      time: _fmt12(_cfgVal('cfg-mornTime')),
+      date: _fmtDisplayDate(mornDateVal),
+    },
+    kharnaTime: {
+      time:     _fmt12(_cfgVal('cfg-kharnaTime')),
+      date:     _fmtDisplayDate(kharnaDateVal),
+      location: _cfgVal('cfg-kharnaLoc'),
+    },
+  };
+  // Remove empty fields so we don't overwrite with blanks
+  Object.keys(cfg).forEach(k => { if (!cfg[k]) delete cfg[k]; });
+
+  // 1. Save to localStorage (instant, works on same device without Firestore)
+  const existing = JSON.parse(localStorage.getItem('psots_live_config') || '{}');
+  localStorage.setItem('psots_live_config', JSON.stringify({ ...existing, ...cfg }));
+
+  // 2. Apply to current window.PSOTS immediately (this tab reflects it right away)
+  if (cfg.eventName) window.PSOTS.eventName = cfg.eventName;
+  if (cfg.eventStart) window.PSOTS.eventStart = cfg.eventStart;
+  if (cfg.deadline)   window.PSOTS.deadline   = cfg.deadline;
+  if (cfg.payeeName)  window.PSOTS.payeeName  = cfg.payeeName;
+  if (cfg.arghyaEvening) Object.assign(window.PSOTS.arghyaEvening, cfg.arghyaEvening);
+  if (cfg.arghyaMorning) Object.assign(window.PSOTS.arghyaMorning, cfg.arghyaMorning);
+  if (cfg.kharnaTime)    Object.assign(window.PSOTS.kharnaTime,    cfg.kharnaTime);
+  window.PSOTS.activeYear = new Date(window.PSOTS.eventStart).getFullYear();
+
+  // 3. Save to Firestore (persists across devices / clears cache)
+  let firestoreOk = false;
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    const r = await PSOTS_DB.saveSiteConfig(cfg);
+    firestoreOk = r.ok;
+  }
+
+  const msg = firestoreOk ? '✅ Saved to Firestore + local cache' : '✅ Saved locally (Firestore not connected)';
+  if (statusEl) statusEl.textContent = msg;
+  toast(msg, 'success');
+  setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 5000);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1753,7 +1946,7 @@ function switchTab(id) {
   if (id === 'prasad') loadPrasadList();
   if (id === 'finance') loadReceipts();
   if (id === 'contributors') setTimeout(loadReminderList, 400);
-  if (id === 'settings') { loadCmteRoles(); renderAmList(); loadMembersAdmin(); loadRolePerms().then(renderPermMatrix); }
+  if (id === 'settings') { loadCmteRoles(); renderAmList(); loadMembersAdmin(); loadRolePerms().then(renderPermMatrix); loadEventConfig(); }
 }
 
 /* ═══════════════════════════════════════════════════

@@ -492,6 +492,44 @@ const PSOTS_DB = (() => {
   }
 
   /* ════════════════════════════════════════════════════
+     SITE CONFIG API
+  ════════════════════════════════════════════════════ */
+
+  /**
+   * getSiteConfig() → config object or null
+   *
+   * Reads the live site config from Firestore (config/site).
+   * Fields mirror window.PSOTS — eventName, eventStart, deadline,
+   * arghyaEvening, arghyaMorning, kharnaTime, payeeName, etc.
+   */
+  async function getSiteConfig() {
+    if (!_db) return null;
+    try {
+      const snap = await _db.collection('config').doc('site').get();
+      return snap.exists ? snap.data() : null;
+    } catch (e) {
+      console.warn('[PSOTS_DB] getSiteConfig failed:', e.message);
+      return null;
+    }
+  }
+
+  /**
+   * saveSiteConfig(data) → { ok }
+   *
+   * Writes/merges site config to Firestore (config/site).
+   */
+  async function saveSiteConfig(data) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      await _db.collection('config').doc('site').set({ ...data, updatedAt: Date.now() }, { merge: true });
+      return { ok: true };
+    } catch (e) {
+      console.warn('[PSOTS_DB] saveSiteConfig failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /* ════════════════════════════════════════════════════
      FINANCE API
   ════════════════════════════════════════════════════ */
 
@@ -626,7 +664,7 @@ const PSOTS_DB = (() => {
 
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, syncContributions, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, syncContributions, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();

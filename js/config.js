@@ -81,7 +81,27 @@ window.PSOTS = {
   googleClientId: '681152691156-g1q8bmionkcim033fhjhtn57jbiq1nij.apps.googleusercontent.com',
 };
 
-/* ── Derived helpers (do not edit) ── */
+/* ── Live config override (saved by admin via UI) ──
+ *  Admin Settings → Event Config → Save overwrites these keys
+ *  in localStorage. Every page load picks them up instantly —
+ *  no file editing required.
+ * ─────────────────────────────────────────────── */
+(function applyLiveConfig() {
+  try {
+    const live = JSON.parse(localStorage.getItem('psots_live_config') || 'null');
+    if (!live) return;
+    // Merge top-level scalar fields
+    ['eventName','eventStart','deadline','payeeName','upiId','upiMobile','waOrg','waOrg2','phone1','phone2','venue','society'].forEach(k => {
+      if (live[k] !== undefined) window.PSOTS[k] = live[k];
+    });
+    // Merge nested objects
+    if (live.arghyaEvening) Object.assign(window.PSOTS.arghyaEvening, live.arghyaEvening);
+    if (live.arghyaMorning) Object.assign(window.PSOTS.arghyaMorning, live.arghyaMorning);
+    if (live.kharnaTime)    Object.assign(window.PSOTS.kharnaTime,    live.kharnaTime);
+  } catch(e) {}
+})();
+
+/* ── Derived helpers (do not edit below) ── */
 window.PSOTS.activeYear = new Date(window.PSOTS.eventStart).getFullYear();
 window.PSOTS.fmt        = n => '₹' + parseInt(n||0).toLocaleString('en-IN');
 window.PSOTS.daysLeft   = () => Math.max(0, Math.ceil((new Date(PSOTS.eventStart)-new Date())/86400000));
