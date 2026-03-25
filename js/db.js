@@ -491,9 +491,180 @@ const PSOTS_DB = (() => {
     }
   }
 
+  /* ════════════════════════════════════════════════════
+     SITE CONFIG API
+  ════════════════════════════════════════════════════ */
+
+  /**
+   * getSiteConfig() → config object or null
+   *
+   * Reads the live site config from Firestore (config/site).
+   * Fields mirror window.PSOTS — eventName, eventStart, deadline,
+   * arghyaEvening, arghyaMorning, kharnaTime, payeeName, etc.
+   */
+  async function getSiteConfig() {
+    if (!_db) return null;
+    try {
+      const snap = await _db.collection('config').doc('site').get();
+      return snap.exists ? snap.data() : null;
+    } catch (e) {
+      console.warn('[PSOTS_DB] getSiteConfig failed:', e.message);
+      return null;
+    }
+  }
+
+  /**
+   * saveSiteConfig(data) → { ok }
+   *
+   * Writes/merges site config to Firestore (config/site).
+   */
+  async function saveSiteConfig(data) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      await _db.collection('config').doc('site').set({ ...data, updatedAt: Date.now() }, { merge: true });
+      return { ok: true };
+    } catch (e) {
+      console.warn('[PSOTS_DB] saveSiteConfig failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /* ════════════════════════════════════════════════════
+     FINANCE API
+  ════════════════════════════════════════════════════ */
+
+  /**
+   * getFinance() → finance object or null
+   *
+   * Reads the single finance summary document from Firestore.
+   * Returns null if Firestore unavailable or doc doesn't exist.
+   */
+  async function getFinance() {
+    if (!_db) return null;
+    try {
+      const snap = await _db.collection('finance').doc('current').get();
+      return snap.exists ? snap.data() : null;
+    } catch (e) {
+      console.warn('[PSOTS_DB] getFinance failed:', e.message);
+      return null;
+    }
+  }
+
+  /**
+   * saveFinance(data) → { ok }
+   *
+   * Writes/merges the finance summary document to Firestore.
+   * data: { carry, collected, budget, expenses, expTent, expKharna, ... budTent, budKharna, ... }
+   */
+  async function saveFinance(data) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      await _db.collection('finance').doc('current').set({ ...data, updatedAt: Date.now() }, { merge: true });
+      return { ok: true };
+    } catch (e) {
+      console.warn('[PSOTS_DB] saveFinance failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /**
+   * getReceipts() → array of receipt objects or null
+   *
+   * Fetches all expense receipts from Firestore.
+   * Returns null if Firestore unavailable.
+   */
+  async function getReceipts() {
+    if (!_db) return null;
+    try {
+      const snap = await _db.collection('receipts').get();
+      return snap.docs.map(d => d.data());
+    } catch (e) {
+      console.warn('[PSOTS_DB] getReceipts failed:', e.message);
+      return null;
+    }
+  }
+
+  /**
+   * saveReceipts(receipts) → { ok, written }
+   *
+   * Replaces the full receipts collection with the given array.
+   * Each receipt: { id, cat, vendor, amount, date, link, notes }
+   */
+  async function saveReceipts(receipts) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      const existing = await _db.collection('receipts').get();
+      const batch = _db.batch();
+      existing.docs.forEach(d => batch.delete(d.ref));
+      receipts.forEach(r => {
+        const ref = _db.collection('receipts').doc(String(r.id));
+        batch.set(ref, {
+          id:     r.id,
+          cat:    r.cat    || '',
+          vendor: r.vendor || '',
+          amount: Number(r.amount) || 0,
+          date:   r.date   || '',
+          link:   r.link   || '',
+          notes:  r.notes  || '',
+        });
+      });
+      await batch.commit();
+      return { ok: true, written: receipts.length };
+    } catch (e) {
+      console.warn('[PSOTS_DB] saveReceipts failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /* ════════════════════════════════════════════════════
+     YEAR HISTORY API
+  ════════════════════════════════════════════════════ */
+
+  /**
+   * archiveYear(year, data) → { ok }
+   *
+   * Saves a completed year's finance summary to Firestore as
+   * finance/history_{year}. Called by the admin Year Rollover tool.
+   */
+  async function archiveYear(year, data) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      await _db.collection('finance').doc('history_' + year).set(
+        { ...data, year: Number(year), archivedAt: Date.now() },
+        { merge: true }
+      );
+      return { ok: true };
+    } catch (e) {
+      console.warn('[PSOTS_DB] archiveYear failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /**
+   * getFinanceHistory() → object keyed by year, or null
+   *
+   * Reads all archived year finance docs from Firestore.
+   * Returns e.g. { 2025: { collected, expenses, ... }, 2026: {...} }
+   */
+  async function getFinanceHistory() {
+    if (!_db) return null;
+    try {
+      const snap = await _db.collection('finance').get();
+      const history = {};
+      snap.docs.filter(d => d.id.startsWith('history_')).forEach(d => {
+        const yr = d.id.replace('history_', '');
+        history[Number(yr)] = d.data();
+      });
+      return Object.keys(history).length > 0 ? history : null;
+    } catch (e) {
+      console.warn('[PSOTS_DB] getFinanceHistory failed:', e.message);
+      return null;
+    }
+  }
+
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, syncContributions, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, syncContributions, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();

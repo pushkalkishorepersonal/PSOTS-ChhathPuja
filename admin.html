@@ -100,6 +100,7 @@
   /* ── FORM ELEMENTS ────────────────── */
   .fg { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
   @media(max-width:520px) { .fg { grid-template-columns: 1fr; } }
+  @media(max-width:700px) { .settings-row { grid-template-columns: 1fr !important; } }
   .fg3 { grid-template-columns: 1fr 1fr 1fr; }
   @media(max-width:600px) { .fg3 { grid-template-columns: 1fr 1fr; } }
   .ff { display: flex; flex-direction: column; }
@@ -591,7 +592,39 @@
         </div>
       </div>
 
-      <!-- 9. Settings -->
+      <!-- 9. Committee -->
+      <div class="feat-tile" style="--tc:#6d3c8f" onclick="switchTab('settings');setTimeout(()=>document.querySelector('#tab-settings .admin-card:nth-child(2)')?.scrollIntoView({behavior:'smooth'}),300)">
+        <div class="ft-head">
+          <div class="ft-icon">🎭</div>
+          <div class="ft-badge" id="ft-badge-cmte"></div>
+        </div>
+        <div class="ft-title">Committee Roles</div>
+        <div class="ft-val" id="ft-val-cmte">—</div>
+        <div class="ft-sub" id="ft-sub-cmte">roles assigned</div>
+        <div class="ft-progress-wrap" style="display:none"></div>
+        <div class="ft-actions">
+          <button class="ft-btn primary" onclick="event.stopPropagation();switchTab('settings');setTimeout(()=>document.getElementById('cmteRoleCard')?.scrollIntoView({behavior:'smooth'}),300)">Manage Roles</button>
+          <button class="ft-btn" onclick="event.stopPropagation();switchTab('settings');setTimeout(()=>{document.getElementById('cmteRoleCard')?.scrollIntoView({behavior:'smooth'});addCmteRole();},350)">+ Add</button>
+        </div>
+      </div>
+
+      <!-- 10. Team Members -->
+      <div class="feat-tile" style="--tc:#2471a3" onclick="switchTab('settings');setTimeout(()=>document.getElementById('teamMembersCard')?.scrollIntoView({behavior:'smooth'}),300)">
+        <div class="ft-head">
+          <div class="ft-icon">👥</div>
+          <div class="ft-badge" id="ft-badge-team"></div>
+        </div>
+        <div class="ft-title">Team Members</div>
+        <div class="ft-val" id="ft-val-team">—</div>
+        <div class="ft-sub" id="ft-sub-team">committee · roles assigned</div>
+        <div class="ft-progress-wrap" style="display:none"></div>
+        <div class="ft-actions">
+          <button class="ft-btn primary" onclick="event.stopPropagation();switchTab('settings');setTimeout(()=>document.getElementById('teamMembersCard')?.scrollIntoView({behavior:'smooth'}),300)">Manage Team</button>
+          <button class="ft-btn" onclick="event.stopPropagation();openAddMemberModal()">+ Add</button>
+        </div>
+      </div>
+
+      <!-- 10. Settings -->
       <div class="feat-tile" style="--tc:#7f8c8d" onclick="switchTab('settings')">
         <div class="ft-head">
           <div class="ft-icon">⚙️</div>
@@ -608,6 +641,32 @@
 
     </div>
 
+    <!-- Add Member Quick Modal -->
+    <div id="addMemberModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center">
+      <div style="background:#fff8f0;border-radius:18px;padding:1.6rem 1.8rem;max-width:420px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.25);animation:ftIn .3s ease">
+        <div style="font-size:1.1rem;font-weight:800;color:var(--ink);margin-bottom:1rem">👥 Add Team Member</div>
+        <div style="display:grid;gap:.6rem">
+          <input id="modal-am-email" type="email" placeholder="Gmail address (e.g. name@gmail.com)"
+            style="padding:.7rem 1rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;width:100%;box-sizing:border-box"/>
+          <input id="modal-am-name" type="text" placeholder="Display name (optional)"
+            style="padding:.7rem 1rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;width:100%;box-sizing:border-box"/>
+          <select id="modal-am-role"
+            style="padding:.7rem 1rem;border:1.5px solid #f0d5b8;border-radius:10px;font-family:'DM Sans',sans-serif;font-size:.88rem;outline:none;background:#fff8f0">
+            <option value="admin">🔑 Admin — full access</option>
+            <option value="treasurer">💰 Treasurer — finance only</option>
+            <option value="event_coordinator">🏮 Event Coordinator — ghat &amp; timings</option>
+            <option value="resident_coordinator">👥 Resident Coordinator — contributors &amp; directory</option>
+            <option value="volunteer_lead">🤝 Volunteer Lead — volunteers only</option>
+            <option value="viewer">👁 Viewer — read only</option>
+          </select>
+          <div style="display:flex;gap:.6rem;margin-top:.3rem">
+            <button onclick="modalAddMember()" style="flex:1;background:var(--or);color:#fff;border:none;border-radius:10px;padding:.7rem;font-weight:700;font-size:.9rem;cursor:pointer">+ Add Member</button>
+            <button onclick="document.getElementById('addMemberModal').style.display='none'" style="background:#f5e8d8;color:var(--ink);border:none;border-radius:10px;padding:.7rem 1rem;font-weight:600;font-size:.9rem;cursor:pointer">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Pending verifications (compact, below tiles) -->
     <div class="admin-card" id="pendingCard" style="display:none">
       <div class="ac-title" style="font-size:.9rem">🔔 Pending Verifications</div>
@@ -619,7 +678,7 @@
   <div class="tab-panel" id="tab-contributors">
     <div class="admin-card">
       <div class="ac-title">🙏 All Contributors</div>
-      <div class="ac-sub">Mark payments as verified (✅) once you confirm the UPI transfer in your PhonePe/GPay app. Only verified entries show on the public website.</div>
+      <div class="ac-sub">Mark payments as verified (✅) once you confirm the UPI transfer in your PhonePe/GPay app. Data loads from Firestore — no Google Sheets dependency.</div>
       <input class="con-search-bar" type="text" id="conSearchAdmin" placeholder="🔍  Search by name, flat or UTR…" oninput="filterAdminCon()"/>
       <div class="con-filter-row">
         <span style="font-size:.72rem;color:var(--lbr)">Filter:</span>
@@ -675,12 +734,12 @@
   <!-- ═══ FINANCE TAB ═══ -->
   <div class="tab-panel" id="tab-finance">
     <div class="admin-card">
-      <div class="ac-title">💰 2026 Financial Overview</div>
+      <div class="ac-title" id="finYearTitle">💰 Financial Overview</div>
       <div class="ac-sub">These numbers show on the public website financial section. Update them as contributions come in.</div>
       <div class="fg">
-        <div class="ff"><label>Carry Forward from 2025</label><div class="rupee-wrap"><span class="rupee-pfx">₹</span><input class="rupee-inp" type="number" id="f-carry" value="104670"/></div><div class="note">Fixed — ₹1,04,670 verified from last year</div></div>
-        <div class="ff"><label>Total Collected 2026 (Live)</label><div class="rupee-wrap"><span class="rupee-pfx">₹</span><input class="rupee-inp" type="number" id="f-collected" value="0"/></div><div class="note">Auto-updates from verified contributions</div></div>
-        <div class="ff"><label>2026 Budget (Planned)</label><div class="rupee-wrap"><span class="rupee-pfx">₹</span><input class="rupee-inp" type="number" id="f-budget" value="282000"/></div></div>
+        <div class="ff"><label id="finCarryLabel">Carry Forward from Previous Year</label><div class="rupee-wrap"><span class="rupee-pfx">₹</span><input class="rupee-inp" type="number" id="f-carry" value="104670"/></div><div class="note" id="finCarryNote">Verified carry-forward from last year</div></div>
+        <div class="ff"><label id="finCollectedLabel">Total Collected (Live)</label><div class="rupee-wrap"><span class="rupee-pfx">₹</span><input class="rupee-inp" type="number" id="f-collected" value="0"/></div><div class="note">Auto-updates from verified contributions</div></div>
+        <div class="ff"><label id="finBudgetLabel">Budget (Planned)</label><div class="rupee-wrap"><span class="rupee-pfx">₹</span><input class="rupee-inp" type="number" id="f-budget" value="282000"/></div></div>
         <div class="ff"><label>Expenses Incurred So Far</label><div class="rupee-wrap"><span class="rupee-pfx">₹</span><input class="rupee-inp" type="number" id="f-expenses" value="0"/></div></div>
       </div>
     </div>
@@ -700,7 +759,7 @@
     </div>
 
     <div class="admin-card">
-      <div class="ac-title">📊 2026 Expense Breakdown</div>
+      <div class="ac-title" id="finExpTitle">📊 Expense Breakdown</div>
       <div class="ac-sub">Update actual spend per category as you make payments. Shows on public site as progress bars.</div>
       <div class="fg fg3">
         <div class="ff"><label>Tent & Decoration</label><div class="rupee-wrap"><span class="rupee-pfx">₹</span><input class="rupee-inp" type="number" id="exp-tent" value="0"/></div></div>
@@ -753,16 +812,30 @@
       <div id="rcptSync" style="font-size:.72rem;color:#c8a880;margin-top:.4rem"></div>
     </div>
 
-    <div class="admin-card">
-      <div class="ac-title">📈 2025 Reference (Read-only)</div>
-      <div class="fg fg3">
-        <div class="ff"><label>Collected 2025</label><input type="text" value="₹2,35,553" readonly style="background:#f5f0e8;color:var(--lbr)"/></div>
-        <div class="ff"><label>Expenses 2025</label><input type="text" value="₹1,98,383" readonly style="background:#f5f0e8;color:var(--lbr)"/></div>
-        <div class="ff"><label>Surplus 2025</label><input type="text" value="₹1,04,670" readonly style="background:#f5f0e8;color:var(--lbr)"/></div>
-        <div class="ff"><label>Contributors 2025</label><input type="text" value="141" readonly style="background:#f5f0e8;color:var(--lbr)"/></div>
-        <div class="ff"><label>Vratis 2025</label><input type="text" value="15" readonly style="background:#f5f0e8;color:var(--lbr)"/></div>
-        <div class="ff"><label>Budget 2025</label><input type="text" value="₹2,82,000" readonly style="background:#f5f0e8;color:var(--lbr)"/></div>
+    <!-- Previous year reference — rendered dynamically from PSOTS.history -->
+    <div class="admin-card" id="prevYearRef" style="display:none">
+      <div class="ac-title" id="prevYearRefTitle">📈 Previous Year Reference (Read-only)</div>
+      <div class="fg fg3" id="prevYearRefGrid"></div>
+    </div>
+
+    <!-- Year Rollover -->
+    <div class="admin-card" style="border-left:4px solid #27ae60">
+      <div class="ac-title">🔄 Year Rollover</div>
+      <div class="ac-sub">Use this once the current year's event is complete to archive this year's data and prepare for next year. The carry-forward balance is auto-calculated.</div>
+      <div id="rolloverStatus" style="font-size:.82rem;color:var(--lbr);margin-bottom:.8rem">Load finance data first, then run rollover.</div>
+      <div class="fg">
+        <div class="ff">
+          <label>Year Being Archived</label>
+          <input type="number" id="rollover-year" style="background:#f5f0e8;font-weight:700"/>
+        </div>
+        <div class="ff">
+          <label>Carry Forward to Next Year</label>
+          <div class="rupee-wrap"><span class="rupee-pfx">₹</span><input class="rupee-inp" type="number" id="rollover-carry" placeholder="Auto-calculated"/></div>
+          <div class="note">= Available − Expenses for this year</div>
+        </div>
       </div>
+      <button class="btn-primary" onclick="runYearRollover()" style="background:#27ae60;margin-top:.5rem">📦 Archive This Year & Carry Forward</button>
+      <div id="rolloverLog" style="font-size:.75rem;color:#27ae60;margin-top:.6rem"></div>
     </div>
   </div>
 
@@ -1074,93 +1147,141 @@
 
   <!-- ═══ SETTINGS TAB ═══ -->
   <div class="tab-panel" id="tab-settings">
-    <div class="admin-card">
-      <div class="ac-title">⚙️ Site Configuration</div>
-      <div class="fg">
-        <div class="ff"><label>Apps Script URL</label><input type="text" id="s-scriptUrl" placeholder="https://script.google.com/macros/s/…/exec"/><div class="note">Paste your Google Apps Script deployment URL here</div></div>
-        <div class="ff"><label>UPI ID</label><input type="text" id="s-upiId" value="9482088904@sbi"/></div>
-        <div class="ff"><label>Primary WhatsApp</label><input type="text" id="s-waOrg" value="919482088904"/></div>
-        <div class="ff"><label>Second Contact</label><input type="text" id="s-waOrg2" value="919902837002"/></div>
-        <div class="ff"><label>Event Start Date</label><input type="date" id="s-eventDate" value="2026-11-01"/></div>
-        <div class="ff"><label>Contribution Deadline</label><input type="date" id="s-deadline" value="2026-10-25"/></div>
-      </div>
-      <button class="btn-primary" onclick="saveSettings()">💾 Save Settings</button>
-    </div>
 
-    <div class="admin-card">
-      <div class="ac-title">🎭 Committee Role Assignment</div>
-      <div class="ac-sub">Assign residents to committee roles by name or flat number. Roles are saved to the backend and shown on the committee page.</div>
-      <div id="cmteRoleList" style="display:flex;flex-direction:column;gap:.9rem;margin-top:1rem"></div>
-      <div style="display:flex;gap:.7rem;margin-top:1rem;flex-wrap:wrap;align-items:center">
-        <button class="btn-secondary" onclick="addCmteRole()">＋ Add Role</button>
-        <button class="btn-primary" onclick="saveCmteRoles()">💾 Save All Roles</button>
-      </div>
-    </div>
+    <!-- Site Config + Fonnte side-by-side -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1rem;align-items:start" class="settings-row">
 
-    <div class="admin-card" style="border-left:3px solid #25d366">
-      <div class="ac-title">📲 Fonnte WhatsApp API</div>
-      <div class="ac-sub">Fonnte powers automated WhatsApp messages — payment confirmations, broadcast blasts, and payment reminders — without you having to manually open WhatsApp.</div>
-      <div id="fonnteStatusBadge" style="display:inline-flex;align-items:center;gap:.45rem;padding:.38rem .85rem;border-radius:50px;font-size:.78rem;font-weight:600;margin-bottom:1rem;background:#f0f0f0;color:#666">
-        ⏳ Not checked yet
+      <div class="admin-card" style="margin:0">
+        <div class="ac-title">⚙️ Configuration</div>
+        <div class="fg" style="margin-top:.7rem">
+          <div class="ff"><label>Apps Script URL</label><input type="text" id="s-scriptUrl" placeholder="https://script.google.com/macros/s/…/exec"/></div>
+          <div class="ff"><label>UPI ID</label><input type="text" id="s-upiId" value="9482088904@sbi"/></div>
+          <div class="ff"><label>Primary WhatsApp</label><input type="text" id="s-waOrg" value="919482088904"/></div>
+          <div class="ff"><label>Second Contact</label><input type="text" id="s-waOrg2" value="919902837002"/></div>
+          <div class="ff"><label>Event Start Date</label><input type="date" id="s-eventDate" value="2026-11-01"/></div>
+          <div class="ff"><label>Contribution Deadline</label><input type="date" id="s-deadline" value="2026-10-25"/></div>
+        </div>
+        <button class="btn-primary" style="margin-top:.8rem" onclick="saveSettings()">💾 Save</button>
       </div>
-      <div style="background:#f0fff4;border:1px solid #a5d6a7;border-radius:12px;padding:1rem 1.1rem;font-size:.8rem;color:#1a3a1a;line-height:1.7;margin-bottom:1rem">
-        <strong>Setup (one-time, done in Apps Script):</strong><br/>
-        1. Go to <strong>script.google.com</strong> → open your project → <strong>Project Settings → Script Properties</strong><br/>
-        2. Add a property: <strong>Name =</strong> <code>FONNTE_TOKEN</code> &nbsp;<strong>Value =</strong> your Fonnte API token<br/>
-        3. Get your token at <strong>fonnte.com</strong> → add device → scan QR with your WhatsApp → copy the token<br/>
-        4. Run <code>authorizeExternalRequests()</code> once to grant HTTP permission
-      </div>
-      <button class="btn-secondary" onclick="checkFonnteStatus()" style="font-size:.82rem">🔄 Check Fonnte Status</button>
-    </div>
 
-    <div class="admin-card">
-      <div class="ac-title">🗄 Data Management</div>
-      <div style="display:flex;gap:.7rem;flex-wrap:wrap">
-        <button class="btn-secondary" onclick="exportAll()">📥 Export All Data (JSON)</button>
-        <button class="btn-secondary" onclick="exportCSV()">📊 Export Contributors CSV</button>
-        <button class="btn-danger" onclick="clearLocalData()">🗑 Clear Local Cache</button>
-      </div>
-    </div>
+      <div style="display:flex;flex-direction:column;gap:1rem">
+        <!-- Fonnte -->
+        <div class="admin-card" style="margin:0;border-left:3px solid #25d366">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:.6rem;flex-wrap:wrap">
+            <div class="ac-title" style="margin:0">📲 Fonnte</div>
+            <div id="fonnteStatusBadge" style="display:inline-flex;align-items:center;gap:.45rem;padding:.28rem .7rem;border-radius:50px;font-size:.72rem;font-weight:600;background:#f0f0f0;color:#666">⏳ Not checked</div>
+          </div>
+          <div style="margin-top:.65rem;display:flex;gap:.5rem;align-items:center;flex-wrap:wrap">
+            <button class="btn-secondary" onclick="checkFonnteStatus()" style="font-size:.8rem">🔄 Check</button>
+            <span style="font-size:.72rem;color:var(--lbr);cursor:pointer" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none'">▸ Setup guide</span>
+            <div style="display:none;width:100%;background:#f0fff4;border:1px solid #a5d6a7;border-radius:8px;padding:.65rem .85rem;font-size:.76rem;color:#1a3a1a;line-height:1.6;margin-top:.35rem">
+              1. script.google.com → Project Settings → Script Properties<br/>
+              2. Add: <code>FONNTE_TOKEN</code> = your token<br/>
+              3. fonnte.com → add device → scan QR<br/>
+              4. Run <code>authorizeExternalRequests()</code> once
+            </div>
+          </div>
+        </div>
 
-    <!-- ── TEAM MEMBERS ── -->
-    <div class="admin-card" id="teamMembersCard">
-      <div class="ac-title">👥 Team Members &amp; Roles</div>
-      <div class="ac-sub">Members are saved to the server — they persist across all devices and logins. Members sign in with their Google account and see only their allowed tabs.</div>
-
-      <div style="display:grid;gap:.5rem;margin-top:1rem">
-        <input id="am-email" type="email" placeholder="Gmail address"
-          style="padding:.65rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;width:100%;box-sizing:border-box"/>
-        <input id="am-name" type="text" placeholder="Display name (optional)"
-          style="padding:.65rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;width:100%;box-sizing:border-box"/>
-        <div style="display:flex;gap:.5rem">
-          <select id="am-role"
-            style="flex:1;padding:.65rem .9rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;background:#fff8f0">
-            <option value="admin">🔑 Admin</option>
-            <option value="treasurer">💰 Treasurer</option>
-            <option value="announcements_manager">📢 Announcements Manager</option>
-            <option value="event_coordinator" selected>🎨 Event Coordinator</option>
-            <option value="resident_coordinator">👥 Resident Coordinator</option>
-            <option value="volunteer">🤝 Volunteer</option>
-          </select>
-          <button class="btn-primary" onclick="adminAddMember()" style="white-space:nowrap;padding:.65rem 1.1rem">＋ Add</button>
+        <!-- Data Management -->
+        <div class="admin-card" style="margin:0">
+          <div class="ac-title">🗄 Data</div>
+          <div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.6rem">
+            <button class="btn-secondary" onclick="exportAll()" style="font-size:.8rem">📥 Export JSON</button>
+            <button class="btn-secondary" onclick="exportCSV()" style="font-size:.8rem">📊 Export CSV</button>
+            <button class="btn-danger" onclick="clearLocalData()" style="font-size:.8rem">🗑 Clear Cache</button>
+          </div>
         </div>
       </div>
+    </div>
 
-      <div id="amList" style="margin-top:1.1rem"></div>
-      <div style="margin-top:.6rem;display:flex;gap:.6rem;align-items:center">
-        <span id="amSync" style="font-size:.72rem;color:#c8a880"></span>
-        <button class="btn-secondary" onclick="loadMembersAdmin()" style="font-size:.72rem;padding:.3rem .75rem">🔄 Refresh from Server</button>
+    <!-- Event Configuration (replaces editing config.js by hand) -->
+    <div class="admin-card" style="margin-top:1rem;border-left:4px solid var(--or)">
+      <div class="ac-title">🗓 Event Configuration</div>
+      <div class="ac-sub">Set the event name, dates and ritual timings here. These values apply site-wide instantly — no file editing needed. Saved to Firestore and cached locally.</div>
+
+      <div class="fg" style="margin-top:.8rem">
+        <div class="ff" style="grid-column:1/-1">
+          <label>Event Name (shows in page titles & emails)</label>
+          <input type="text" id="cfg-eventName" placeholder="PSOTS Chhath Puja 2026 — पंच वर्ष महोत्सव"/>
+        </div>
+        <div class="ff"><label>UPI Payee Name</label><input type="text" id="cfg-payeeName" placeholder="ChhathPuja2026PSOTS"/></div>
+        <div class="ff"><label>Event Start (Day 1 — Nahay Khay)</label><input type="datetime-local" id="cfg-eventStart"/></div>
+        <div class="ff"><label>Contribution Deadline</label><input type="datetime-local" id="cfg-deadline"/></div>
+      </div>
+
+      <div style="font-size:.78rem;font-weight:700;color:var(--or);margin:.9rem 0 .4rem">🌅 Sandhya Arghya (Day 3)</div>
+      <div class="fg">
+        <div class="ff"><label>Time</label><input type="time" id="cfg-eveTime" value="17:45"/></div>
+        <div class="ff"><label>Date</label><input type="date" id="cfg-eveDate"/></div>
+      </div>
+
+      <div style="font-size:.78rem;font-weight:700;color:var(--or);margin:.9rem 0 .4rem">🌄 Usha Arghya (Day 4)</div>
+      <div class="fg">
+        <div class="ff"><label>Time</label><input type="time" id="cfg-mornTime" value="06:15"/></div>
+        <div class="ff"><label>Date</label><input type="date" id="cfg-mornDate"/></div>
+      </div>
+
+      <div style="font-size:.78rem;font-weight:700;color:var(--or);margin:.9rem 0 .4rem">🍽️ Kharna Prasad (Day 2)</div>
+      <div class="fg">
+        <div class="ff"><label>Time</label><input type="time" id="cfg-kharnaTime" value="19:00"/></div>
+        <div class="ff"><label>Date</label><input type="date" id="cfg-kharnaDate"/></div>
+        <div class="ff" style="grid-column:1/-1"><label>Location</label><input type="text" id="cfg-kharnaLoc" placeholder="Community Hall"/></div>
+      </div>
+
+      <div style="display:flex;gap:.7rem;align-items:center;margin-top:1rem;flex-wrap:wrap">
+        <button class="btn-primary" onclick="saveEventConfig()">💾 Save Event Config</button>
+        <button class="btn-secondary" onclick="loadEventConfig()">🔄 Load Saved Config</button>
+        <span id="cfgStatus" style="font-size:.75rem;color:var(--lbr)"></span>
+      </div>
+      <div style="margin-top:.6rem;font-size:.73rem;color:var(--lbr);background:#fff8f0;border-radius:8px;padding:.5rem .75rem;line-height:1.6">
+        💡 After saving, refresh any open browser tab to see the updated event dates everywhere on the site.
       </div>
     </div>
 
-    <!-- ── PERMISSION MATRIX ── -->
-    <div class="admin-card" id="permMatrixCard">
+    <!-- Team Members -->
+    <div class="admin-card" id="teamMembersCard" style="margin-top:1rem">
+      <div class="ac-title">👥 Team Members</div>
+      <div style="display:flex;gap:.5rem;margin-top:.8rem;flex-wrap:wrap">
+        <input id="am-email" type="email" placeholder="Gmail address"
+          style="flex:2;min-width:160px;padding:.6rem .85rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.83rem;outline:none"/>
+        <input id="am-name" type="text" placeholder="Display name (optional)"
+          style="flex:1;min-width:120px;padding:.6rem .85rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.83rem;outline:none"/>
+        <select id="am-role"
+          style="flex:1;min-width:140px;padding:.6rem .85rem;border:1.5px solid #f0d5b8;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.83rem;outline:none;background:#fff8f0">
+          <option value="admin">🔑 Admin</option>
+          <option value="treasurer">💰 Treasurer</option>
+          <option value="announcements_manager">📢 Announcements</option>
+          <option value="event_coordinator" selected>🎨 Event Coordinator</option>
+          <option value="resident_coordinator">👥 Resident Coordinator</option>
+          <option value="volunteer">🤝 Volunteer</option>
+        </select>
+        <button class="btn-primary" onclick="adminAddMember()" style="white-space:nowrap;padding:.6rem 1rem">＋ Add</button>
+      </div>
+      <div id="amList" style="margin-top:.9rem"></div>
+      <div style="margin-top:.5rem;display:flex;gap:.6rem;align-items:center">
+        <span id="amSync" style="font-size:.7rem;color:#c8a880"></span>
+        <button class="btn-secondary" onclick="loadMembersAdmin()" style="font-size:.72rem;padding:.28rem .65rem">🔄 Refresh</button>
+      </div>
+    </div>
+
+    <!-- Committee Role Assignment -->
+    <div class="admin-card" id="cmteRoleCard" style="margin-top:1rem">
+      <div class="ac-title">🎭 Committee Roles</div>
+      <div id="cmteRoleList" style="display:flex;flex-direction:column;gap:.6rem;margin-top:.8rem"></div>
+      <div style="display:flex;gap:.6rem;margin-top:.8rem">
+        <button class="btn-secondary" onclick="addCmteRole()">＋ Add Role</button>
+        <button class="btn-primary" onclick="saveCmteRoles()">💾 Save</button>
+      </div>
+    </div>
+
+    <!-- Permission Matrix -->
+    <div class="admin-card" id="permMatrixCard" style="margin-top:1rem">
       <div class="ac-title">🔐 Role Permissions</div>
-      <div class="ac-sub">Control which tabs each role can access. Admin always has full access.</div>
-      <div id="permMatrix" style="margin-top:1rem;overflow-x:auto"></div>
-      <div style="margin-top:.85rem;display:flex;gap:.6rem">
-        <button class="btn-primary" onclick="saveRolePerms()">💾 Save Permissions</button>
-        <button class="btn-secondary" onclick="resetRolePerms()">↩ Reset Defaults</button>
+      <div id="permMatrix" style="margin-top:.8rem;overflow-x:auto"></div>
+      <div style="margin-top:.75rem;display:flex;gap:.6rem">
+        <button class="btn-primary" onclick="saveRolePerms()">💾 Save</button>
+        <button class="btn-secondary" onclick="resetRolePerms()">↩ Reset</button>
       </div>
     </div>
   </div>
@@ -1655,12 +1776,161 @@ function loadScriptUrl() {
 function saveSettings() {
   const url = document.getElementById('s-scriptUrl').value.trim();
   if (url) localStorage.setItem(SCRIPT_URL_KEY, url);
-  // Save other settings to localStorage
   ['upiId','waOrg','waOrg2','eventDate','deadline'].forEach(k => {
     const el = document.getElementById('s-' + k);
     if (el) localStorage.setItem('psots_' + k, el.value);
   });
   toast('✅ Settings saved!', 'success');
+}
+
+/* ─── Event Config (replaces editing config.js by hand) ─── */
+
+function _cfgVal(id) { const el = document.getElementById(id); return el ? el.value.trim() : ''; }
+
+function _populateEventConfigForm(cfg) {
+  const _s = (id, v) => { const el = document.getElementById(id); if (el && v !== undefined && v !== null) el.value = v; };
+  _s('cfg-eventName',  cfg.eventName);
+  _s('cfg-payeeName',  cfg.payeeName);
+  // datetime-local needs "YYYY-MM-DDTHH:mm"
+  if (cfg.eventStart) _s('cfg-eventStart', cfg.eventStart.slice(0,16));
+  if (cfg.deadline)   _s('cfg-deadline',   cfg.deadline.slice(0,16));
+  if (cfg.arghyaEvening) {
+    if (cfg.arghyaEvening.date) {
+      // Convert "Nov 3, 2026" → "2026-11-03" for date input
+      const d = new Date(cfg.arghyaEvening.date);
+      if (!isNaN(d)) _s('cfg-eveDate', d.toISOString().slice(0,10));
+    }
+    if (cfg.arghyaEvening.time) {
+      // "5:45 PM" → "17:45"
+      const t = _parseTimeTo24(cfg.arghyaEvening.time);
+      if (t) _s('cfg-eveTime', t);
+    }
+  }
+  if (cfg.arghyaMorning) {
+    if (cfg.arghyaMorning.date) {
+      const d = new Date(cfg.arghyaMorning.date);
+      if (!isNaN(d)) _s('cfg-mornDate', d.toISOString().slice(0,10));
+    }
+    if (cfg.arghyaMorning.time) {
+      const t = _parseTimeTo24(cfg.arghyaMorning.time);
+      if (t) _s('cfg-mornTime', t);
+    }
+  }
+  if (cfg.kharnaTime) {
+    if (cfg.kharnaTime.date) {
+      const d = new Date(cfg.kharnaTime.date);
+      if (!isNaN(d)) _s('cfg-kharnaDate', d.toISOString().slice(0,10));
+    }
+    if (cfg.kharnaTime.time) {
+      const t = _parseTimeTo24(cfg.kharnaTime.time);
+      if (t) _s('cfg-kharnaTime', t);
+    }
+    _s('cfg-kharnaLoc', cfg.kharnaTime.location);
+  }
+}
+
+function _parseTimeTo24(str) {
+  // "5:45 PM" → "17:45", "06:15 AM" → "06:15"
+  const m = String(str).match(/(\d{1,2}):(\d{2})\s*(AM|PM)?/i);
+  if (!m) return null;
+  let h = parseInt(m[1]), min = m[2], ampm = (m[3]||'').toUpperCase();
+  if (ampm === 'PM' && h < 12) h += 12;
+  if (ampm === 'AM' && h === 12) h = 0;
+  return String(h).padStart(2,'0') + ':' + min;
+}
+
+function _fmt12(timeVal) {
+  // "17:45" → "5:45 PM"
+  if (!timeVal) return '';
+  const [h, m] = timeVal.split(':').map(Number);
+  const ampm = h >= 12 ? 'PM' : 'AM';
+  const h12  = h % 12 || 12;
+  return h12 + ':' + String(m).padStart(2,'0') + ' ' + ampm;
+}
+
+function _fmtDisplayDate(dateVal) {
+  // "2026-11-03" → "Nov 3, 2026"
+  if (!dateVal) return '';
+  const d = new Date(dateVal + 'T00:00:00');
+  return d.toLocaleDateString('en-US', { month:'short', day:'numeric', year:'numeric' });
+}
+
+async function loadEventConfig() {
+  const statusEl = document.getElementById('cfgStatus');
+  if (statusEl) statusEl.textContent = 'Loading…';
+  // Try Firestore first
+  let cfg = null;
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    cfg = await PSOTS_DB.getSiteConfig();
+  }
+  // Fall back to localStorage
+  if (!cfg) {
+    try { cfg = JSON.parse(localStorage.getItem('psots_live_config') || 'null'); } catch(e) {}
+  }
+  // Fall back to current window.PSOTS
+  if (!cfg) cfg = window.PSOTS || {};
+  _populateEventConfigForm(cfg);
+  if (statusEl) statusEl.textContent = cfg.updatedAt
+    ? '✅ Loaded — last saved ' + new Date(cfg.updatedAt).toLocaleString('en-IN')
+    : '📄 Loaded from site defaults';
+  setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 4000);
+}
+
+async function saveEventConfig() {
+  const statusEl = document.getElementById('cfgStatus');
+  if (statusEl) statusEl.textContent = 'Saving…';
+
+  const eveDateVal   = _cfgVal('cfg-eveDate');
+  const mornDateVal  = _cfgVal('cfg-mornDate');
+  const kharnaDateVal= _cfgVal('cfg-kharnaDate');
+
+  const cfg = {
+    eventName:  _cfgVal('cfg-eventName'),
+    payeeName:  _cfgVal('cfg-payeeName'),
+    eventStart: _cfgVal('cfg-eventStart') ? _cfgVal('cfg-eventStart') + ':00' : '',
+    deadline:   _cfgVal('cfg-deadline')   ? _cfgVal('cfg-deadline')   + ':00' : '',
+    arghyaEvening: {
+      time: _fmt12(_cfgVal('cfg-eveTime')),
+      date: _fmtDisplayDate(eveDateVal),
+    },
+    arghyaMorning: {
+      time: _fmt12(_cfgVal('cfg-mornTime')),
+      date: _fmtDisplayDate(mornDateVal),
+    },
+    kharnaTime: {
+      time:     _fmt12(_cfgVal('cfg-kharnaTime')),
+      date:     _fmtDisplayDate(kharnaDateVal),
+      location: _cfgVal('cfg-kharnaLoc'),
+    },
+  };
+  // Remove empty fields so we don't overwrite with blanks
+  Object.keys(cfg).forEach(k => { if (!cfg[k]) delete cfg[k]; });
+
+  // 1. Save to localStorage (instant, works on same device without Firestore)
+  const existing = JSON.parse(localStorage.getItem('psots_live_config') || '{}');
+  localStorage.setItem('psots_live_config', JSON.stringify({ ...existing, ...cfg }));
+
+  // 2. Apply to current window.PSOTS immediately (this tab reflects it right away)
+  if (cfg.eventName) window.PSOTS.eventName = cfg.eventName;
+  if (cfg.eventStart) window.PSOTS.eventStart = cfg.eventStart;
+  if (cfg.deadline)   window.PSOTS.deadline   = cfg.deadline;
+  if (cfg.payeeName)  window.PSOTS.payeeName  = cfg.payeeName;
+  if (cfg.arghyaEvening) Object.assign(window.PSOTS.arghyaEvening, cfg.arghyaEvening);
+  if (cfg.arghyaMorning) Object.assign(window.PSOTS.arghyaMorning, cfg.arghyaMorning);
+  if (cfg.kharnaTime)    Object.assign(window.PSOTS.kharnaTime,    cfg.kharnaTime);
+  window.PSOTS.activeYear = new Date(window.PSOTS.eventStart).getFullYear();
+
+  // 3. Save to Firestore (persists across devices / clears cache)
+  let firestoreOk = false;
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    const r = await PSOTS_DB.saveSiteConfig(cfg);
+    firestoreOk = r.ok;
+  }
+
+  const msg = firestoreOk ? '✅ Saved to Firestore + local cache' : '✅ Saved locally (Firestore not connected)';
+  if (statusEl) statusEl.textContent = msg;
+  toast(msg, 'success');
+  setTimeout(() => { if (statusEl) statusEl.textContent = ''; }, 5000);
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1676,7 +1946,7 @@ function switchTab(id) {
   if (id === 'prasad') loadPrasadList();
   if (id === 'finance') loadReceipts();
   if (id === 'contributors') setTimeout(loadReminderList, 400);
-  if (id === 'settings') { loadCmteRoles(); renderAmList(); loadMembersAdmin(); loadRolePerms().then(renderPermMatrix); }
+  if (id === 'settings') { loadCmteRoles(); renderAmList(); loadMembersAdmin(); loadRolePerms().then(renderPermMatrix); loadEventConfig(); }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -1862,7 +2132,7 @@ function _mapConRow(r) {
   return {
     ts: r.ts || r.date || '', name: r.name || '', flat: r.flat || '',
     mobile: r.mobile || '', amount: r.amount || 0, method: r.method || '',
-    date: r.date || '', status: r.status || '', year: r.year || 2026
+    date: r.date || '', status: r.status || '', year: r.year || new Date().getFullYear()
   };
 }
 
@@ -1894,23 +2164,34 @@ async function loadAdminCon() {
     } catch(e) { console.warn('Firestore contributors load failed:', e); }
   }
 
-  container.innerHTML = '<div style="text-align:center;padding:2rem;color:#c03000;font-size:.88rem">⚠️ Could not load contributors. Check Firestore connection in Settings.</div>';
-}
-
-async function _loadAdminConLegacy() {
-  const url = getScriptUrl();
-  const container = document.getElementById('conCardList');
-  if (!url) return;
+  // 2. Local history.json — bundled static data
   try {
-    const res = await fetch(url + '?action=list_all');
-    const data = await res.json();
-    allConData = data.all || [];
-    PsotsCache.set('contributors_all', allConData, CACHE_TTL.contributors);
-    renderConTable(allConData);
-    updateDashStats();
-  } catch(e) {
-    container.innerHTML = '<div style="text-align:center;padding:2rem;color:#c03000;font-size:.88rem">⚠️ Could not connect to Apps Script. Check URL in Settings.</div>';
+    const gRes = await fetch('data/history.json');
+    if (gRes.ok) {
+      const g = await gRes.json();
+      allConData = (g.history || []).map(_mapConRow);
+      PsotsCache.set('contributors_all', allConData, CACHE_TTL.contributors);
+      renderConTable(allConData);
+      updateDashStats();
+      return;
+    }
+  } catch(e) {}
+
+  // 3. Apps Script — last resort
+  const url = getScriptUrl();
+  if (url) {
+    try {
+      const res  = await fetch(url + '?action=list_all');
+      const data = await res.json();
+      allConData = (data.all || []).map(_mapConRow);
+      PsotsCache.set('contributors_all', allConData, CACHE_TTL.contributors);
+      renderConTable(allConData);
+      updateDashStats();
+      return;
+    } catch(e) {}
   }
+
+  container.innerHTML = '<div style="text-align:center;padding:2rem;color:#c03000;font-size:.88rem">⚠️ Could not load contributors. Check Firestore connection or Apps Script URL in Settings.</div>';
 }
 
 const AV_COLORS_ADM = ['#e85c00','#c93800','#8b2800','#1a5276','#1a7a4e','#7b1fa2','#c62828'];
@@ -2238,6 +2519,25 @@ function updateDashStats() {
   _set('ft-val-pra', prasadAll.length);
   _set('ft-sub-pra', `on list · ${vratiCount} vrat${vratiCount !== 1 ? 'is' : 'i'}`);
 
+  // ── Committee tile ────────────────────────────────
+  const filledRoles = cmteRoles.filter(r => r.role && r.name);
+  _set('ft-val-cmte', filledRoles.length || cmteRoles.length || '—');
+  _set('ft-sub-cmte', filledRoles.length ? filledRoles.slice(0,2).map(r=>r.role).join(' · ') + (filledRoles.length > 2 ? ` +${filledRoles.length-2}` : '') : 'no roles assigned yet');
+  _badge('ft-badge-cmte', filledRoles.length ? `${filledRoles.length} filled` : null, filledRoles.length ? 'good' : '');
+
+  // ── Team Members tile ──────────────────────────────
+  const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
+  const totalTeam = base.length + _membersCache.length;
+  const roleBreakdown = _membersCache.reduce((acc, m) => {
+    const lbl = (ROLE_META[m.role] || {}).label || m.role;
+    acc[lbl] = (acc[lbl] || 0) + 1;
+    return acc;
+  }, {});
+  const roleStr = Object.entries(roleBreakdown).map(([r,c]) => `${c} ${r}`).join(' · ') || 'superadmin only';
+  _set('ft-val-team', totalTeam);
+  _set('ft-sub-team', roleStr);
+  _badge('ft-badge-team', totalTeam > 1 ? `${totalTeam} members` : '1 member', 'good');
+
   // ── Settings tile — Fonnte status ─────────────────
   const fSt = document.getElementById('fonnteStatusBadge');
   const fTxt = fSt ? fSt.textContent.trim() : '';
@@ -2376,6 +2676,12 @@ async function saveFinance() {
     budMisc: document.getElementById('bud-misc').value,
   };
   PsotsCache.invalidate('finance');
+  // Save to Firestore (primary)
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    const { action: _a, ...firestoreData } = data;
+    await PSOTS_DB.saveFinance(firestoreData);
+  }
+  // Save to Apps Script / Sheet (backup)
   const url = getScriptUrl();
   if (url) {
     try {
@@ -2384,6 +2690,98 @@ async function saveFinance() {
   }
   updateDashStats();
   toast('✅ Finance data saved!', 'success');
+}
+
+/* ═══════════════════════════════════════════════════
+   YEAR ROLLOVER
+═══════════════════════════════════════════════════ */
+
+(function initFinanceLabels() {
+  const ACTIVE_YEAR = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
+  const prevYear    = ACTIVE_YEAR - 1;
+  const _s = id => document.getElementById(id);
+  if (_s('finYearTitle'))    _s('finYearTitle').textContent    = `💰 ${ACTIVE_YEAR} Financial Overview`;
+  if (_s('finCarryLabel'))   _s('finCarryLabel').textContent   = `Carry Forward from ${prevYear}`;
+  if (_s('finCollectedLabel')) _s('finCollectedLabel').textContent = `Total Collected ${ACTIVE_YEAR} (Live)`;
+  if (_s('finBudgetLabel'))  _s('finBudgetLabel').textContent  = `${ACTIVE_YEAR} Budget (Planned)`;
+  if (_s('finExpTitle'))     _s('finExpTitle').textContent     = `📊 ${ACTIVE_YEAR} Expense Breakdown`;
+  if (_s('rollover-year'))   _s('rollover-year').value         = ACTIVE_YEAR;
+
+  // Previous year reference card from PSOTS.history
+  const hist = window.PSOTS && window.PSOTS.history;
+  const prev = hist && hist[prevYear];
+  if (prev) {
+    const fmt = n => '₹' + parseInt(n||0).toLocaleString('en-IN');
+    const card = _s('prevYearRef'); if (card) card.style.display = '';
+    const title = _s('prevYearRefTitle'); if (title) title.textContent = `📈 ${prevYear} Reference (Read-only)`;
+    const grid = _s('prevYearRefGrid');
+    if (grid) grid.innerHTML = [
+      ['Collected', fmt(prev.collected)], ['Expenses', fmt(prev.expenses)],
+      ['Surplus',   fmt((prev.collected||0)-(prev.expenses||0))],
+      ['Contributors', prev.contributors||'—'], ['Vratis', prev.vratis||'—'],
+      ['Budget', fmt(prev.budget)],
+    ].map(([l,v])=>`<div class="ff"><label>${l} ${prevYear}</label><input type="text" value="${v}" readonly style="background:#f5f0e8;color:var(--lbr)"/></div>`).join('');
+  }
+
+  // Pre-fill rollover carry from current finance inputs
+  function updateRolloverCarry() {
+    const avail   = parseFloat(document.getElementById('f-carry')?.value||0) + parseFloat(document.getElementById('f-collected')?.value||0);
+    const expenses = parseFloat(document.getElementById('f-expenses')?.value||0);
+    const carry = Math.max(0, avail - expenses);
+    const el = document.getElementById('rollover-carry'); if (el) el.value = Math.round(carry);
+    const st = document.getElementById('rolloverStatus');
+    if (st) st.textContent = `Carry forward to ${ACTIVE_YEAR+1}: ${fmt(carry)} (= available ${fmt(avail)} − expenses ${fmt(expenses)})`;
+  }
+  ['f-carry','f-collected','f-expenses'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', updateRolloverCarry);
+  });
+  updateRolloverCarry();
+})();
+
+async function runYearRollover() {
+  const yr    = parseInt(document.getElementById('rollover-year')?.value);
+  const carry = parseInt(document.getElementById('rollover-carry')?.value);
+  if (!yr || yr < 2022) { toast('Invalid year', 'error'); return; }
+  if (!confirm(`Archive ${yr} and carry ₹${carry.toLocaleString('en-IN')} to ${yr+1}?\n\nThis saves ${yr}'s totals to history and updates the carry-forward. You still need to update config.js event dates for the new year.`)) return;
+
+  const logEl = document.getElementById('rolloverLog');
+  if (logEl) logEl.textContent = 'Archiving…';
+
+  const archiveData = {
+    collected: parseFloat(document.getElementById('f-collected')?.value)||0,
+    expenses:  parseFloat(document.getElementById('f-expenses')?.value)||0,
+    carry:     parseFloat(document.getElementById('f-carry')?.value)||0,
+    budget:    parseFloat(document.getElementById('f-budget')?.value)||0,
+    expTent:     parseFloat(document.getElementById('exp-tent')?.value)||0,
+    expKharna:   parseFloat(document.getElementById('exp-kharna')?.value)||0,
+    expThekua:   parseFloat(document.getElementById('exp-thekua')?.value)||0,
+    expAV:       parseFloat(document.getElementById('exp-av')?.value)||0,
+    expCultural: parseFloat(document.getElementById('exp-cultural')?.value)||0,
+    expMisc:     parseFloat(document.getElementById('exp-misc')?.value)||0,
+  };
+
+  let ok = false;
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    const r = await PSOTS_DB.archiveYear(yr, archiveData);
+    if (r.ok) {
+      // Set next year's carry in the finance doc
+      await PSOTS_DB.saveFinance({ carry, expenses: 0, expTent: 0, expKharna: 0, expThekua: 0, expAV: 0, expCultural: 0, expMisc: 0, budget: 0 });
+      ok = true;
+    }
+  }
+
+  if (ok) {
+    document.getElementById('f-carry').value    = carry;
+    document.getElementById('f-expenses').value = 0;
+    document.getElementById('f-collected').value = 0;
+    ['exp-tent','exp-kharna','exp-thekua','exp-av','exp-cultural','exp-misc'].forEach(id => { document.getElementById(id).value = ''; });
+    if (logEl) logEl.textContent = `✅ ${yr} archived to Firestore. Carry ₹${carry.toLocaleString('en-IN')} set for ${yr+1}. Now update js/config.js event dates for ${yr+1} and run Year Rollover again next year.`;
+    toast(`✅ Year ${yr} archived!`, 'success');
+  } else {
+    if (logEl) logEl.textContent = '⚠️ Firestore not ready. Connect Firestore first.';
+    toast('Firestore not ready', 'error');
+  }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -2881,66 +3279,63 @@ function renderCmteRoles() {
   const el = document.getElementById('cmteRoleList');
   if (!el) return;
   el.innerHTML = cmteRoles.map((r, i) => `
-    <div style="background:#fff8f2;border:1px solid #f0d5b8;border-radius:12px;padding:.85rem 1rem;display:flex;flex-wrap:wrap;gap:.6rem;align-items:flex-end">
-      <div style="flex:1;min-width:140px">
-        <label style="font-size:.72rem;color:var(--lbr);display:block;margin-bottom:.25rem">Role</label>
-        <input list="cmteRoleOptions" value="${r.role}" onchange="cmteRoles[${i}].role=this.value"
-          style="width:100%;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff"/>
-        <datalist id="cmteRoleOptions">${DEFAULT_ROLES.map(d=>`<option value="${d}">`).join('')}</datalist>
-      </div>
-      <div style="flex:1;min-width:130px">
-        <label style="font-size:.72rem;color:var(--lbr);display:block;margin-bottom:.25rem">Name</label>
-        <input id="cmte-name-${i}" value="${r.name}" placeholder="Resident name" oninput="cmteRoles[${i}].name=this.value"
-          style="width:100%;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff"/>
-      </div>
-      <div style="flex:0 0 100px">
-        <label style="font-size:.72rem;color:var(--lbr);display:block;margin-bottom:.25rem">Flat No.</label>
-        <input id="cmte-flat-${i}" value="${r.flat}" placeholder="e.g. 15167" oninput="cmteRoles[${i}].flat=this.value"
-          style="width:100%;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff"/>
-      </div>
-      <button onclick="lookupCmteResident(${i})" title="Lookup by flat"
-        style="background:#fff0e0;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .75rem;font-size:.78rem;cursor:pointer;color:var(--or);font-weight:600;white-space:nowrap">🔍 Lookup</button>
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;padding:.7rem .9rem;background:#fff8f2;border:1px solid #f0d5b8;border-radius:12px">
+      <input list="cmteRoleOptions${i}" value="${r.role}" onchange="cmteRoles[${i}].role=this.value" placeholder="Role (e.g. Treasurer)"
+        style="flex:1;min-width:130px;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff"/>
+      <datalist id="cmteRoleOptions${i}">${DEFAULT_ROLES.map(d=>`<option value="${d}">`).join('')}</datalist>
+      <input id="cmte-flat-${i}" value="${r.flat}" placeholder="Flat no." oninput="cmteRoles[${i}].flat=this.value" onblur="if(this.value.trim())lookupCmteResident(${i})"
+        style="width:90px;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff"/>
+      <input id="cmte-name-${i}" value="${r.name}" placeholder="Name (auto-fills on flat lookup)"
+        oninput="cmteRoles[${i}].name=this.value"
+        style="flex:1;min-width:130px;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:${r.name?'#fff':'#fffaf5'}"/>
       <button onclick="cmteRoles.splice(${i},1);renderCmteRoles()" title="Remove"
-        style="background:none;border:1.5px solid #f0d5b8;border-radius:8px;padding:.45rem .6rem;font-size:.85rem;cursor:pointer;color:#c03000">✕</button>
+        style="background:none;border:none;padding:.3rem .5rem;font-size:1rem;cursor:pointer;color:#c03000;line-height:1">✕</button>
     </div>`).join('');
 }
 
 async function lookupCmteResident(i) {
-  const flat = cmteRoles[i].flat || document.getElementById('cmte-flat-' + i)?.value.trim();
-  const nameInput = document.getElementById('cmte-name-' + i)?.value.trim();
+  const flat      = (cmteRoles[i].flat || document.getElementById('cmte-flat-' + i)?.value || '').trim();
+  const nameInput = (document.getElementById('cmte-name-' + i)?.value || '').trim();
   if (!flat && !nameInput) { toast('Enter a flat number or name first', 'error'); return; }
 
-  if (flat) {
-    try {
-      const res = await fetch(`${url}?action=findByFlat&flat=${encodeURIComponent(flat)}`);
-      const d = await res.json();
-      if (d.found) {
-        cmteRoles[i].name = d.name || cmteRoles[i].name;
-        cmteRoles[i].flat = d.flat || flat;
-        cmteRoles[i].mobile = d.mobile || '';
-        renderCmteRoles();
-        toast('✅ Found: ' + (d.name || flat), 'success');
-        return;
-      }
-    } catch(e) {}
+  function _applyResult(found) {
+    cmteRoles[i].name   = found.name   || cmteRoles[i].name;
+    cmteRoles[i].flat   = found.flat   || flat;
+    cmteRoles[i].mobile = found.mobile || '';
+    renderCmteRoles();
+    toast('✅ Found: ' + (found.name || flat), 'success');
   }
 
-  // Search by name through all contributors
-  if (nameInput) {
-    try {
-      const res = await fetch(`${url}?action=list_all`);
-      const d = await res.json();
-      const match = (d.all||[]).find(r => r.name.toLowerCase().includes(nameInput.toLowerCase()));
-      if (match) {
-        cmteRoles[i].name = match.name;
-        cmteRoles[i].flat = match.flat || cmteRoles[i].flat;
-        cmteRoles[i].mobile = match.mobile || '';
-        renderCmteRoles();
-        toast('✅ Found: ' + match.name + ' · Flat ' + match.flat, 'success');
-        return;
-      }
-    } catch(e) {}
+  if (flat) {
+    // 1. Firestore residents directory (primary, fastest)
+    if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+      try {
+        const r = await PSOTS_DB.getResident(flat);
+        if (r && r.name) { _applyResult(r); return; }
+      } catch(e) {}
+    }
+
+    // 2. In-memory allConData (already loaded, zero network)
+    const inMem = allConData.find(r => String(r.flat) === String(flat) && r.name);
+    if (inMem) { _applyResult(inMem); return; }
+
+    // 3. Apps Script findByFlat
+    const scriptUrl = getScriptUrl();
+    if (scriptUrl) {
+      try {
+        const res = await fetch(`${scriptUrl}?action=findByFlat&flat=${encodeURIComponent(flat)}`);
+        const d   = await res.json();
+        if (d.found && d.name) { _applyResult(d); return; }
+      } catch(e) {}
+    }
   }
+
+  // 4. Name search through allConData
+  if (nameInput) {
+    const match = allConData.find(r => r.name && r.name.toLowerCase().includes(nameInput.toLowerCase()));
+    if (match) { _applyResult(match); return; }
+  }
+
   toast('Resident not found — you can still type manually', 'error');
 }
 
@@ -3077,7 +3472,34 @@ function renderAmList() {
   el.innerHTML = baseRows + (members.length
     ? memberRows
     : '<div style="font-size:.82rem;color:#c8a880;padding:.5rem 0">No members yet — add one above or edit the Members sheet directly.</div>');
+  // Sync tile count on dashboard
+  updateDashStats();
 }
+
+function openAddMemberModal() {
+  const m = document.getElementById('addMemberModal');
+  if (m) { m.style.display = 'flex'; document.getElementById('modal-am-email').focus(); }
+}
+function modalAddMember() {
+  const email = (document.getElementById('modal-am-email').value||'').trim().toLowerCase();
+  const name  = (document.getElementById('modal-am-name').value||'').trim();
+  const role  = document.getElementById('modal-am-role').value;
+  if (!email || !email.includes('@')) return toast('Enter a valid email', 'error');
+  const base = (window.PSOTS && window.PSOTS.adminEmails) || [];
+  if (base.includes(email) || _membersCache.some(m => m.email === email)) return toast('Already in team', 'error');
+  const updated = [..._membersCache, { email, name, role, addedBy: currentAdminUser?.email||'', addedAt: Date.now() }];
+  document.getElementById('modal-am-email').value = '';
+  document.getElementById('modal-am-name').value = '';
+  document.getElementById('addMemberModal').style.display = 'none';
+  adminSaveMembers(updated);
+  toast('✅ ' + (name||email) + ' added as ' + (ROLE_META[role]?.label || role), 'success');
+  updateDashStats();
+}
+// Close modal on backdrop click
+document.addEventListener('click', function(e) {
+  const modal = document.getElementById('addMemberModal');
+  if (modal && e.target === modal) modal.style.display = 'none';
+});
 
 function adminAddMember() {
   const email = (document.getElementById('am-email').value||'').trim().toLowerCase();
@@ -4486,14 +4908,31 @@ function addReceipt() {
 
   allReceipts.push({ id: Date.now(), cat, vendor, amount, date, link, notes });
   renderReceiptList();
+  syncExpensesFromReceipts();
   // Clear fields
   ['rcpt-vendor','rcpt-amount','rcpt-link','rcpt-notes'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
   toast('Receipt added — click Save to persist', 'success');
 }
 
+function syncExpensesFromReceipts() {
+  const catMap = { tent: 0, kharna: 0, thekua: 0, av: 0, cultural: 0, misc: 0 };
+  allReceipts.forEach(r => { if (catMap[r.cat] !== undefined) catMap[r.cat] += Number(r.amount) || 0; });
+  document.getElementById('exp-tent').value     = catMap.tent     || '';
+  document.getElementById('exp-kharna').value   = catMap.kharna   || '';
+  document.getElementById('exp-thekua').value   = catMap.thekua   || '';
+  document.getElementById('exp-av').value       = catMap.av       || '';
+  document.getElementById('exp-cultural').value = catMap.cultural || '';
+  document.getElementById('exp-misc').value     = catMap.misc     || '';
+  const total = Object.values(catMap).reduce((s, v) => s + v, 0);
+  document.getElementById('f-expenses').value = total || '';
+  const el = document.getElementById('finance-total');
+  if (el) { el.style.display = total > 0 ? 'block' : 'none'; el.textContent = 'Total Expenses: ₹' + total.toLocaleString('en-IN'); }
+}
+
 function removeReceipt(id) {
   allReceipts = allReceipts.filter(r => r.id !== id);
   renderReceiptList();
+  syncExpensesFromReceipts();
 }
 
 function renderReceiptList() {
@@ -4531,7 +4970,21 @@ async function saveReceipts() {
   PsotsCache.invalidate('receipts');
   const url    = getScriptUrl();
   const syncEl = document.getElementById('rcptSync');
-  if (syncEl) syncEl.textContent = 'Saving to sheet…';
+  if (syncEl) syncEl.textContent = 'Saving…';
+  // Save to Firestore (primary) — also auto-save the updated finance totals
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    await PSOTS_DB.saveReceipts(allReceipts);
+    const financePayload = {
+      expenses: document.getElementById('f-expenses').value,
+      expTent: document.getElementById('exp-tent').value,
+      expKharna: document.getElementById('exp-kharna').value,
+      expThekua: document.getElementById('exp-thekua').value,
+      expAV: document.getElementById('exp-av').value,
+      expCultural: document.getElementById('exp-cultural').value,
+      expMisc: document.getElementById('exp-misc').value,
+    };
+    await PSOTS_DB.saveFinance(financePayload);
+  }
   if (url && !url.includes('YOUR_APPS')) {
     try {
       await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
@@ -4539,7 +4992,7 @@ async function saveReceipts() {
       if (syncEl) syncEl.textContent = 'Verifying…';
       await new Promise(r => setTimeout(r, 1200));
       await loadReceipts();
-      if (syncEl) syncEl.textContent = '✅ Saved to sheet ' + new Date().toLocaleTimeString();
+      if (syncEl) syncEl.textContent = '✅ Saved ' + new Date().toLocaleTimeString();
       setTimeout(()=>{ const el=document.getElementById('rcptSync'); if(el) el.textContent=''; }, 3000);
     } catch(e) {
       if (syncEl) syncEl.textContent = '⚠️ Save failed — edit Receipts sheet directly';

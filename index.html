@@ -951,22 +951,30 @@ function _renderHomepageAnns(list, el){
     </div>`).join('');
 }
 (function(){
-  const now=new Date();const y=now.getFullYear(),m=now.getMonth(),d=now.getDate(),h=now.getHours();
-  if(y===2026&&m===10&&d>=1&&d<=4){
+  const cfg = window.PSOTS || {};
+  const evtStart = new Date(cfg.eventStart || '2099-01-01');
+  const now = new Date();
+  const evtY=evtStart.getFullYear(), evtM=evtStart.getMonth(), evtD=evtStart.getDate();
+  const y=now.getFullYear(), m=now.getMonth(), d=now.getDate(), h=now.getHours();
+  const kharnaTime = cfg.kharnaTime ? parseInt(cfg.kharnaTime.time) : 19;
+  const eveTime    = cfg.arghyaEvening ? parseInt(cfg.arghyaEvening.time) : 17;
+  const mornTime   = cfg.arghyaMorning ? parseInt(cfg.arghyaMorning.time) : 6;
+  const dayN = (y===evtY && m===evtM) ? d - evtD + 1 : 0; // 1=Day1 … 4=Day4
+  if(dayN>=1&&dayN<=4){
     const banner=document.getElementById('liveBanner');
     const txt=document.getElementById('lbText');
     const sub=document.getElementById('lbSub');
     banner.classList.add('active');
-    if(d===1){txt.textContent='Day 1 — Nahay Khay is LIVE!';sub.textContent='Ghat sanctification from 5:30 AM · Society Ghat';}
-    else if(d===2){txt.textContent='Day 2 — Kharna is TODAY!';sub.textContent=h<19?'Fast day · Kharna Prasad at 7:00 PM · Community Hall':'Kharna Prasad is being served at Community Hall!';}
-    else if(d===3){
-      if(h<17){txt.textContent='Day 3 — Sandhya Arghya TODAY!';sub.textContent='Evening Arghya at 5:45 PM · Society Ghat · Be there!';}
+    if(dayN===1){txt.textContent='Day 1 — Nahay Khay is LIVE!';sub.textContent='Ghat sanctification from 5:30 AM · Society Ghat';}
+    else if(dayN===2){txt.textContent='Day 2 — Kharna is TODAY!';sub.textContent=h<kharnaTime?'Fast day · Kharna Prasad at '+(cfg.kharnaTime&&cfg.kharnaTime.time||'7:00 PM')+' · '+(cfg.kharnaTime&&cfg.kharnaTime.location||'Community Hall'):'Kharna Prasad is being served!';}
+    else if(dayN===3){
+      if(h<eveTime){txt.textContent='Day 3 — Sandhya Arghya TODAY!';sub.textContent='Evening Arghya at '+(cfg.arghyaEvening&&cfg.arghyaEvening.time||'5:45 PM')+' · Society Ghat · Be there!';}
       else{txt.textContent='Sandhya Arghya is HAPPENING NOW!';sub.textContent='Join us at the Society Ghat · जय छठी मैया!';}
     }
-    else if(d===4){
-      if(h<6){txt.textContent='Day 4 — Usha Arghya at DAWN!';sub.textContent='Morning Arghya at 6:15 AM · Society Ghat';}
-      else if(h<8){txt.textContent='Usha Arghya is HAPPENING NOW!';sub.textContent='Offering to the rising sun · Society Ghat · जय छठी मैया!';}
-      else{txt.textContent='जय छठी मैया! Thekua Prasad Available';sub.textContent='Collect Thekua Prasad at Society Ghat · Thank you for a wonderful 5th year!';}
+    else if(dayN===4){
+      if(h<mornTime){txt.textContent='Day 4 — Usha Arghya at DAWN!';sub.textContent='Morning Arghya at '+(cfg.arghyaMorning&&cfg.arghyaMorning.time||'6:15 AM')+' · Society Ghat';}
+      else if(h<mornTime+2){txt.textContent='Usha Arghya is HAPPENING NOW!';sub.textContent='Offering to the rising sun · Society Ghat · जय छठी मैया!';}
+      else{txt.textContent='जय छठी मैया! Thekua Prasad Available';sub.textContent='Collect Thekua Prasad at Society Ghat!';}
     }
   }
 })();

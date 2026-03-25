@@ -2121,7 +2121,7 @@ async function _refreshHistoryCache(flat, mobile) {
       if (contribs && contribs.length) {
         _setCachedHistory(contribs);
         renderContributions(contribs.map(r => ({
-          year: r.year, amount: r.amount, method: r.method || '', date: r.date || '', status: r.status || '✅ Received'
+          year: r.year, amount: r.amount, method: r.method || '', date: r.date || '', status: r.status || '✅ Received', name: r.name || ''
         })));
         return;
       }
@@ -2140,7 +2140,7 @@ async function _refreshHistoryCache(flat, mobile) {
         const mine = _filterMyContribs(allH, flat, mobile);
         if (mine.length) {
           renderContributions(mine.map(r => ({
-            year: r.year, amount: r.amount, method: r.method || '', date: r.date || '', status: r.status || '✅ Received'
+            year: r.year, amount: r.amount, method: r.method || '', date: r.date || '', status: r.status || '✅ Received', name: r.name || ''
           })));
           return;
         }
@@ -2889,7 +2889,10 @@ function loadVolunteerStatus() {
     // Always show check-in card for registered volunteers (with event day restriction)
     checkinCard.style.display = 'block';
     const now = new Date();
-    const isEventDay = now.getFullYear() === 2026 && now.getMonth() === 10 && now.getDate() >= 1 && now.getDate() <= 4;
+    const evtStart = new Date((window.PSOTS && window.PSOTS.eventStart) || '2099-01-01');
+    const evtEnd   = new Date(evtStart); evtEnd.setDate(evtStart.getDate() + 3); evtEnd.setHours(23,59,59);
+    const isEventDay = now >= evtStart && now <= evtEnd;
+    const evtLabel = evtStart.toLocaleDateString('en-IN',{month:'short',day:'numeric'}) + '–' + evtEnd.toLocaleDateString('en-IN',{month:'short',day:'numeric'});
     const checkinBtn = document.getElementById('volCheckinBtn');
     const checkinStatus = document.getElementById('volCheckinStatus');
     const checked = localStorage.getItem('psots_vol_checkin_' + now.getDate());
@@ -2901,7 +2904,7 @@ function loadVolunteerStatus() {
         if (timeEl) timeEl.textContent = 'Checked in at ' + new Date(checked).toLocaleTimeString() + '. Thank you!';
       }
     } else if (!isEventDay) {
-      if (checkinBtn) { checkinBtn.disabled = true; checkinBtn.style.opacity = '.5'; checkinBtn.title = 'Available Nov 1–4, 2026'; checkinBtn.textContent = '📍 Check-In (Available Nov 1–4)'; }
+      if (checkinBtn) { checkinBtn.disabled = true; checkinBtn.style.opacity = '.5'; checkinBtn.title = 'Available ' + evtLabel; checkinBtn.textContent = '📍 Check-In (Available ' + evtLabel + ')'; }
     }
   } else {
     const statusIcon = document.getElementById('volStatusIcon');
