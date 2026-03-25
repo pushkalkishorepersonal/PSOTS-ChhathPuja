@@ -8,6 +8,10 @@
   <link rel="stylesheet" href="../css/style.css"/>
   <script src="../js/config.js"></script>
   <script src="../js/auth-gate.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script src="../js/db.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSi2BTRuu7PkXE8AHa012XqgVYjTIyrUsoA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <style>
   .qr-canvas-wrap{background:#fff;border-radius:12px;padding:14px;box-shadow:0 4px 18px rgba(26,8,0,.1);display:flex;flex-direction:column;align-items:center;gap:8px}
@@ -211,31 +215,19 @@
     <!-- Pay panels — JS sets device layout on load -->
     <div class="pay-panels">
 
-      <!-- APP SECTION: collapsed by default; optional shortcuts for specific apps -->
+      <!-- APP SECTION: single universal UPI link -->
       <div id="appSection" class="pay-section collapsed">
         <button class="pay-sec-hdr" onclick="toggleSec('appSection','appArrow')">
           <span>📱 Open in UPI App (optional shortcut)</span>
           <span class="sec-arrow" id="appArrow">▸</span>
         </button>
         <div class="pay-sec-body">
-          <div class="app-grid">
-            <a class="app-big-btn app-btn-gpay" id="link-gpay" href="#" onclick="return handleAppLink(this,'gpay')">
-              <svg width="20" height="20" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M24 20v8.4h11.6c-.5 2.7-2 5-4.3 6.5l7 5.4C42 36.3 44 30.7 44 24c0-1.4-.1-2.7-.4-4H24z" fill="#fff" fill-opacity=".9"/><path d="M13.3 28.6 11.6 30l-6.2 4.8C7.9 39.4 12.5 43 18 44.7V37.4c-2.2-.6-4.1-1.9-5.4-3.6" fill="#fff" fill-opacity=".7"/><path d="M18 7.3C12.5 9 7.9 12.6 5.4 17.2l6.8 5.3c1.3-3.7 4.3-6.6 7.8-8.1V7.3z" fill="#fff" fill-opacity=".7"/><path d="M24 4C17 4 11 7.4 7 12.7l7.3 5.7C16.2 14.3 19.9 12 24 12c3.4 0 6.5 1.2 8.9 3.2l6.6-6.6C35.7 5.8 30.2 4 24 4z" fill="#fff" fill-opacity=".9"/></svg>
-              GPay
-            </a>
-            <a class="app-big-btn app-btn-phonepe" id="link-phonepe" href="#" onclick="return handleAppLink(this,'phonepe')">
-              <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><circle cx="24" cy="24" r="20" fill="#fff" fill-opacity=".15"/><text x="24" y="30" text-anchor="middle" font-size="18" font-weight="bold" fill="#fff" font-family="sans-serif">Pe</text></svg>
-              PhonePe
-            </a>
-            <a class="app-big-btn app-btn-paytm" id="link-paytm" href="#" onclick="return handleAppLink(this,'paytm')">
-              <svg width="20" height="20" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg"><rect x="4" y="4" width="40" height="40" rx="8" fill="#00b9f1" fill-opacity=".8"/><text x="24" y="30" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff" font-family="sans-serif">Paytm</text></svg>
-              PayTM
-            </a>
-            <a class="app-big-btn app-btn-any" id="link-any" href="#" onclick="return handleAppLink(this,'any')">
-              📲 Any App
+          <div class="app-grid" style="grid-template-columns:1fr">
+            <a class="app-big-btn app-btn-any" id="link-any" href="#" onclick="return handleAppLink(this,'any')" style="font-size:1.05rem;padding:1rem;justify-content:center">
+              📲 Open Any UPI App
             </a>
           </div>
-          <p class="app-sec-note" id="appSecNote">Enter amount above · If app doesn't open → scan QR or copy UPI ID above</p>
+          <p class="app-sec-note" id="appSecNote">Tap to open — ₹ pre-filled · If app doesn't open, scan QR above</p>
         </div>
       </div>
 
@@ -267,7 +259,7 @@
   <!-- Already-submitted banner (shown when localStorage has a recent submission) -->
   <div class="already-submitted-banner" id="asbBanner">
     <div class="asb-title">✅ Contribution already recorded</div>
-    <div class="asb-sub">You've already submitted a confirmation today. The committee will verify it within 24 hours and send a WhatsApp confirmation. 🙏<br>If you've made an additional payment, please <a href="https://wa.me/919482088904" style="color:var(--or);font-weight:600">WhatsApp the committee directly</a>.</div>
+    <div class="asb-sub">You've already submitted a confirmation today. The committee will verify it shortly — check your status in the portal. 🙏</div>
     <div class="asb-meta" id="asbMeta"></div>
   </div>
 
@@ -305,7 +297,6 @@
     <div id="user-confirm-only" style="display:none">
       <div class="fg">
         <div class="ff"><label>Amount Paid</label><div class="amt-ro" id="amtRoUser">← enter amount above</div></div>
-        <div class="ff"><label>Payment Date</label><input type="date" id="f-date-user"/></div>
       </div>
     </div>
 
@@ -314,17 +305,11 @@
       <div class="ff"><label>Flat No. <span style="font-weight:400;color:#a07850">(optional)</span></label><input type="text" id="f-anon-flat" placeholder="e.g. B-204"/></div>
     </div>
 
-    <div class="fg" id="extra-fields">
-      <div class="ff"><label>UPI App Used</label>
-        <select id="f-method">
-          <option value="">Select app</option>
-          <option value="GPay">GPay</option><option value="PhonePe">PhonePe</option>
-          <option value="PayTM">PayTM</option><option value="Direct Transfer">Direct Transfer</option>
-          <option value="Cash">Cash</option><option value="Other">Other</option>
-        </select>
-      </div>
-      <div class="ff"><label>Payment Date</label><input type="date" id="f-date"/></div>
-    </div>
+    <!-- I've Paid checkbox -->
+    <label style="display:flex;align-items:center;gap:.75rem;background:#f0faf0;border:1.5px solid #a8dba8;border-radius:.75rem;padding:.9rem 1rem;margin-bottom:1rem;cursor:pointer">
+      <input type="checkbox" id="ivePaidCheck" style="width:20px;height:20px;accent-color:#228b22;cursor:pointer;flex-shrink:0"/>
+      <span style="font-size:.9rem;font-weight:600;color:#1a5c1a">I confirm I've paid <span id="ivePaidAmt" style="color:#c94d00">the amount above</span> via UPI</span>
+    </label>
 
     <button class="btn-primary btn-block" id="submitBtn" onclick="submitForm()">Submit Confirmation 🙏</button>
     <div class="err-box" id="errBox"></div>
@@ -332,8 +317,7 @@
     <div class="success-box" id="successBox">
       <div class="sb-icon">🎉</div>
       <h4>जय छठी मैया!</h4>
-      <p id="successTxt">Your contribution has been recorded. The committee will verify and confirm within 24 hours.</p>
-      <button class="btn-wa btn-block" onclick="sendReceipt()">📲 Send Receipt to My WhatsApp</button>
+      <p id="successTxt">Your contribution has been recorded. The committee will verify and confirm shortly.</p>
       <a href="../portal.html" style="display:block;margin-top:.75rem;font-size:.82rem;color:var(--or);text-decoration:none;font-weight:600">View my contributions in Portal →</a>
     </div>
   </div><!-- /conf-body -->
@@ -353,8 +337,9 @@ const C={
 let currentUser=null,userProfile={},lastSubmit={},_qr=null,_payMode='user';
 
 // ── QR helpers ──────────────────────────────────────────────
+const _ACTIVE_YR=(window.PSOTS&&window.PSOTS.activeYear)||new Date().getFullYear();
 function buildUpiUri(amount){
-  const base=`upi://pay?pa=${encodeURIComponent(C.upiId)}&pn=${encodeURIComponent(C.payeeName)}&cu=INR&tn=${encodeURIComponent('ChhathPuja2026')}`;
+  const base=`upi://pay?pa=${encodeURIComponent(C.upiId)}&pn=${encodeURIComponent(C.payeeName)}&cu=INR&tn=${encodeURIComponent('ChhathPuja'+_ACTIVE_YR)}`;
   return(amount&&parseInt(amount)>=1)?base+`&am=${amount}`:base;
 }
 function initQR(){
@@ -398,7 +383,7 @@ function downloadQR(){
     const canvas=document.querySelector('#qrContainer canvas');
     if(canvas){
       const a=document.createElement('a');
-      a.download='ChhathPuja2026-UPI-QR.png';
+      a.download=`ChhathPuja${_ACTIVE_YR}-UPI-QR.png`;
       a.href=canvas.toDataURL('image/png');
       a.click();return;
     }
@@ -408,7 +393,7 @@ function downloadQR(){
 }
 
 // ── Duplicate submission guard ───────────────────────────────
-const SUBMIT_KEY='psots_last_submit_2026';
+const SUBMIT_KEY=`psots_last_submit_${_ACTIVE_YR}`;
 const COOLDOWN_MS=24*60*60*1000; // 24 hours
 
 function lockSubmitButton(label){
@@ -610,6 +595,8 @@ function onAmtInput(){
   const f=v?'₹ '+parseInt(v).toLocaleString('en-IN'):'← enter amount above';
   document.getElementById('amtRo').textContent=f;
   document.getElementById('amtRoUser').textContent=f;
+  const lbl=document.getElementById('ivePaidAmt');
+  if(lbl)lbl.textContent=v&&parseInt(v)>=1?'₹'+parseInt(v).toLocaleString('en-IN'):'the amount above';
   const amtDisplay=document.getElementById('amtDisplay');
   if(v&&parseInt(v)>=1){
     amtDisplay.textContent='Amount: ₹'+parseInt(v).toLocaleString('en-IN')+' — pre-filled in QR';
@@ -628,28 +615,12 @@ function updateAppLinks(amount){
   const amt=parseFloat(amount);
   const pa=encodeURIComponent(C.upiId);
   const pn=encodeURIComponent(C.payeeName);
-  const tn=encodeURIComponent('ChhathPuja2026');
+  const tn=encodeURIComponent('ChhathPuja'+_ACTIVE_YR);
   const q=`pa=${pa}&pn=${pn}&am=${amt}&cu=INR&tn=${tn}`;
-  const isAndroid=/Android/i.test(navigator.userAgent);
-  const fbGpay=encodeURIComponent('https://pay.google.com/');
-  const fbPe=encodeURIComponent('https://www.phonepe.com/');
-  const fbPtm=encodeURIComponent('https://paytm.com/');
-  function intentUrl(pkg,fb){return`intent://pay?${q}#Intent;scheme=upi;package=${pkg};S.browser_fallback_url=${fb};end`;}
-  const urls={
-    gpay:  isAndroid?intentUrl('com.google.android.apps.nbu.paisa.user',fbGpay):`gpay://upi/pay?${q}`,
-    phonepe:isAndroid?intentUrl('com.phonepe.app',fbPe):`phonepe://pay?${q}`,
-    paytm: isAndroid?intentUrl('net.one97.paytm',fbPtm):`paytmmp://pay?${q}`,
-    any:   `upi://pay?${q}`
-  };
-  ['gpay','phonepe','paytm','any'].forEach(k=>{
-    const el=document.getElementById('link-'+k);
-    if(el) el.href=amt>=1?urls[k]:'#';
-  });
-  if(amt>=1){
-    document.getElementById('appSecNote').textContent='Tap to open — ₹'+parseInt(amount).toLocaleString('en-IN')+' pre-filled · If app doesn\'t open, scan QR above';
-  } else {
-    document.getElementById('appSecNote').textContent='Enter amount above · If app doesn\'t open → scan QR or copy UPI ID above';
-  }
+  const el=document.getElementById('link-any');
+  if(el) el.href=amt>=1?`upi://pay?${q}`:'#';
+  const note=document.getElementById('appSecNote');
+  if(note) note.textContent=amt>=1?'Tap to open — ₹'+parseInt(amount).toLocaleString('en-IN')+' pre-filled · If app doesn\'t open, scan QR above':'Enter amount above · If app doesn\'t open → scan QR or copy UPI ID above';
 }
 
 function openConfirm(){
@@ -687,9 +658,10 @@ function copyUpiId(){
 async function submitForm(){
   let name,flat,mobile;
   const amount=document.getElementById('payAmt').value;
-  const date=document.getElementById('f-date').value;
-  const method=document.getElementById('f-method').value;
   document.getElementById('errBox').style.display='none';
+
+  if(!document.getElementById('ivePaidCheck').checked)return showErr('Please tick "I\'ve paid" to confirm your payment.');
+  if(!amount||amount<1)return showErr('Please enter the contribution amount above.');
 
   if(_payMode==='anon'){
     name='Anonymous Contributor';
@@ -703,46 +675,35 @@ async function submitForm(){
     if(!flat)return showErr('Please enter your flat number.');
     if(!/^\d{10}$/.test(mobile))return showErr('Please enter the 10-digit mobile used for payment.');
   }
-  if(!amount||amount<1)return showErr('Please enter the contribution amount above.');
+
   const btn=document.getElementById('submitBtn');
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Submitting…';
-  const dateStr=date?new Date(date).toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'}):new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'});
-  const ts=new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'});
+  const dateStr=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'});
   const isPortalUser=!!currentUser;
-  lastSubmit={name,flat,mobile,amount,dateStr,method:method||'UPI'};
+
+  // Save to Firestore via PSOTS_DB
+  if(typeof PSOTS_DB!=='undefined'&&PSOTS_DB.isFirestoreReady){
+    try{
+      await PSOTS_DB.savePendingContribution({
+        name,flat,mobile,year:_ACTIVE_YR,
+        amount:parseInt(amount),method:'UPI',date:dateStr,
+      });
+    }catch(e){}
+  }
+  // Apps Script backup
   if(C.scriptUrl&&!C.scriptUrl.includes('YOUR_APPS')){
-    try{await fetch(C.scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({timestamp:ts,name,flat,mobile,amount,date:dateStr,method:method||'UPI',status:'Pending Verification',accountType:isPortalUser?'Portal 🔐':'Guest 👤',userId:currentUser?.id||''})});}catch(e){}
+    const ts=new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'});
+    try{await fetch(C.scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({timestamp:ts,name,flat,mobile,amount,date:dateStr,method:'UPI',status:'Pending Verification',accountType:isPortalUser?'Portal 🔐':'Guest 👤',userId:currentUser?.id||''})});}catch(e){}
   }
   // Save cookies for guest
   if(!currentUser){['name','flat','mobile'].forEach(k=>{const d=new Date();d.setTime(d.getTime()+365*864e5);document.cookie=`cp_${k}=${encodeURIComponent(document.getElementById('f-'+k).value)};expires=${d.toUTCString()};path=/;SameSite=Lax`;});}
-  // Lock form — save submission record to localStorage (24-hour cooldown)
-  const submitRecord={name,flat,amount,ts:Date.now()};
-  localStorage.setItem('psots_last_submit_2026',JSON.stringify(submitRecord));
+  // 24h cooldown guard
+  localStorage.setItem(SUBMIT_KEY,JSON.stringify({name,flat,amount,ts:Date.now()}));
   lockSubmitButton('✅ Submitted — awaiting verification');
   openConfirm();
   document.getElementById('successBox').style.display='block';
-  document.getElementById('successTxt').textContent=`Your contribution of ₹${parseInt(amount).toLocaleString('en-IN')} has been recorded. The committee will verify and send you a WhatsApp confirmation within 24 hours. 🙏`;
+  document.getElementById('successTxt').textContent=`₹${parseInt(amount).toLocaleString('en-IN')} recorded! The committee will verify and confirm shortly. 🙏`;
   document.getElementById('successBox').scrollIntoView({behavior:'smooth',block:'center'});
-  // Notify organiser
-  const waOrgMsg=`🌅 *Chhath 2026 — New Contribution*\n\n👤 ${name}  🏠 ${flat}\n📱 ${mobile}\n💰 ₹${parseInt(amount).toLocaleString('en-IN')}  📲 ${method||'UPI'}  📅 ${dateStr}\n🏷 ${isPortalUser?'Portal User 🔐':'Guest 👤'}`;
-  setTimeout(()=>openWA(C.waOrg,waOrgMsg),1500);
-}
-
-function openWA(phone,text){
-  const encoded=encodeURIComponent(text);
-  const isMobile=/Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-  if(isMobile){
-    const url=phone?`whatsapp://send?phone=${phone}&text=${encoded}`:`whatsapp://send?text=${encoded}`;
-    window.location.href=url;
-  }else{
-    const url=phone?`https://wa.me/${phone}?text=${encoded}`:`https://wa.me/?text=${encoded}`;
-    window.open(url,'_blank');
-  }
-}
-function sendReceipt(){
-  const{name,flat,mobile,amount,dateStr,method}=lastSubmit;
-  const msg=`🌅 *जय छठी मैया!*\n\nनमस्ते ${name} जी 🙏\n\nYour contribution for *PSOTS Chhath Puja 2026* has been received!\n\n🏠 Flat: ${flat}\n💰 ₹${parseInt(amount).toLocaleString('en-IN')}\n📲 ${method}\n📅 ${dateStr}\n\nजय छठी मैया! 🌅\n— PSOTS Chhath Committee`;
-  openWA('91'+mobile,msg);
 }
 
 function showErr(m){const e=document.getElementById('errBox');e.textContent='⚠️ '+m;e.style.display='block';e.scrollIntoView({behavior:'smooth',block:'center'});}
