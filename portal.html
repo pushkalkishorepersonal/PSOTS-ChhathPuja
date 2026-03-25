@@ -8,6 +8,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <!-- Central config (sets window.PSOTS) -->
   <script src="js/config.js"></script>
+  <!-- QR code generator (client-side, no external API) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" crossorigin="anonymous"></script>
   <!-- Firebase SDK (compat) — loads before db.js so PSOTS_DB can initialise Firestore -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -838,8 +840,8 @@
         </div>
       </div>
 
-      <button style="display:block;width:100%;background:linear-gradient(135deg,#c94d00,#ff8c00);color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-style:italic;font-size:1.1rem;padding:1rem;border-radius:13px;border:none;cursor:pointer;box-shadow:0 6px 26px rgba(201,77,0,.38);margin-bottom:.8rem" onclick="qpLaunch('any');return false">
-        📲 Open My UPI App — Pay ₹<span id="qp-btn-lbl">—</span>
+      <button id="qp-launch-btn" style="display:block;width:100%;background:linear-gradient(135deg,#c94d00,#ff8c00);color:#fff;font-family:'DM Sans',sans-serif;font-weight:700;font-style:italic;font-size:1.1rem;padding:1rem;border-radius:13px;border:none;cursor:pointer;box-shadow:0 6px 26px rgba(201,77,0,.38);margin-bottom:.8rem" onclick="qpLaunch('any');return false">
+        <span id="qp-btn-icon">📲</span> <span id="qp-btn-action">Open My UPI App — Pay</span> ₹<span id="qp-btn-lbl">—</span>
       </button>
       <p style="text-align:center;font-size:.7rem;color:#c8a880">After paying, your confirmation is auto-recorded from your profile ✅</p>
     </div>
@@ -2976,8 +2978,13 @@ function dismissStorageNotice() {
 /* ── Desktop UPI QR Modal ── */
 function showUpiQr(amt) {
   const upiStr = `upi://pay?pa=${encodeURIComponent(C.upiId)}&pn=${encodeURIComponent(C.payeeName)}&am=${amt}&cu=INR&tn=ChhathPuja2026`;
-  const qrUrl = `https://chart.googleapis.com/chart?chs=260x260&cht=qr&chl=${encodeURIComponent(upiStr)}&choe=UTF-8`;
-  document.getElementById('upiQrImg').src = qrUrl;
+  const div = document.getElementById('upiQrDiv');
+  div.innerHTML = '';
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(div, { text: upiStr, width: 260, height: 260, colorDark: '#000', colorLight: '#fff', correctLevel: QRCode.CorrectLevel.M });
+  } else {
+    div.innerHTML = '<p style="color:#c00;font-size:.85rem">QR library failed to load. Please open on mobile.</p>';
+  }
   document.getElementById('upiQrAmt').textContent = `₹${parseInt(amt).toLocaleString('en-IN')}`;
   document.getElementById('upiQrId').textContent = C.upiId;
   document.getElementById('upiQrModal').style.display = 'flex';
@@ -2985,6 +2992,14 @@ function showUpiQr(amt) {
 function closeUpiQr() {
   document.getElementById('upiQrModal').style.display = 'none';
 }
+/* ── Set Pay button label based on device ── */
+(function() {
+  const mobile = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
+  const icon = document.getElementById('qp-btn-icon');
+  const action = document.getElementById('qp-btn-action');
+  if (icon) icon.textContent = mobile ? '📲' : '📷';
+  if (action) action.textContent = mobile ? 'Open My UPI App — Pay' : 'Scan QR Code to Pay';
+})();
 </script>
 
 <!-- Desktop UPI QR Modal -->
@@ -2993,7 +3008,7 @@ function closeUpiQr() {
     <button onclick="closeUpiQr()" style="position:absolute;top:.75rem;right:.75rem;background:none;border:none;font-size:1.4rem;cursor:pointer;color:#666">&times;</button>
     <div style="font-size:1.1rem;font-weight:700;color:#7c3a00;margin-bottom:.25rem">Scan &amp; Pay</div>
     <div style="font-size:.8rem;color:#888;margin-bottom:1rem">Open any UPI app and scan this QR</div>
-    <img id="upiQrImg" src="" alt="UPI QR Code" style="width:260px;height:260px;border:1px solid #eee;border-radius:.5rem"/>
+    <div id="upiQrDiv" style="width:260px;height:260px;border:1px solid #eee;border-radius:.5rem;margin:0 auto;display:flex;align-items:center;justify-content:center"></div>
     <div style="margin-top:1rem;font-size:1.2rem;font-weight:700;color:#c0392b">Amount: <span id="upiQrAmt"></span></div>
     <div style="font-size:.75rem;color:#888;margin-top:.25rem">UPI ID: <span id="upiQrId" style="font-weight:600;color:#444"></span></div>
     <div style="font-size:.72rem;color:#aaa;margin-top:.75rem">After paying, come back and WhatsApp the committee to confirm.</div>
