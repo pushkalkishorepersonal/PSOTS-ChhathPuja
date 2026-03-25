@@ -491,9 +491,96 @@ const PSOTS_DB = (() => {
     }
   }
 
+  /* ════════════════════════════════════════════════════
+     FINANCE API
+  ════════════════════════════════════════════════════ */
+
+  /**
+   * getFinance() → finance object or null
+   *
+   * Reads the single finance summary document from Firestore.
+   * Returns null if Firestore unavailable or doc doesn't exist.
+   */
+  async function getFinance() {
+    if (!_db) return null;
+    try {
+      const snap = await _db.collection('finance').doc('current').get();
+      return snap.exists ? snap.data() : null;
+    } catch (e) {
+      console.warn('[PSOTS_DB] getFinance failed:', e.message);
+      return null;
+    }
+  }
+
+  /**
+   * saveFinance(data) → { ok }
+   *
+   * Writes/merges the finance summary document to Firestore.
+   * data: { carry, collected, budget, expenses, expTent, expKharna, ... budTent, budKharna, ... }
+   */
+  async function saveFinance(data) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      await _db.collection('finance').doc('current').set({ ...data, updatedAt: Date.now() }, { merge: true });
+      return { ok: true };
+    } catch (e) {
+      console.warn('[PSOTS_DB] saveFinance failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /**
+   * getReceipts() → array of receipt objects or null
+   *
+   * Fetches all expense receipts from Firestore.
+   * Returns null if Firestore unavailable.
+   */
+  async function getReceipts() {
+    if (!_db) return null;
+    try {
+      const snap = await _db.collection('receipts').get();
+      return snap.docs.map(d => d.data());
+    } catch (e) {
+      console.warn('[PSOTS_DB] getReceipts failed:', e.message);
+      return null;
+    }
+  }
+
+  /**
+   * saveReceipts(receipts) → { ok, written }
+   *
+   * Replaces the full receipts collection with the given array.
+   * Each receipt: { id, cat, vendor, amount, date, link, notes }
+   */
+  async function saveReceipts(receipts) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      const existing = await _db.collection('receipts').get();
+      const batch = _db.batch();
+      existing.docs.forEach(d => batch.delete(d.ref));
+      receipts.forEach(r => {
+        const ref = _db.collection('receipts').doc(String(r.id));
+        batch.set(ref, {
+          id:     r.id,
+          cat:    r.cat    || '',
+          vendor: r.vendor || '',
+          amount: Number(r.amount) || 0,
+          date:   r.date   || '',
+          link:   r.link   || '',
+          notes:  r.notes  || '',
+        });
+      });
+      await batch.commit();
+      return { ok: true, written: receipts.length };
+    } catch (e) {
+      console.warn('[PSOTS_DB] saveReceipts failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, syncContributions, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, syncContributions, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();

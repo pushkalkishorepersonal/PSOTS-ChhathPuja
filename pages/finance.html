@@ -419,10 +419,20 @@ async function load2026() {
     } catch (e) {}
   }
 
+  // Finance data: Firestore-first, Apps Script fallback
+  let _financeObj = null;
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    try { _financeObj = await PSOTS_DB.getFinance(); } catch(e) {}
+  }
+  if (!_financeObj && su) {
+    try {
+      const r2 = await fetch(su + '?action=getFinance');
+      const d2 = await r2.json();
+      _financeObj = d2.finance || null;
+    } catch(e) {}
+  }
+  const f = _financeObj || {};
   try {
-    const r2 = await fetch(su + '?action=getFinance');
-    const d2 = await r2.json();
-    const f = d2.finance || {};
     if (f.expenses && Number(f.expenses) > 0) expenses = parseInt(f.expenses);
     if (f.budget && Number(f.budget) > 0) budget = parseInt(f.budget);
 

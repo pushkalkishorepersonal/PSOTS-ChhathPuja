@@ -2469,6 +2469,12 @@ async function saveFinance() {
     budMisc: document.getElementById('bud-misc').value,
   };
   PsotsCache.invalidate('finance');
+  // Save to Firestore (primary)
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    const { action: _a, ...firestoreData } = data;
+    await PSOTS_DB.saveFinance(firestoreData);
+  }
+  // Save to Apps Script / Sheet (backup)
   const url = getScriptUrl();
   if (url) {
     try {
@@ -4603,14 +4609,31 @@ function addReceipt() {
 
   allReceipts.push({ id: Date.now(), cat, vendor, amount, date, link, notes });
   renderReceiptList();
+  syncExpensesFromReceipts();
   // Clear fields
   ['rcpt-vendor','rcpt-amount','rcpt-link','rcpt-notes'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
   toast('Receipt added — click Save to persist', 'success');
 }
 
+function syncExpensesFromReceipts() {
+  const catMap = { tent: 0, kharna: 0, thekua: 0, av: 0, cultural: 0, misc: 0 };
+  allReceipts.forEach(r => { if (catMap[r.cat] !== undefined) catMap[r.cat] += Number(r.amount) || 0; });
+  document.getElementById('exp-tent').value     = catMap.tent     || '';
+  document.getElementById('exp-kharna').value   = catMap.kharna   || '';
+  document.getElementById('exp-thekua').value   = catMap.thekua   || '';
+  document.getElementById('exp-av').value       = catMap.av       || '';
+  document.getElementById('exp-cultural').value = catMap.cultural || '';
+  document.getElementById('exp-misc').value     = catMap.misc     || '';
+  const total = Object.values(catMap).reduce((s, v) => s + v, 0);
+  document.getElementById('f-expenses').value = total || '';
+  const el = document.getElementById('finance-total');
+  if (el) { el.style.display = total > 0 ? 'block' : 'none'; el.textContent = 'Total Expenses: ₹' + total.toLocaleString('en-IN'); }
+}
+
 function removeReceipt(id) {
   allReceipts = allReceipts.filter(r => r.id !== id);
   renderReceiptList();
+  syncExpensesFromReceipts();
 }
 
 function renderReceiptList() {
@@ -4648,7 +4671,21 @@ async function saveReceipts() {
   PsotsCache.invalidate('receipts');
   const url    = getScriptUrl();
   const syncEl = document.getElementById('rcptSync');
-  if (syncEl) syncEl.textContent = 'Saving to sheet…';
+  if (syncEl) syncEl.textContent = 'Saving…';
+  // Save to Firestore (primary) — also auto-save the updated finance totals
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    await PSOTS_DB.saveReceipts(allReceipts);
+    const financePayload = {
+      expenses: document.getElementById('f-expenses').value,
+      expTent: document.getElementById('exp-tent').value,
+      expKharna: document.getElementById('exp-kharna').value,
+      expThekua: document.getElementById('exp-thekua').value,
+      expAV: document.getElementById('exp-av').value,
+      expCultural: document.getElementById('exp-cultural').value,
+      expMisc: document.getElementById('exp-misc').value,
+    };
+    await PSOTS_DB.saveFinance(financePayload);
+  }
   if (url && !url.includes('YOUR_APPS')) {
     try {
       await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
@@ -4656,7 +4693,7 @@ async function saveReceipts() {
       if (syncEl) syncEl.textContent = 'Verifying…';
       await new Promise(r => setTimeout(r, 1200));
       await loadReceipts();
-      if (syncEl) syncEl.textContent = '✅ Saved to sheet ' + new Date().toLocaleTimeString();
+      if (syncEl) syncEl.textContent = '✅ Saved ' + new Date().toLocaleTimeString();
       setTimeout(()=>{ const el=document.getElementById('rcptSync'); if(el) el.textContent=''; }, 3000);
     } catch(e) {
       if (syncEl) syncEl.textContent = '⚠️ Save failed — edit Receipts sheet directly';
