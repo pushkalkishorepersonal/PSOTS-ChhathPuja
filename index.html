@@ -727,6 +727,8 @@ tick();setInterval(tick,1000);
 const ob=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){const b=document.getElementById('tfBar');if(b)b.style.width=b.dataset.pct+'%'}})},{threshold:.3});
 const ds=document.querySelector('.dashboard');if(ds)ob.observe(ds);
 
+// If signed in, clear any previously-set gated-open state (prevents stale "sign in" prompt)
+if(_li){document.querySelectorAll('.mob-section[data-gated="true"]').forEach(s=>s.classList.remove('gated-open'));}
 function toggleMobSec(id){
   const sec=document.getElementById(id);
   const arrow=sec.querySelector('.mob-sec-arrow');

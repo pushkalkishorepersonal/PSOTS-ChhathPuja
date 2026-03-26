@@ -2493,9 +2493,10 @@ function updateDashStats() {
   _bar('ft-bar-col', pct);
   _badge('ft-badge-col', pending.length ? `${pending.length} pending` : null, pending.length ? 'urgent' : '');
 
-  // Show/hide pending card
+  // Show/hide pending card — ALL years (not year-filtered) so newly-submitted items always surface
+  const allPending = allConData.filter(r => !r.status?.includes('Received') && !r.status?.includes('Rejected'));
   const pc = document.getElementById('pendingCard');
-  if (pc) pc.style.display = pending.length ? 'block' : 'none';
+  if (pc) pc.style.display = allPending.length ? 'block' : 'none';
 
   // ── Finance tile — read directly from DOM inputs (populated by loadAllFromSheet) ──
   const budget   = parseFloat(document.getElementById('f-budget')?.value)    || 0;
@@ -2575,8 +2576,8 @@ function _badge(id, text, cls) {
 }
 
 function updatePendingList() {
+  // Show ALL pending across ALL years so contributions aren't missed due to year-filter mismatch
   const pending = allConData.filter(r =>
-    (parseInt(r.year) || new Date().getFullYear()) === ACTIVE_YEAR &&
     !r.status?.includes('Received') && !r.status?.includes('Rejected')
   );
   const el = document.getElementById('pendingList');
