@@ -354,28 +354,40 @@ const ACTIVE_YEAR = (window.PSOTS && window.PSOTS.activeYear) || new Date().getF
 const fmt = n => '₹' + parseInt(n || 0).toLocaleString('en-IN');
 
 async function loadCurrentYear() {
-  let collected = 0, count = 0, expenses = 0, budget = 0, carry = 0;
+  let collected = 0, count = 0, pendingAmt = 0, pendingCount = 0, expenses = 0, budget = 0, carry = 0;
 
   // Contributions — Firestore first, Apps Script fallback
   if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
     try {
       const all = await PSOTS_DB.getAllContributions();
       if (all) {
-        const rows = all.filter(x => Number(x.year) === ACTIVE_YEAR && (x.status || '').includes('Received'));
-        collected = rows.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
-        count = rows.length;
+        const verRows  = all.filter(x => Number(x.year) === ACTIVE_YEAR && (x.status || '').includes('Received'));
+        const pendRows = all.filter(x => Number(x.year) === ACTIVE_YEAR && !(x.status || '').includes('Received') && !(x.status || '').includes('Rejected'));
+        collected   = verRows.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
+        count       = verRows.length;
+        pendingAmt  = pendRows.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
+        pendingCount = pendRows.length;
       }
     } catch (e) {}
   }
-  if (!collected && su) {
+  if (!collected && !pendingAmt && su) {
     try {
       const r = await fetch(su + '?action=list_all');
       const d = await r.json();
-      const rows = (d.all || []).filter(x => Number(x.year) === ACTIVE_YEAR && (x.status || '').includes('Received'));
-      collected = rows.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
-      count = rows.length;
+      const verRows  = (d.all || []).filter(x => Number(x.year) === ACTIVE_YEAR && (x.status || '').includes('Received'));
+      const pendRows = (d.all || []).filter(x => Number(x.year) === ACTIVE_YEAR && !(x.status || '').includes('Received') && !(x.status || '').includes('Rejected'));
+      collected    = verRows.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
+      count        = verRows.length;
+      pendingAmt   = pendRows.reduce((s, c) => s + (parseFloat(c.amount) || 0), 0);
+      pendingCount = pendRows.length;
     } catch (e) {}
   }
+  // Update collected / pending rows
+  const colEl = document.getElementById('c26-collected'); if (colEl) colEl.textContent = collected ? fmt(collected) : '—';
+  const penEl = document.getElementById('c26-pending');   if (penEl) penEl.textContent = pendingAmt ? fmt(pendingAmt) : '—';
+  const cntEl = document.getElementById('c26-count');     if (cntEl) cntEl.textContent = count || '—';
+  const pcEl  = document.getElementById('c26-pending-count'); if (pcEl) pcEl.textContent = pendingCount || '—';
+  const rejRow = document.getElementById('rejRow'); if (rejRow) rejRow.style.display = 'none';
 
   // Finance data: Firestore-first, Apps Script fallback
   let _financeObj = null;
@@ -417,9 +429,15 @@ async function loadCurrentYear() {
 
   const available = carry + collected;
   const balance = available - expenses;
-  const pct = budget > 0 ? Math.min(100, Math.round((collected / budget) * 100)) : 0;
-
-  // c26-collected, c26-count, c26-pending-count already set by _applyContribStats
+  // Progress = (carry + verified collected) vs budget — consistent with homepage tile
+  const pct = budget > 0 ? Math.min(100, Math.round(((carry + collected) / budget) * 100)) : 0;
+  // If no finance doc yet, fall back to hardcoded opening balance
+  if (!carry && available === collected) {
+    const openBal = 104670;
+    const pctFb = budget > 0 ? Math.min(100, Math.round(((openBal + collected) / budget) * 100)) : 0;
+    document.getElementById('c26-pct').textContent = pctFb + '%';
+    const barFb = document.getElementById('c26-bar'); if (barFb) { barFb.dataset.pct = pctFb; setTimeout(() => barFb.style.width = pctFb + '%', 200); }
+  }
   document.getElementById('c26-available').textContent = fmt(available);
   document.getElementById('c26-expenses').textContent = fmt(expenses);
   document.getElementById('c26-balance').textContent = fmt(balance);

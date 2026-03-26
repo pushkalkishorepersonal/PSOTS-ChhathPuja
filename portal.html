@@ -2309,19 +2309,22 @@ function renderContributions(data) {
 }
 
 function updateSummary(data) {
+  const ACTIVE_YR = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
   const verified  = data.filter(d => d.status?.includes('Received'));
   const total     = verified.reduce((s,d) => s+(parseFloat(d.amount)||0), 0);
   const allYears  = [...new Set(data.map(d => d.year))].filter(Boolean).sort();
   const verYears  = [...new Set(verified.map(d => d.year))].filter(Boolean);
   const lastEntry = verified[0];
-  const thisYr    = verified.filter(d => d.year==2026).reduce((s,d) => s+(parseFloat(d.amount)||0), 0);
+  const thisYr    = verified.filter(d => Number(d.year)==ACTIVE_YR).reduce((s,d) => s+(parseFloat(d.amount)||0), 0);
+  const thisYrPending = data.filter(d => Number(d.year)==ACTIVE_YR && !d.status?.includes('Received') && !d.status?.includes('Rejected'))
+                            .reduce((s,d) => s+(parseFloat(d.amount)||0), 0);
 
   // Stat values
   const _s = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
   _s('totalGiven', total ? '₹'+total.toLocaleString('en-IN') : '—');
   _s('yearsCount', verYears.length || '—');
   _s('lastGiven',  lastEntry ? fmtDate(lastEntry.date) : '—');
-  _s('thisYear',   thisYr ? '₹'+thisYr.toLocaleString('en-IN') : '—');
+  _s('thisYear',   thisYr ? '₹'+thisYr.toLocaleString('en-IN') : thisYrPending ? '⏳ Pending' : '—');
 
   // Loyalty badge
   const badge = document.getElementById('csumBadge');
@@ -2349,17 +2352,24 @@ function updateSummary(data) {
   }
 
   // Home tab status card
-  _s('homeContribTitle', thisYr ? '✅ Paid for Chhath Puja 2026' : '🌅 Contribute for Chhath Puja 2026');
+  _s('homeContribTitle', thisYr
+    ? `✅ Paid for Chhath Puja ${ACTIVE_YR}`
+    : thisYrPending ? `⏳ Payment pending verification — ${ACTIVE_YR}`
+    : `🌅 Contribute for Chhath Puja ${ACTIVE_YR}`);
   _s('homeContribSub', thisYr
     ? `₹${thisYr.toLocaleString('en-IN')} verified · Thank you! 🙏`
-    : 'Deadline: 25th October 2026 · Every contribution counts');
+    : thisYrPending ? `₹${thisYrPending.toLocaleString('en-IN')} pending · Admin will verify shortly`
+    : `Deadline: 25th October ${ACTIVE_YR} · Every contribution counts`);
   const payBtn = document.getElementById('homePayBtn');
   const recBtn = document.getElementById('homeReceiptBtn');
   if (payBtn) payBtn.style.display = thisYr ? 'none' : 'inline-block';
   if (recBtn) recBtn.style.display = thisYr ? 'inline-block' : 'none';
 
   // Hero status strip
-  _s('phStatus', thisYr ? `✅ Paid ₹${thisYr.toLocaleString('en-IN')}` : 'Not contributed yet');
+  _s('phStatus', thisYr
+    ? `✅ Paid ₹${thisYr.toLocaleString('en-IN')}`
+    : thisYrPending ? `⏳ ₹${thisYrPending.toLocaleString('en-IN')} pending verification`
+    : 'Not contributed yet');
 
   // Home tile "My History" sub-label
   _s('htYears', verYears.length ? `${verYears.length} year${verYears.length!==1?'s':''} · ₹${total.toLocaleString('en-IN')}` : 'No history yet');
