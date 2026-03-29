@@ -727,6 +727,10 @@ tick();setInterval(tick,1000);
 const ob=new IntersectionObserver(e=>{e.forEach(x=>{if(x.isIntersecting){const b=document.getElementById('tfBar');if(b)b.style.width=b.dataset.pct+'%'}})},{threshold:.3});
 const ds=document.querySelector('.dashboard');if(ds)ob.observe(ds);
 
+const su=(window.PSOTS&&window.PSOTS.scriptUrl)||localStorage.getItem('psots_script_url')||'';
+const _pu=(function(){try{return JSON.parse(localStorage.getItem('psots_user')||localStorage.getItem('psots_admin_user')||'null');}catch(e){return null;}})();
+const _li=!!(_pu&&_pu.id);
+
 // If signed in, clear any previously-set gated-open state (prevents stale "sign in" prompt)
 if(_li){document.querySelectorAll('.mob-section[data-gated="true"]').forEach(s=>s.classList.remove('gated-open'));}
 function toggleMobSec(id){
@@ -759,9 +763,6 @@ function toggleMobSec(id){
     revOb.observe(t);
   });
 })();
-const su=(window.PSOTS&&window.PSOTS.scriptUrl)||localStorage.getItem('psots_script_url')||'';
-const _pu=(function(){try{return JSON.parse(localStorage.getItem('psots_user')||localStorage.getItem('psots_admin_user')||'null');}catch(e){return null;}})();
-const _li=!!(_pu&&_pu.id);
 if(!_li){
   const _lockStyle='padding:1.4rem .8rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.55rem';
   const _lockHtml='<div style="'+_lockStyle+'"><div style="font-size:1.4rem">🔒</div><div style="font-size:.82rem;font-weight:700;color:var(--or)">Sign in to view</div><div style="font-size:.74rem;color:var(--lbr)">Login with Google or email OTP</div></div>';
