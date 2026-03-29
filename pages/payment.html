@@ -474,7 +474,6 @@ async function fetchLastSheetEntry(){
 
 // Init
 window.addEventListener('DOMContentLoaded',()=>{
-  document.getElementById('f-date').valueAsDate=new Date();
   initLayout();
   initQR();
   checkPreviousSubmission();
@@ -562,7 +561,6 @@ function setMode(m){
   if(m==='anon'){
     document.getElementById('guest-fields').style.display='none';
     document.getElementById('user-confirm-only').style.display='none';
-    document.getElementById('extra-fields').style.display='grid';
     document.getElementById('anon-flat-field').style.display='block';
     document.getElementById('confHdrSub').textContent='No personal details needed — just confirm the amount after payment.';
     if(!anonNotice){
@@ -582,7 +580,6 @@ function setMode(m){
   const isUser=m==='user'&&currentUser;
   document.getElementById('guest-fields').style.display='block';
   document.getElementById('user-confirm-only').style.display='none';
-  document.getElementById('extra-fields').style.display='grid';
   if(isUser){
     document.getElementById('confHdrSub').textContent='Your details are pre-filled. Just confirm the amount — payment done!';
   }else{
