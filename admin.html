@@ -1592,6 +1592,7 @@ const SCRIPT_URL_KEY = 'psots_script_url';
 
 let allConData = [];
 let filterMode = 'all';
+let _conLoading = false; // guard against concurrent loadAdminCon calls
 let announcements = [];
 let ACTIVE_YEAR = parseInt(localStorage.getItem('psots_active_year')) || new Date().getFullYear();
 
@@ -2152,6 +2153,16 @@ function _mapConRow(r) {
 }
 
 async function loadAdminCon() {
+  if (_conLoading) return; // another call already in flight — don't race it
+  _conLoading = true;
+  try {
+    await _doLoadAdminCon();
+  } finally {
+    _conLoading = false;
+  }
+}
+
+async function _doLoadAdminCon() {
   const container = document.getElementById('conCardList');
 
   // 0. Session cache — instant (only serve if non-empty)
