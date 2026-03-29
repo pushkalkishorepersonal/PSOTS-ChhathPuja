@@ -1949,7 +1949,12 @@ function switchTab(id) {
   if (id === 'volunteers') loadVolunteers();
   if (id === 'prasad') loadPrasadList();
   if (id === 'finance') loadReceipts();
-  if (id === 'contributors') setTimeout(loadReminderList, 400);
+  if (id === 'contributors') {
+    // Reload contributors if initial load failed (container shows error or is empty)
+    const cl = document.getElementById('conCardList');
+    if (!allConData.length || (cl && cl.querySelector('[style*="c03000"]'))) loadAdminCon();
+    setTimeout(loadReminderList, 400);
+  }
   if (id === 'broadcast') loadSubscribers();
   if (id === 'settings') { loadCmteRoles(); renderAmList(); loadMembersAdmin(); loadRolePerms().then(renderPermMatrix); loadEventConfig(); }
 }
@@ -2156,7 +2161,23 @@ async function loadAdminCon() {
 
   container.innerHTML = '<div style="text-align:center;padding:1.5rem;color:var(--lbr);font-size:.88rem">🌅 Loading contributors…</div>';
 
-  // 1. Firestore — query directly (same as public contributors page)
+  // 1. PSOTS_DB — established, tested Firestore path used everywhere else in the app
+  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+    try {
+      const rows = await PSOTS_DB.getAllContributions();
+      if (rows && rows.length >= 0) {
+        allConData = rows.map(_mapConRow);
+        PsotsCache.set('contributors_all', allConData, CACHE_TTL.contributors);
+        renderConTable(allConData);
+        updateDashStats();
+        return;
+      }
+    } catch(e) {
+      console.error('[Admin] PSOTS_DB contributors load failed:', e);
+    }
+  }
+
+  // 2. Raw Firebase fallback (if PSOTS_DB not ready yet)
   try {
     let fsDb = null;
     if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length) {
@@ -2177,7 +2198,7 @@ async function loadAdminCon() {
     console.error('[Admin] Firestore contributors load failed:', e);
   }
 
-  // 2. Local history.json — bundled static data
+  // 3. Local history.json — bundled static data
   try {
     const gRes = await fetch('data/history.json');
     if (gRes.ok) {
@@ -2190,7 +2211,7 @@ async function loadAdminCon() {
     }
   } catch(e) {}
 
-  // 3. Apps Script — last resort
+  // 4. Apps Script — last resort
   const url = getScriptUrl();
   if (url) {
     try {
