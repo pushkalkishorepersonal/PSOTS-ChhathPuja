@@ -2374,6 +2374,17 @@ async function updateStatus(idx, newStatus) {
   if (!row) return;
   row.status = newStatus;
 
+  // Write status back to Firestore so it persists across page refreshes
+  if (row._id) {
+    try {
+      const fsDb = (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length)
+        ? firebase.firestore() : null;
+      if (fsDb) await fsDb.collection('contributions').doc(row._id).update({ status: newStatus });
+    } catch(e) { console.warn('[Admin] Firestore status update failed:', e); }
+  }
+  // Invalidate session cache so next load reflects updated status
+  PsotsCache.invalidate('contributors_all');
+
   if (url) {
     try {
       await fetch(url, {
