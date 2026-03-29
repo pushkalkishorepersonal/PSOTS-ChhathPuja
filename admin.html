@@ -726,6 +726,7 @@
       <div id="bulkReminderStatus" style="font-size:.75rem;color:var(--lbr);margin-bottom:.4rem"></div>
 
       <!-- Flat list -->
+      <div id="reminderTowerFilters" style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.5rem"></div>
       <div style="display:flex;align-items:center;gap:.6rem;margin-bottom:.4rem;flex-wrap:wrap">
         <div id="reminderStats" style="font-size:.78rem;color:var(--lbr);flex:1"></div>
       </div>
@@ -1634,7 +1635,7 @@ window.addEventListener('load', () => {
 function handleAdminLogin(response) {
   const payload = JSON.parse(atob(response.credential.split('.')[1]));
   if (!getAdminEmails().includes(payload.email)) {
-    document.getElementById('loginErr').style.display = 'block';
+    const loginErrEl = document.getElementById('loginErr'); if (loginErrEl) loginErrEl.style.display = 'block';
     return;
   }
   const u = { id: payload.sub, name: payload.name, email: payload.email, picture: payload.picture, loginTime: Date.now() };
