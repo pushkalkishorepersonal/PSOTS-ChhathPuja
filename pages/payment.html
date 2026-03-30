@@ -680,13 +680,13 @@ async function submitForm(){
   const isPortalUser=!!currentUser;
 
   // Save to Firestore via PSOTS_DB
-  if(typeof PSOTS_DB!=='undefined'&&PSOTS_DB.isFirestoreReady){
+  if(typeof PSOTS_DB!=='undefined'){
     try{
       await PSOTS_DB.savePendingContribution({
         name,flat,mobile,year:_ACTIVE_YR,
         amount:parseInt(amount),method:'UPI',date:dateStr,
       });
-    }catch(e){}
+    }catch(e){ console.warn('[Payment] Firestore save failed:', e); }
   }
   // Apps Script backup
   if(C.scriptUrl&&!C.scriptUrl.includes('YOUR_APPS')){

@@ -2469,7 +2469,7 @@ async function deleteEntry(idx) {
   updateDashStats();
 
   // Delete from Firestore
-  if (typeof PSOTS_DB !== 'undefined' && PSOTS_DB.isFirestoreReady) {
+  if (typeof PSOTS_DB !== 'undefined') {
     const result = await PSOTS_DB.deleteContribution(r);
     if (result.ok) {
       toast('🗑 Deleted from database', 'error');
@@ -2477,7 +2477,7 @@ async function deleteEntry(idx) {
       toast('⚠️ Removed locally but Firestore delete failed: ' + result.error, 'error');
     }
   } else {
-    toast('🗑 Removed from local view (Firestore unavailable)', 'error');
+    toast('🗑 Removed from local view (database unavailable)', 'error');
   }
 }
 
