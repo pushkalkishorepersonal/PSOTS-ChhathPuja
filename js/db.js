@@ -33,6 +33,18 @@ const PSOTS_DB = (() => {
   let _db    = null;
   let _ready = false;  // flips to true once Firestore is connected
 
+  /** Wait up to `ms` milliseconds for _db to be initialised. */
+  function _waitForDb(ms = 5000) {
+    if (_db) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const deadline = Date.now() + ms;
+      const timer = setInterval(() => {
+        if (_db) { clearInterval(timer); resolve(); }
+        else if (Date.now() >= deadline) { clearInterval(timer); reject(new Error('Firestore did not initialise within ' + ms + 'ms')); }
+      }, 150);
+    });
+  }
+
   /* ── Initialise Firebase / Firestore ─────────────── */
   function _init() {
     const cfg = window.PSOTS_FIREBASE_CONFIG;
@@ -673,6 +685,7 @@ const PSOTS_DB = (() => {
    * Uses a timestamp-based key so duplicate taps don't overwrite each other.
    */
   async function savePendingContribution(record) {
+    try { await _waitForDb(5000); } catch (e) { return { ok: false, error: e.message }; }
     if (!_db) return { ok: false, error: 'Firestore not ready' };
     try {
       const key = [

@@ -679,14 +679,15 @@ async function submitForm(){
   const dateStr=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'});
   const isPortalUser=!!currentUser;
 
-  // Save to Firestore via PSOTS_DB
+  // Save to Firestore via PSOTS_DB (waits up to 5s for DB to initialise)
   if(typeof PSOTS_DB!=='undefined'){
     try{
-      await PSOTS_DB.savePendingContribution({
+      const r=await PSOTS_DB.savePendingContribution({
         name,flat,mobile,year:_ACTIVE_YR,
         amount:parseInt(amount),method:'UPI',date:dateStr,
       });
-    }catch(e){ console.warn('[Payment] Firestore save failed:', e); }
+      if(!r.ok) console.warn('[Payment] Firestore save failed:',r.error);
+    }catch(e){ console.warn('[Payment] Firestore save error:',e); }
   }
   // Apps Script backup
   if(C.scriptUrl&&!C.scriptUrl.includes('YOUR_APPS')){
