@@ -702,6 +702,7 @@
         <button class="btn-primary" onclick="PsotsCache.invalidate('contributors_all');loadAdminCon()">🔄 Refresh List</button>
         <button class="btn-secondary" onclick="exportCSV()">📥 Export CSV</button>
         <button class="btn-secondary" onclick="bulkVerifyVisible()">✅ Verify All Visible</button>
+        <button class="btn-secondary" style="background:#fff0f0;border-color:#e53e3e;color:#c0392b" onclick="deleteEntriesByYear()">🗑 Delete All by Year</button>
       </div>
     </div>
 
@@ -2497,6 +2498,27 @@ function bulkVerifyVisible() {
     const idx = allConData.indexOf(r);
     if (idx >= 0 && !r.status?.includes('Received')) updateStatus(idx, '✅ Received');
   });
+}
+
+async function deleteEntriesByYear() {
+  const yr = prompt('Enter the year whose entries you want to permanently delete from Firestore:\n(e.g. 2026)', '2026');
+  if (!yr || isNaN(yr)) return;
+  const year = parseInt(yr);
+  const preview = allConData.filter(r => r.year === year || Number(r.year) === year);
+  if (!confirm(`Delete ALL ${preview.length} Firestore entries for year ${year}?\n\nThis CANNOT be undone. The entries will also be removed from local view.`)) return;
+
+  if (typeof PSOTS_DB === 'undefined') { toast('Firestore not available', 'error'); return; }
+  toast(`Deleting ${preview.length} entries for ${year}…`, 'info');
+  const result = await PSOTS_DB.deleteContributionsByYear(year);
+  if (result.ok) {
+    allConData = allConData.filter(r => Number(r.year) !== year);
+    PsotsCache.invalidate('contributors_all');
+    renderConTable(allConData);
+    updateDashStats();
+    toast(`Deleted ${result.deleted} entries for ${year} from Firestore`, 'error');
+  } else {
+    toast('Delete failed: ' + result.error, 'error');
+  }
 }
 
 function exportCSV() {

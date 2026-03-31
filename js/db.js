@@ -713,9 +713,35 @@ const PSOTS_DB = (() => {
     }
   }
 
+  /**
+   * deleteContributionsByYear(year) → { ok, deleted }
+   *
+   * Deletes every document in the contributions collection where year === year.
+   * Runs in batches of 500 (Firestore batch limit).
+   */
+  async function deleteContributionsByYear(year) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      const snap = await _db.collection('contributions').where('year', '==', Number(year)).get();
+      if (snap.empty) return { ok: true, deleted: 0 };
+      const BATCH = 500;
+      let deleted = 0;
+      for (let i = 0; i < snap.docs.length; i += BATCH) {
+        const batch = _db.batch();
+        snap.docs.slice(i, i + BATCH).forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        deleted += Math.min(BATCH, snap.docs.length - i);
+      }
+      return { ok: true, deleted };
+    } catch (e) {
+      console.warn('[PSOTS_DB] deleteContributionsByYear failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, syncContributions, savePendingContribution, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, deleteContributionsByYear, syncContributions, savePendingContribution, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();
