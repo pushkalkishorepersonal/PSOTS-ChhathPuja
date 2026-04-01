@@ -2497,14 +2497,24 @@ async function deleteEntry(idx) {
   // Delete from Firestore
   if (typeof PSOTS_DB !== 'undefined') {
     const result = await PSOTS_DB.deleteContribution(r);
-    if (result.ok) {
-      toast('🗑 Deleted from database', 'error');
-    } else {
-      toast('⚠️ Removed locally but Firestore delete failed: ' + result.error, 'error');
+    if (!result.ok) {
+      console.warn('[Admin] Firestore delete failed:', result.error);
     }
-  } else {
-    toast('🗑 Removed from local view (database unavailable)', 'error');
   }
+
+  // Delete from Google Sheet (so Sheet-sourced entries don't reappear)
+  const url = getScriptUrl();
+  if (url) {
+    try {
+      await fetch(url, {
+        method: 'POST', mode: 'no-cors',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'deleteEntry', flat: r.flat, year: r.year || new Date().getFullYear(), amount: r.amount }),
+      });
+    } catch(e) { console.warn('[Admin] Sheet delete failed:', e); }
+  }
+
+  toast('🗑 Deleted', 'error');
 }
 
 function setFilter(mode, el) {
