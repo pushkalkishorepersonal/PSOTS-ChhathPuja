@@ -410,6 +410,27 @@ const PSOTS_DB = (() => {
     }
   }
 
+  /**
+   * getCurrentYearContributions(year) → array or null
+   *
+   * Fetches ALL contribution records for the given year — both pending AND verified.
+   * Much faster than getAllContributions() since it filters server-side.
+   * Used by admin step 5 so that verified entries don't disappear after a reload
+   * when the full collection scan times out on slow connections.
+   */
+  async function getCurrentYearContributions(year) {
+    if (!_db) return null;
+    try {
+      const snap = await _db.collection('contributions')
+        .where('year', '==', Number(year))
+        .get();
+      return snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    } catch (e) {
+      console.warn('[PSOTS_DB] getCurrentYearContributions failed:', e.message);
+      return null;
+    }
+  }
+
 
   /**
    * getAnnouncements() → array of announcement objects or null
@@ -759,7 +780,7 @@ const PSOTS_DB = (() => {
 
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, getPendingContributions, deleteContribution, deleteContributionsByYear, syncContributions, savePendingContribution, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, getPendingContributions, getCurrentYearContributions, deleteContribution, deleteContributionsByYear, syncContributions, savePendingContribution, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();

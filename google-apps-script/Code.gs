@@ -1364,12 +1364,10 @@ function sendWA(phone, message) {
 /* ══════════════════════════════════════════════════════════
    HELPER: Notify committee on WhatsApp via Fonnte
    Script Properties: COMMITTEE_PHONE (e.g. 919482088904)
-   Falls back to CALLMEBOT_PHONE if COMMITTEE_PHONE not set.
 ══════════════════════════════════════════════════════════ */
 function notifyCommitteeWhatsApp(body) {
   const props = PropertiesService.getScriptProperties();
-  // Use dedicated committee phone, or fall back to old CallMeBot phone field
-  const phone = props.getProperty('COMMITTEE_PHONE') || props.getProperty('CALLMEBOT_PHONE');
+  const phone = props.getProperty('COMMITTEE_PHONE');
   if (!phone) return;
 
   const amt    = body.amount ? '₹' + parseFloat(body.amount).toLocaleString('en-IN') : '?';
@@ -1393,7 +1391,7 @@ function notifyCommitteeWhatsApp(body) {
 ══════════════════════════════════════════════════════════ */
 function notifyCommittee(message) {
   const props = PropertiesService.getScriptProperties();
-  const phone = props.getProperty('COMMITTEE_PHONE') || props.getProperty('CALLMEBOT_PHONE');
+  const phone = props.getProperty('COMMITTEE_PHONE');
   if (!phone) return;
   sendWA(phone, message);
 }
