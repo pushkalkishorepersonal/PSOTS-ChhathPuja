@@ -33,6 +33,18 @@ const PSOTS_DB = (() => {
   let _db    = null;
   let _ready = false;  // flips to true once Firestore is connected
 
+  /** Wait up to `ms` milliseconds for _db to be initialised. */
+  function _waitForDb(ms = 5000) {
+    if (_db) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const deadline = Date.now() + ms;
+      const timer = setInterval(() => {
+        if (_db) { clearInterval(timer); resolve(); }
+        else if (Date.now() >= deadline) { clearInterval(timer); reject(new Error('Firestore did not initialise within ' + ms + 'ms')); }
+      }, 150);
+    });
+  }
+
   /* ── Initialise Firebase / Firestore ─────────────── */
   function _init() {
     const cfg = window.PSOTS_FIREBASE_CONFIG;
@@ -673,6 +685,7 @@ const PSOTS_DB = (() => {
    * Uses a timestamp-based key so duplicate taps don't overwrite each other.
    */
   async function savePendingContribution(record) {
+    try { await _waitForDb(5000); } catch (e) { return { ok: false, error: e.message }; }
     if (!_db) return { ok: false, error: 'Firestore not ready' };
     try {
       const key = [
@@ -700,9 +713,35 @@ const PSOTS_DB = (() => {
     }
   }
 
+  /**
+   * deleteContributionsByYear(year) → { ok, deleted }
+   *
+   * Deletes every document in the contributions collection where year === year.
+   * Runs in batches of 500 (Firestore batch limit).
+   */
+  async function deleteContributionsByYear(year) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      const snap = await _db.collection('contributions').where('year', '==', Number(year)).get();
+      if (snap.empty) return { ok: true, deleted: 0 };
+      const BATCH = 500;
+      let deleted = 0;
+      for (let i = 0; i < snap.docs.length; i += BATCH) {
+        const batch = _db.batch();
+        snap.docs.slice(i, i + BATCH).forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        deleted += Math.min(BATCH, snap.docs.length - i);
+      }
+      return { ok: true, deleted };
+    } catch (e) {
+      console.warn('[PSOTS_DB] deleteContributionsByYear failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, syncContributions, savePendingContribution, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, deleteContributionsByYear, syncContributions, savePendingContribution, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();
