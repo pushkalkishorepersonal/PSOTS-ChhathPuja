@@ -718,36 +718,54 @@ const PSOTS_DB = (() => {
   }
 
   /**
-   * savePendingContribution(record) → { ok }
+   * savePendingContribution(record) → { ok, id }
    *
-   * Saves a single self-reported contribution with status "Pending Verification".
-   * Uses a timestamp-based key so duplicate taps don't overwrite each other.
+   * Saves a self-reported contribution using Firestore auto-ID (returned to caller
+   * so it can be stored in the Sheet for reliable cross-reference).
+   *
+   * Schema (clean, no ambiguity):
+   *   flat, year, name, amount, method, mobile  — plain values
+   *   paymentDate  — ISO "YYYY-MM-DD", never locale-dependent
+   *   status       — "pending" | "verified" | "rejected"
+   *   submittedAt  — Unix ms timestamp (Date.now())
+   *   source       — "portal" | "manual"
    */
   async function savePendingContribution(record) {
     try { await _waitForDb(5000); } catch (e) { return { ok: false, error: e.message }; }
     if (!_db) return { ok: false, error: 'Firestore not ready' };
     try {
-      const key = [
-        record.year,
-        String(record.flat  || '').replace(/\//g, '-'),
-        String(record.name  || '').replace(/\s+/g, '').toLowerCase().slice(0, 12),
-        record.amount,
-        Date.now(),
-      ].join('_').replace(/[^a-zA-Z0-9_\-]/g, '').slice(0, 120);
-      await _db.collection('contributions').doc(key).set({
+      const docRef = await _db.collection('contributions').add({
         flat:        String(record.flat   || ''),
-        year:        Number(record.year)  || 0,
+        year:        Number(record.year)  || new Date().getFullYear(),
         name:        record.name   || '',
         amount:      Number(record.amount) || 0,
-        date:        record.date   || '',
+        paymentDate: record.paymentDate || new Date().toISOString().slice(0, 10),
         method:      record.method || 'UPI',
-        status:      'Pending Verification',
-        mobile:      record.mobile || '',
+        status:      'pending',
+        mobile:      String(record.mobile || ''),
         submittedAt: Date.now(),
+        source:      record.source || 'portal',
       });
-      return { ok: true };
+      return { ok: true, id: docRef.id };
     } catch (e) {
       console.warn('[PSOTS_DB] savePendingContribution failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /**
+   * updateContributionStatus(id, status) → { ok }
+   *
+   * Updates a contribution's status by Firestore document ID.
+   * status must be one of: "pending" | "verified" | "rejected"
+   */
+  async function updateContributionStatus(id, status) {
+    if (!_db || !id) return { ok: false, error: 'No id or Firestore not ready' };
+    try {
+      await _db.collection('contributions').doc(id).update({ status, verifiedAt: Date.now() });
+      return { ok: true };
+    } catch (e) {
+      console.warn('[PSOTS_DB] updateContributionStatus failed:', e.message);
       return { ok: false, error: e.message };
     }
   }
@@ -780,7 +798,7 @@ const PSOTS_DB = (() => {
 
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, getPendingContributions, getCurrentYearContributions, deleteContribution, deleteContributionsByYear, syncContributions, savePendingContribution, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, getPendingContributions, getCurrentYearContributions, deleteContribution, deleteContributionsByYear, syncContributions, savePendingContribution, updateContributionStatus, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();
