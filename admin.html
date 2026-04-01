@@ -1701,6 +1701,7 @@ function logout() {
    INIT
 ═══════════════════════════════════════════════════ */
 function initAdmin() {
+  PsotsCache.invalidate('contributors_all'); // always fetch fresh on page load
   loadScriptUrl();
   loadAdminCon();
   loadAnnouncements();
