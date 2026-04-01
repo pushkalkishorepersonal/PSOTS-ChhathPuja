@@ -24,7 +24,8 @@ const SHEET_RECEIPTS      = 'Receipts';
 const SHEET_ROLE_PERMS    = 'RolePerms';
 
 // ─── Column headers ───
-const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','Date','Status','AccountType','UserID','Year'];
+// Col indices: 0=Timestamp 1=Name 2=Flat 3=Mobile 4=Amount 5=Method 6=PaymentDate 7=Status 8=AccountType 9=UserID 10=Year 11=DocId
+const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','PaymentDate','Status','AccountType','UserID','Year','DocId'];
 const PROF_HEADERS = ['UserID','Name','Email','Flat','Mobile','IsVrati','Photo','LastUpdated','WaOptIn'];
 const FIN_HEADERS  = ['Key','Value'];
 const ANN_HEADERS  = ['Tag','Meta','Text'];
@@ -282,9 +283,9 @@ function doPost(e) {
     if (body.action === 'saveProfile') {
       result = actionSaveProfile(body);
     } else if (body.action === 'updateStatus') {
-      result = actionUpdateStatus(body.flat, body.year, body.newStatus);
+      result = actionUpdateStatus(body);
     } else if (body.action === 'deleteEntry') {
-      result = actionDeleteEntry(body.flat, body.year, body.amount);
+      result = actionDeleteEntry(body);
     } else if (body.action === 'updateFinance') {
       result = actionUpdateFinance(body);
     } else if (body.action === 'bulkImport') {
@@ -367,16 +368,18 @@ function actionListAll() {
   const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, CON_HEADERS.length).getValues();
 
   const all = data.map(r => ({
-    ts:     String(r[0]),
-    name:   String(r[1]),
-    flat:   String(r[2]),
-    mobile: String(r[3]),
-    amount: Number(r[4]) || 0,
-    method: String(r[5]),
-    date:   String(r[6]),
-    status: String(r[7]),
+    ts:          String(r[0]),
+    name:        String(r[1]),
+    flat:        String(r[2]),
+    mobile:      String(r[3]),
+    amount:      Number(r[4]) || 0,
+    method:      String(r[5]),
+    paymentDate: String(r[6]),  // ISO "YYYY-MM-DD" for new rows; old rows have locale date
+    date:        String(r[6]),  // kept for backwards compat in admin _mapConRow
+    status:      String(r[7]),
     accountType: String(r[8]),
-    year:   Number(r[10]) || extractYear(String(r[6])) || new Date().getFullYear()
+    year:        Number(r[10]) || extractYear(String(r[6])) || new Date().getFullYear(),
+    _id:         String(r[11] || ''),  // Firestore docId — enables reliable updates/deletes
   }));
 
   return { all };
@@ -398,13 +401,15 @@ function actionMyContribs(flat, mobile) {
   });
 
   const contributions = mine.map(r => ({
-    ts:     String(r[0]),
-    name:   String(r[1]),
-    year:   Number(r[10]) || extractYear(String(r[6])) || new Date().getFullYear(),
-    amount: Number(r[4]) || 0,
-    method: String(r[5]),
-    date:   String(r[6]),
-    status: String(r[7])
+    ts:          String(r[0]),
+    name:        String(r[1]),
+    year:        Number(r[10]) || extractYear(String(r[6])) || new Date().getFullYear(),
+    amount:      Number(r[4]) || 0,
+    method:      String(r[5]),
+    paymentDate: String(r[6]),
+    date:        String(r[6]),
+    status:      String(r[7]),
+    _id:         String(r[11] || ''),
   }));
 
   // Sort by submitted timestamp descending (latest first)
@@ -420,20 +425,25 @@ function actionAddContribution(body) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
   if (!sheet) return { error: 'Contributions sheet not found' };
 
-  const year = extractYear(body.date) || new Date().getFullYear();
+  // paymentDate is ISO "YYYY-MM-DD" from new schema; fall back for legacy callers
+  const paymentDate = body.paymentDate || body.date || Utilities.formatDate(new Date(), 'Asia/Kolkata', 'yyyy-MM-dd');
+  const year = Number(String(paymentDate).slice(0, 4)) || new Date().getFullYear();
+  // timestamp stored as ISO string — no locale ambiguity
+  const timestamp = body.timestamp || new Date().toISOString();
 
   sheet.appendRow([
-    body.timestamp || new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+    timestamp,
     body.name   || '',
     body.flat   || '',
     body.mobile || '',
     Math.round(Number(body.amount) || 0),
     body.method || 'UPI',
-    body.date   || '',
-    body.status || 'Pending Verification',
+    paymentDate,
+    body.status || 'pending',
     body.accountType || 'Guest 👤',
     body.userId || '',
-    year
+    year,
+    body.docId  || ''   // Firestore auto-ID — links Sheet row ↔ Firestore doc
   ]);
 
   // Notify committee on WhatsApp (fire-and-forget)
@@ -446,7 +456,7 @@ function actionAddContribution(body) {
     flat:   body.flat   || '',
     amount: body.amount || '',
     method: body.method || 'UPI',
-    date:   body.date   || '',
+    date:   paymentDate,
     txnid:  ''
   }); } catch(e) {}
 
@@ -455,72 +465,104 @@ function actionAddContribution(body) {
 
 /* ══════════════════════════════════════════════════════════
    ACTION: Update contribution status (admin)
+   body: { docId, flat, year, status }
+   Matches by docId (col 12) first; falls back to flat+year.
+   status: "verified" | "rejected" | "pending"
 ══════════════════════════════════════════════════════════ */
-function actionUpdateStatus(flat, year, newStatus) {
+function actionUpdateStatus(body) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
   if (!sheet || sheet.getLastRow() < 2) return { error: 'No data' };
 
-  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, CON_HEADERS.length).getValues();
+  const newStatus = body.status || body.newStatus || '';
+  const docId     = String(body.docId || '').trim();
+  const flat      = String(body.flat  || '').trim();
+  const year      = Number(body.year) || 0;
 
-  for (let i = 0; i < data.length; i++) {
-    if (String(data[i][2]).trim() === String(flat).trim() &&
-        (Number(data[i][10]) === Number(year) || !year)) {
-      sheet.getRange(i + 2, 8).setValue(newStatus);
+  const numCols = Math.max(CON_HEADERS.length, 12);
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, numCols).getValues();
 
-      // Auto WhatsApp to contributor on verify or reject
-      const name   = data[i][1] || '';
-      const mobile = data[i][3] || '';
-      const amount = data[i][4] || '';
-      const method = data[i][5] || 'UPI';
-      const date   = data[i][6] || '';
-      const amt    = amount ? '₹' + parseFloat(amount).toLocaleString('en-IN') : '';
-
-      if (mobile) {
-        if (newStatus.includes('Received') || newStatus.includes('✅')) {
-          sendWA(mobile,
-            '🌅 *PSOTS Chhath Puja 2026*\n' +
-            '✅ *Payment Verified!*\n\n' +
-            '👤 ' + name + '\n' +
-            '🏠 Flat ' + flat + ' · Prestige Song of the South\n' +
-            '💰 *' + amt + '* via ' + method + '\n' +
-            (date ? '📅 ' + date + '\n' : '') +
-            '\n📋 View your receipt: https://chhath.psots.in/portal.html\n\n' +
-            'आपके योगदान के लिए हृदय से धन्यवाद! 🙏\n' +
-            'जय छठी मैया! 🌅'
-          );
-        } else if (newStatus.includes('Rejected') || newStatus.includes('❌')) {
-          sendWA(mobile,
-            '🌅 *PSOTS Chhath Puja 2026*\n' +
-            '❌ *Payment Not Verified*\n\n' +
-            'नमस्ते ' + name + ' जी 🙏\n\n' +
-            'We could not verify your payment of *' + amt + '* for Flat ' + flat + '.\n\n' +
-            'This may be due to a mismatch in UPI details. Please contact the committee:\n' +
-            '📞 9482088904 or reply to this message.\n\n' +
-            'जय छठी मैया! 🌅'
-          );
-        }
+  let rowIdx = -1;
+  // 1. Match by Firestore docId (column 12, index 11) — exact, no ambiguity
+  if (docId) {
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][11] || '').trim() === docId) { rowIdx = i; break; }
+    }
+  }
+  // 2. Fall back to flat + year (for pre-docId rows)
+  if (rowIdx === -1 && flat) {
+    for (let i = 0; i < data.length; i++) {
+      if (String(data[i][2]).trim() === flat && (Number(data[i][10]) === year || !year)) {
+        rowIdx = i; break;
       }
+    }
+  }
+  if (rowIdx === -1) return { error: 'Entry not found' };
 
-      return { success: true };
+  sheet.getRange(rowIdx + 2, 8).setValue(newStatus); // col 8 = Status
+
+  // WhatsApp to contributor
+  const name   = String(data[rowIdx][1] || '');
+  const mobile = String(data[rowIdx][3] || '');
+  const amount = data[rowIdx][4] || 0;
+  const method = String(data[rowIdx][5] || 'UPI');
+  const date   = String(data[rowIdx][6] || '');
+  const flatDisp = String(data[rowIdx][2] || flat);
+  const amt = amount ? '₹' + parseFloat(amount).toLocaleString('en-IN') : '';
+
+  if (mobile) {
+    if (newStatus === 'verified') {
+      sendWA(mobile,
+        '🌅 *PSOTS Chhath Puja 2026*\n✅ *Payment Verified!*\n\n' +
+        '👤 ' + name + '\n🏠 Flat ' + flatDisp + ' · Prestige Song of the South\n' +
+        '💰 *' + amt + '* via ' + method + '\n' +
+        (date ? '📅 ' + date + '\n' : '') +
+        '\n📋 View receipt: https://chhath.psots.in/portal.html\n\n' +
+        'आपके योगदान के लिए हृदय से धन्यवाद! 🙏\nजय छठी मैया! 🌅'
+      );
+    } else if (newStatus === 'rejected') {
+      sendWA(mobile,
+        '🌅 *PSOTS Chhath Puja 2026*\n❌ *Payment Not Verified*\n\n' +
+        'नमस्ते ' + name + ' जी 🙏\n\n' +
+        'We could not verify your payment of *' + amt + '* for Flat ' + flatDisp + '.\n' +
+        'Please contact the committee: 📞 9482088904\n\nजय छठी मैया! 🌅'
+      );
     }
   }
 
-  return { error: 'Entry not found' };
+  return { success: true };
 }
 
 /* ══════════════════════════════════════════════════════════
    ACTION: Delete entry (admin)
+   body: { docId, flat, year, amount }
+   Matches by docId (col 12) first; falls back to flat+year+amount.
 ══════════════════════════════════════════════════════════ */
-function actionDeleteEntry(flat, year, amount) {
+function actionDeleteEntry(body) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
   if (!sheet || sheet.getLastRow() < 2) return { error: 'No data' };
 
-  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, CON_HEADERS.length).getValues();
+  const docId  = String(body.docId  || '').trim();
+  const flat   = String(body.flat   || '').trim();
+  const year   = Number(body.year)  || 0;
+  const amount = Number(body.amount) || 0;
 
+  const numCols = Math.max(CON_HEADERS.length, 12);
+  const data = sheet.getRange(2, 1, sheet.getLastRow() - 1, numCols).getValues();
+
+  // 1. Match by docId — exact, no ambiguity
+  if (docId) {
+    for (let i = data.length - 1; i >= 0; i--) {
+      if (String(data[i][11] || '').trim() === docId) {
+        sheet.deleteRow(i + 2);
+        return { success: true };
+      }
+    }
+  }
+  // 2. Fall back to flat + year + amount
   for (let i = data.length - 1; i >= 0; i--) {
-    if (String(data[i][2]).trim() === String(flat).trim() &&
-        Number(data[i][10]) === Number(year) &&
-        Number(data[i][4]) === Number(amount)) {
+    if (String(data[i][2]).trim() === flat &&
+        Number(data[i][10]) === year &&
+        Number(data[i][4]) === amount) {
       sheet.deleteRow(i + 2);
       return { success: true };
     }
@@ -812,7 +854,7 @@ function actionBulkImport(records) {
     Math.round(Number(r.amount) || 0),
     r.method|| 'UPI',
     r.date  || '',
-    r.status|| '✅ Received',
+    r.status|| 'verified',
     r.accountType || 'Historical Import',
     r.userId|| '',
     r.year  || new Date().getFullYear()

@@ -2059,7 +2059,7 @@ function renderDirCards() {
   // Only add currentYear entries — history.json already covers prior years; adding all years causes double-counting
   const currentYear = new Date().getFullYear();
   allConData.filter(r => (r.year || currentYear) === currentYear).forEach(r => {
-    if (!r.flat || !(r.status||'').includes('Received')) return;
+    if (!r.flat || r.status !== 'verified') return;
     const amt = parseFloat(r.amount) || 0;
     if (amt <= 0) return;
     const f = String(r.flat).trim();
@@ -2151,12 +2151,25 @@ function escAdm(s) { return String(s||'').replace(/'/g,"\\'"); }
 /* ═══════════════════════════════════════════════════
    CONTRIBUTORS
 ═══════════════════════════════════════════════════ */
+/* Normalize a raw row (from Firestore or Apps Script) to a consistent shape.
+   Status is always converted to clean lowercase: "pending" | "verified" | "rejected"
+   regardless of whether the source used old emoji strings or new clean values. */
 function _mapConRow(r) {
+  const raw = r.status || '';
+  const status = (raw === 'verified' || raw.includes('Received'))  ? 'verified'
+               : (raw === 'rejected' || raw.includes('Rejected'))  ? 'rejected'
+               : 'pending';
   return {
-    _id: r._id || '',                          // Firestore doc ID — needed for reliable delete
-    ts: r.ts || r.date || '', name: r.name || '', flat: r.flat || '',
-    mobile: r.mobile || '', amount: r.amount || 0, method: r.method || '',
-    date: r.date || '', status: r.status || '', year: r.year || new Date().getFullYear()
+    _id:    r._id    || '',
+    ts:     r.submittedAt || r.ts || '',   // epoch ms preferred; fall back to locale string
+    name:   r.name   || '',
+    flat:   r.flat   || '',
+    mobile: r.mobile || '',
+    amount: r.amount || 0,
+    method: r.method || '',
+    date:   r.paymentDate || r.date || '', // ISO "YYYY-MM-DD" preferred
+    status,
+    year:   Number(r.year) || new Date().getFullYear(),
   };
 }
 
@@ -2323,9 +2336,9 @@ function fmtConDate(ts, dateFallback) {
 }
 
 function _conCardHtml(r) {
-  const isVerified  = r.status?.includes('Received');
-  const isRejected  = r.status?.includes('Rejected');
-  const isPending   = !isVerified && !isRejected;
+  const isVerified  = r.status === 'verified';
+  const isRejected  = r.status === 'rejected';
+  const isPending   = r.status === 'pending' || (!isVerified && !isRejected);
   const origIdx     = allConData.indexOf(r);
   const fp          = parseFlatNumber(r.flat);
   const initials    = (r.name||'?').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
@@ -2355,8 +2368,8 @@ function _conCardHtml(r) {
       ${utr      ? `<span style="font-family:monospace;font-size:.64rem;background:#f5f0e8;padding:.12rem .38rem;border-radius:4px;color:var(--lbr)">${utr}</span>` : ''}
     </div>
     <div style="display:flex;justify-content:flex-end;gap:.4rem;padding-left:2.8rem;flex-wrap:wrap">
-      ${isPending  ? `<button onclick="updateStatus(${origIdx},'✅ Received')" style="background:#ecfdf5;color:#2e7d32;border:1px solid rgba(46,125,50,.3);border-radius:8px;padding:.32rem .75rem;font-size:.74rem;cursor:pointer;font-weight:600">✅ Verify</button>` : ''}
-      ${!isRejected? `<button onclick="updateStatus(${origIdx},'❌ Rejected')" style="background:#fff1f2;color:#c0392b;border:1px solid rgba(192,57,43,.25);border-radius:8px;padding:.32rem .75rem;font-size:.74rem;cursor:pointer;font-weight:600">❌ Reject</button>` : ''}
+      ${isPending  ? `<button onclick="updateStatus(${origIdx},'verified')" style="background:#ecfdf5;color:#2e7d32;border:1px solid rgba(46,125,50,.3);border-radius:8px;padding:.32rem .75rem;font-size:.74rem;cursor:pointer;font-weight:600">✅ Verify</button>` : ''}
+      ${!isRejected? `<button onclick="updateStatus(${origIdx},'rejected')" style="background:#fff1f2;color:#c0392b;border:1px solid rgba(192,57,43,.25);border-radius:8px;padding:.32rem .75rem;font-size:.74rem;cursor:pointer;font-weight:600">❌ Reject</button>` : ''}
       ${r.mobile   ? `<button onclick="sendWAConfirm('${escAdm(r.name)}','${escAdm(r.flat)}','${r.amount}','${r.mobile}')" style="background:var(--warm);color:var(--lbr);border:1px solid #f0d5b8;border-radius:8px;padding:.32rem .65rem;font-size:.74rem;cursor:pointer" title="WhatsApp">📲</button>` : ''}
       <button onclick="deleteEntry(${origIdx})" style="background:#fff1f2;color:#c0392b;border:1px solid rgba(192,57,43,.2);border-radius:8px;padding:.32rem .65rem;font-size:.74rem;cursor:pointer" title="Delete">🗑</button>
     </div>
@@ -2376,9 +2389,9 @@ function renderConTable(data) {
       const utrMatch  = utrStr.includes(q);
       if (!flatMatch && !nameMatch && !utrMatch) return false;
     }
-    if (filterMode === 'pending')  return !r.status?.includes('Received') && !r.status?.includes('Rejected');
-    if (filterMode === 'verified') return r.status?.includes('Received');
-    if (filterMode === 'rejected') return r.status?.includes('Rejected');
+    if (filterMode === 'pending')  return r.status === 'pending';
+    if (filterMode === 'verified') return r.status === 'verified';
+    if (filterMode === 'rejected') return r.status === 'rejected';
     return true;
   });
   _lastConFiltered = filtered;
@@ -2402,8 +2415,8 @@ function renderConTable(data) {
   container.innerHTML = years.map(yr => {
     const rows = byYear[yr];
     const isOpen = yr === currentYear;
-    const yrVerified = rows.filter(r => r.status?.includes('Received')).reduce((s,r) => s+(parseFloat(r.amount)||0), 0);
-    const yrPending  = rows.filter(r => !r.status?.includes('Received') && !r.status?.includes('Rejected')).length;
+    const yrVerified = rows.filter(r => r.status === 'verified').reduce((s,r) => s+(parseFloat(r.amount)||0), 0);
+    const yrPending  = rows.filter(r => r.status === 'pending').length;
     return `<details ${isOpen ? 'open' : ''} style="border:1.5px solid #f0d5b8;border-radius:12px;margin-bottom:.75rem;overflow:hidden">
       <summary style="cursor:pointer;padding:.65rem 1rem;background:var(--warm);display:flex;justify-content:space-between;align-items:center;user-select:none;list-style:none">
         <span style="font-weight:700;font-size:.9rem;color:var(--ink)">📅 ${yr}${yr === currentYear ? ' <span style="font-size:.65rem;background:var(--or);color:#fff;border-radius:50px;padding:.1rem .45rem;margin-left:.35rem">Current</span>' : ''}</span>
@@ -2417,7 +2430,7 @@ function renderConTable(data) {
     </details>`;
   }).join('');
 
-  const verTotal = filtered.filter(r => r.status?.includes('Received')).reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
+  const verTotal = filtered.filter(r => r.status === 'verified').reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
   document.getElementById('conVerifiedTotal').textContent = '₹' + verTotal.toLocaleString('en-IN');
   updateDashStats();
   updatePendingList();
@@ -2425,37 +2438,36 @@ function renderConTable(data) {
 }
 
 async function updateStatus(idx, newStatus) {
-  const url = getScriptUrl();
+  // newStatus must be "verified" or "rejected" — clean, no emoji
   const row = allConData[idx];
   if (!row) return;
   row.status = newStatus;
-
-  // Write status back to Firestore so it persists across page refreshes
-  if (row._id) {
-    try {
-      const fsDb = (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length)
-        ? firebase.firestore() : null;
-      if (fsDb) await fsDb.collection('contributions').doc(row._id).update({ status: newStatus });
-    } catch(e) { console.warn('[Admin] Firestore status update failed:', e); }
-  }
-  // Invalidate session cache so next load reflects updated status
   PsotsCache.invalidate('contributors_all');
 
+  // Update Firestore via PSOTS_DB (uses doc ID, no ambiguity)
+  if (row._id && typeof PSOTS_DB !== 'undefined') {
+    try {
+      await PSOTS_DB.updateContributionStatus(row._id, newStatus);
+    } catch(e) { console.warn('[Admin] Firestore status update failed:', e); }
+  }
+
+  // Update Sheet via Apps Script — passes docId + fallback fields
+  const url = getScriptUrl();
   if (url) {
     try {
       await fetch(url, {
         method: 'POST', mode: 'no-cors',
-        headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ action: 'updateStatus', row: row.rowIndex, status: newStatus }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'updateStatus', docId: row._id, flat: row.flat, year: row.year, status: newStatus }),
       });
-    } catch(e) { console.warn(e); }
+    } catch(e) { console.warn('[Admin] Sheet status update failed:', e); }
   }
 
-  toast(newStatus.includes('Received') ? '✅ Marked as Verified!' : '❌ Marked as Rejected', newStatus.includes('Received') ? 'success' : 'error');
+  toast(newStatus === 'verified' ? '✅ Marked as Verified!' : '❌ Marked as Rejected',
+        newStatus === 'verified' ? 'success' : 'error');
   renderConTable(allConData);
 
-  // Auto-send WhatsApp thank you if verified
-  if (newStatus.includes('Received')) {
+  if (newStatus === 'verified') {
     setTimeout(() => sendWAConfirm(row.name, row.flat, row.amount, row.mobile), 800);
   }
 }
@@ -2509,14 +2521,14 @@ async function deleteEntry(idx) {
     }
   }
 
-  // Delete from Google Sheet (so Sheet-sourced entries don't reappear)
+  // Delete from Google Sheet — passes docId for exact match, with flat+year+amount as fallback
   const url = getScriptUrl();
   if (url) {
     try {
       await fetch(url, {
         method: 'POST', mode: 'no-cors',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'deleteEntry', flat: r.flat, year: r.year || new Date().getFullYear(), amount: r.amount }),
+        body: JSON.stringify({ action: 'deleteEntry', docId: r._id, flat: r.flat, year: r.year || new Date().getFullYear(), amount: r.amount }),
       });
     } catch(e) { console.warn('[Admin] Sheet delete failed:', e); }
   }
@@ -2538,7 +2550,7 @@ function bulkVerifyVisible() {
   if (!confirm('Mark all currently visible entries as Verified? This will send WhatsApp confirmations to each contributor.')) return;
   _lastConFiltered.forEach(r => {
     const idx = allConData.indexOf(r);
-    if (idx >= 0 && !r.status?.includes('Received')) updateStatus(idx, '✅ Received');
+    if (idx >= 0 && r.status !== 'verified') updateStatus(idx, 'verified');
   });
 }
 
@@ -2593,8 +2605,8 @@ function shiftActiveYear(delta) {
 function updateDashStats() {
   // Filter to active year only
   const all      = allConData.filter(r => (parseInt(r.year) || new Date().getFullYear()) === ACTIVE_YEAR);
-  const verified = all.filter(r => r.status?.includes('Received'));
-  const pending  = all.filter(r => !r.status?.includes('Received') && !r.status?.includes('Rejected'));
+  const verified = all.filter(r => r.status === 'verified');
+  const pending  = all.filter(r => r.status === 'pending');
   const total    = verified.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
 
   // Top stat bar
@@ -2616,7 +2628,7 @@ function updateDashStats() {
   _badge('ft-badge-col', pending.length ? `${pending.length} pending` : null, pending.length ? 'urgent' : '');
 
   // Show/hide pending card — ALL years (not year-filtered) so newly-submitted items always surface
-  const allPending = allConData.filter(r => !r.status?.includes('Received') && !r.status?.includes('Rejected'));
+  const allPending = allConData.filter(r => r.status === 'pending');
   const pc = document.getElementById('pendingCard');
   if (pc) pc.style.display = allPending.length ? 'block' : 'none';
 
@@ -2649,7 +2661,7 @@ function updateDashStats() {
   _badge('ft-badge-dir', towers.length ? `${towers.length} towers` : null, 'good');
 
   // ── Prasad tile ───────────────────────────────────
-  const prasadAll = allConData.filter(r => r.status?.includes('Received') && (parseInt(r.year)||new Date().getFullYear()) === ACTIVE_YEAR);
+  const prasadAll = allConData.filter(r => r.status === 'verified' && (parseInt(r.year)||new Date().getFullYear()) === ACTIVE_YEAR);
   const vratiCount = prasadAll.filter(r => r.isVrati === 'yes').length;
   _set('ft-val-pra', prasadAll.length);
   _set('ft-sub-pra', `on list · ${vratiCount} vrat${vratiCount !== 1 ? 'is' : 'i'}`);
@@ -2699,9 +2711,7 @@ function _badge(id, text, cls) {
 
 function updatePendingList() {
   // Show ALL pending across ALL years so contributions aren't missed due to year-filter mismatch
-  const pending = allConData.filter(r =>
-    !r.status?.includes('Received') && !r.status?.includes('Rejected')
-  );
+  const pending = allConData.filter(r => r.status === 'pending');
   const el = document.getElementById('pendingList');
   if (!pending.length) { el.innerHTML = '<p style="color:var(--green);font-size:.9rem">✅ No pending verifications!</p>'; return; }
   el.innerHTML = pending.slice(0,5).map((r,i) => `
@@ -3801,13 +3811,16 @@ async function submitManualEntry() {
   const btn = document.getElementById('me-submit-btn');
   btn.disabled = true; btn.innerHTML = '<span class="sp"></span>Saving…';
 
-  const ts      = new Date().toLocaleString('en-IN', {timeZone:'Asia/Kolkata'});
-  const dateStr = date ? new Date(date).toLocaleDateString('en-IN', {day:'2-digit',month:'2-digit',year:'numeric'}) : ts.split(',')[0];
+  const now     = new Date();
+  const ts      = now.toISOString();
+  const paymentDate = date ? new Date(date).toISOString().slice(0,10) : now.toISOString().slice(0,10);
   const entry   = {
-    timestamp: ts, name, flat, mobile, amount, date: dateStr,
+    timestamp: ts, name, flat, mobile, amount,
+    paymentDate, date: paymentDate,  // ISO "YYYY-MM-DD"
     method: method + (note ? ` (${note})` : ''),
-    status: '✅ Received',  // Admin entries are auto-verified
+    status: 'verified',  // Admin entries are auto-verified
     enteredBy: 'Admin',
+    source: 'manual',
   };
 
   const url = getScriptUrl();
@@ -3884,10 +3897,10 @@ function processBulkEntry() {
 
 async function confirmBulk(entries, method, dateStr) {
   const url = getScriptUrl();
-  const ts  = new Date().toLocaleString('en-IN', {timeZone:'Asia/Kolkata'});
+  const ts  = new Date().toISOString();
   let saved = 0;
   for (const e of entries) {
-    const row = { timestamp:ts, name:e.name, flat:e.flat, mobile:'', amount:e.amount, date:dateStr, method, status:'✅ Received', enteredBy:'Admin Bulk' };
+    const row = { timestamp:ts, name:e.name, flat:e.flat, mobile:'', amount:e.amount, paymentDate:dateStr, date:dateStr, method, status:'verified', enteredBy:'Admin Bulk', source:'manual' };
     if (url && !url.includes('YOUR_APPS_SCRIPT')) {
       try { await fetch(url, { method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'}, body: JSON.stringify(row) }); } catch(e) {}
     }
@@ -3964,7 +3977,7 @@ function exportFinancePDF() {
   const av = document.getElementById('exp-av').value || 0;
   const cultural = document.getElementById('exp-cultural').value || 0;
   const misc = document.getElementById('exp-misc').value || 0;
-  const verified = allConData.filter(r => r.status?.includes('Received'));
+  const verified = allConData.filter(r => r.status === 'verified');
   const total = verified.reduce((s,r) => s + (parseFloat(r.amount)||0), 0);
   const balance = parseFloat(carry) + total - parseFloat(expenses);
 
@@ -4686,7 +4699,7 @@ async function loadReminderList() {
   // Verified flats for current year only
   const verifiedFlats = new Set(
     (allConData || [])
-      .filter(c => c.status?.includes('Received') && (parseInt(c.year) || currentYear) === currentYear)
+      .filter(c => c.status === 'verified' && (parseInt(c.year) || currentYear) === currentYear)
       .map(c => String(c.flat || '').trim())
       .filter(Boolean)
   );
@@ -4724,7 +4737,7 @@ async function loadReminderList() {
     const flat = String(c.flat || '').trim();
     const yr   = parseInt(c.year);
     const amt  = parseFloat(c.amount) || 0;
-    if (!flat || !yr || !c.status?.includes('Received')) return;
+    if (!flat || !yr || c.status !== 'verified') return;
     if (!flatHistory[flat]) flatHistory[flat] = {};
     flatHistory[flat][yr] = (flatHistory[flat][yr] || 0) + amt;
   });
