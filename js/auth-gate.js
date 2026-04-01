@@ -167,21 +167,42 @@
   }
 
   // ── 4. Gate actions (exposed globally for onclick handlers) ──
+  // ── Client-side guards ───────────────────────────────
+  var _otpAttempts   = 0;   // failed verify attempts — lock out at 5
+  var _otpSentAt     = 0;   // timestamp of last OTP send — enforce 30s resend cooldown
+  var _otpCooldownMs = 30 * 1000; // 30-second resend cooldown
+  var _otpMaxAttempts = 5;
+
   window._psGate = {
     onGoogle: function (response) {
       try {
-        var payload = JSON.parse(atob(response.credential.split('.')[1]));
-        var u = { id: payload.sub, name: payload.name, email: payload.email,
-                  picture: payload.picture || null, loginTime: Date.now(), provider: 'google' };
+        var parts = (response.credential || '').split('.');
+        if (parts.length !== 3) throw new Error('bad JWT');
+        // atob may fail on unicode — use a safe decoder
+        var b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        while (b64.length % 4) b64 += '=';
+        var payload = JSON.parse(decodeURIComponent(atob(b64).split('').map(function(c){
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join('')));
+        if (!payload.sub || !payload.email) throw new Error('incomplete payload');
+        var u = { id: payload.sub, name: payload.name || payload.email.split('@')[0],
+                  email: payload.email, picture: payload.picture || null,
+                  loginTime: Date.now(), provider: 'google' };
         localStorage.setItem('psots_user', JSON.stringify(u));
         window._psGate._unlock(u.name);
       } catch (e) { window._psGate._err('Google sign-in failed. Please try email.'); }
     },
 
     sendOtp: function () {
-      var email = (document.getElementById('gate-email').value || '').trim();
+      var email = (document.getElementById('gate-email').value || '').trim().toLowerCase();
       if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         window._psGate._err('Enter a valid email address'); return;
+      }
+      // Client-side resend cooldown (UX guard; server has its own rate limit)
+      var elapsed = Date.now() - _otpSentAt;
+      if (_otpSentAt > 0 && elapsed < _otpCooldownMs) {
+        var wait = Math.ceil((_otpCooldownMs - elapsed) / 1000);
+        window._psGate._err('Please wait ' + wait + 's before requesting another code.'); return;
       }
       var su = (window.PSOTS && window.PSOTS.scriptUrl) || '';
       if (!su || su.indexOf('YOUR_APPS') !== -1) {
@@ -193,18 +214,32 @@
       fetch(su + '?action=sendOtp&email=' + encodeURIComponent(email))
         .then(function (r) { return r.json(); })
         .then(function (d) {
-          if (!d.ok) { window._psGate._err(d.msg || d.error || 'Could not send code'); btn.disabled = false; btn.textContent = 'Send Sign-in Code →'; return; }
+          if (!d.ok) {
+            window._psGate._err(d.msg || d.error || 'Could not send code');
+            btn.disabled = false; btn.textContent = 'Send Sign-in Code →';
+            return;
+          }
+          _otpSentAt   = Date.now();
+          _otpAttempts = 0; // reset attempt counter for fresh OTP
           document.getElementById('gate-email-step').style.display = 'none';
           document.getElementById('gate-otp-step').style.display = 'block';
           var gw = document.getElementById('gate-google-wrap');
           if (gw) gw.style.display = 'none';
           setTimeout(function () { var otpEl = document.getElementById('gate-otp'); if (otpEl) otpEl.focus(); }, 100);
         })
-        .catch(function () { window._psGate._err('Network error — try again'); btn.disabled = false; btn.textContent = 'Send Sign-in Code →'; });
+        .catch(function () {
+          window._psGate._err('Network error — try again');
+          btn.disabled = false; btn.textContent = 'Send Sign-in Code →';
+        });
     },
 
     verifyOtp: function () {
-      var email = (document.getElementById('gate-email').value || '').trim();
+      if (_otpAttempts >= _otpMaxAttempts) {
+        window._psGate._err('Too many incorrect attempts. Please request a new code.');
+        document.getElementById('gate-verify-btn').disabled = true;
+        return;
+      }
+      var email = (document.getElementById('gate-email').value || '').trim().toLowerCase();
       var otp   = (document.getElementById('gate-otp').value || '').trim();
       if (!otp || !/^\d{6}$/.test(otp)) { window._psGate._err('Enter the 6-digit code'); return; }
       var su = (window.PSOTS && window.PSOTS.scriptUrl) || '';
@@ -214,7 +249,15 @@
       fetch(su + '?action=verifyOtp&email=' + encodeURIComponent(email) + '&otp=' + encodeURIComponent(otp))
         .then(function (r) { return r.json(); })
         .then(function (d) {
-          if (!d.ok) { window._psGate._err(d.msg || d.error || 'Incorrect code. Try again.'); btn.disabled = false; btn.textContent = 'Verify & Enter →'; return; }
+          if (!d.ok) {
+            _otpAttempts++;
+            var remaining = _otpMaxAttempts - _otpAttempts;
+            var msg = d.msg || d.error || 'Incorrect code. Try again.';
+            if (remaining > 0) msg += ' (' + remaining + ' attempt' + (remaining === 1 ? '' : 's') + ' left)';
+            window._psGate._err(msg);
+            btn.disabled = false; btn.textContent = 'Verify & Enter →';
+            return;
+          }
           var u = {
             id: d.userId,
             name: (d.profile && d.profile.name) || email.split('@')[0],
@@ -224,7 +267,10 @@
           if (d.profile) localStorage.setItem('psots_profile_' + d.userId, JSON.stringify(d.profile));
           window._psGate._unlock(u.name);
         })
-        .catch(function () { window._psGate._err('Verification failed — try again'); btn.disabled = false; btn.textContent = 'Verify & Enter →'; });
+        .catch(function () {
+          window._psGate._err('Verification failed — try again');
+          btn.disabled = false; btn.textContent = 'Verify & Enter →';
+        });
     },
 
     backToEmail: function () {

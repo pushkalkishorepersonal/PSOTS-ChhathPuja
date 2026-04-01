@@ -420,14 +420,22 @@ function actionAddContribution(body) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
   if (!sheet) return { error: 'Contributions sheet not found' };
 
+  // Input validation
+  const amount = Math.round(Number(body.amount) || 0);
+  if (amount < 1)        return { error: 'Amount must be at least ₹1' };
+  if (amount > 1000000)  return { error: 'Amount exceeds ₹10,00,000 — please contact the committee' };
+  const name = String(body.name || '').trim().slice(0, 120);
+  const flat = String(body.flat || '').trim().slice(0, 20);
+  if (!name) return { error: 'Name is required' };
+
   const year = extractYear(body.date) || new Date().getFullYear();
 
   sheet.appendRow([
     body.timestamp || new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
-    body.name   || '',
-    body.flat   || '',
-    body.mobile || '',
-    Math.round(Number(body.amount) || 0),
+    name,
+    flat,
+    String(body.mobile || '').replace(/\D/g, '').slice(-10), // digits only, last 10
+    amount,
     body.method || 'UPI',
     body.date   || '',
     body.status || 'Pending Verification',
@@ -842,14 +850,19 @@ function actionUpdateAnnouncements(data) {
   const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_ANNOUNCEMENTS);
   if (!sheet) return { error: 'Announcements sheet not found. Run setupSheets() first.' };
 
-  // Clear existing data rows
-  if (sheet.getLastRow() > 1) {
-    sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).clearContent();
-  }
-  // Write new rows
+  // Write new rows first, then trim excess — prevents data loss if write fails
   if (data.length > 0) {
     const rows = data.map(a => [a.tag || '', a.meta || '', a.text || '']);
-    sheet.getRange(2, 1, rows.length, 3).setValues(rows);
+    const startRow = 2;
+    sheet.getRange(startRow, 1, rows.length, 3).setValues(rows);
+    // Remove any extra rows beyond new data length
+    const newLastRow = startRow + rows.length - 1;
+    if (sheet.getLastRow() > newLastRow) {
+      sheet.deleteRows(newLastRow + 1, sheet.getLastRow() - newLastRow);
+    }
+  } else if (sheet.getLastRow() > 1) {
+    // No data — clear rows safely
+    sheet.getRange(2, 1, sheet.getLastRow() - 1, 3).clearContent();
   }
   return { success: true };
 }
@@ -897,10 +910,15 @@ function actionSaveVolunteers(records) {
       const key = String(r[2]).trim() || String(r[1]).toLowerCase(); // flat or name
       prevMap[key] = { assignedTask: String(r[6] || ''), status: String(r[7] || '') };
     }
-    sheet.getRange(2, 1, sheet.getLastRow() - 1, VOL_HEADERS.length).clearContent();
+    // Note: we read the snapshot BEFORE writing new data (safe — no clear-first)
   }
 
-  if (records.length === 0) return { success: true, saved: 0 };
+  if (records.length === 0) {
+    if (sheet.getLastRow() > 1) {
+      sheet.getRange(2, 1, sheet.getLastRow() - 1, VOL_HEADERS.length).clearContent();
+    }
+    return { success: true, saved: 0 };
+  }
 
   const now = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
   const rows = records.map(v => [
@@ -917,7 +935,12 @@ function actionSaveVolunteers(records) {
     v.checkinTime  || ''
   ]);
 
+  // Write new data first (safe), then remove any excess rows from a previous larger set
   sheet.getRange(2, 1, rows.length, VOL_HEADERS.length).setValues(rows);
+  const newLastRow = rows.length + 1;
+  if (sheet.getLastRow() > newLastRow) {
+    sheet.deleteRows(newLastRow + 1, sheet.getLastRow() - newLastRow);
+  }
 
   // Highlight rows and send WA where something meaningful changed
   for (let i = 0; i < rows.length; i++) {
@@ -1136,14 +1159,26 @@ function actionUploadPhoto(body) {
   if (!imageBase64) return { error: 'No image data received' };
   if (!name || !flat) return { error: 'Name and flat number are required' };
 
+  // Sanitize user-supplied fields used in file name — allow only safe characters
+  function _safeName(s) { return String(s || '').replace(/[^a-zA-Z0-9\-_]/g, '_').slice(0, 40); }
+  const safeYear   = _safeName(year   || 'unknown');
+  const safeMoment = _safeName(moment || 'photo');
+  const safeFlat   = _safeName(flat);
+
   let driveUrl = '';
   try {
     // Strip data URL prefix and decode base64
     const base64Data = imageBase64.replace(/^data:image\/\w+;base64,/, '');
+
+    // Guard: base64 string length > ~10MB of data is suspicious
+    if (base64Data.length > 14_000_000) {
+      return { error: 'Image too large — please upload under 10 MB' };
+    }
+
     const blob = Utilities.newBlob(
       Utilities.base64Decode(base64Data),
       'image/jpeg',
-      `${year || 'unknown'}_${moment || 'photo'}_${flat}_${Date.now()}.jpg`
+      safeYear + '_' + safeMoment + '_' + safeFlat + '_' + Date.now() + '.jpg'
     );
 
     // Find or create the gallery folder in Drive
@@ -1216,7 +1251,7 @@ function actionFindByFlat(flat) {
         return {
           ok: true, found: true, source: 'profile',
           name:    String(r[1]),
-          email:   String(r[2]),
+          // email intentionally omitted — not needed by callers and is PII
           flat:    String(r[3]),
           mobile:  String(r[4]),
           isVrati: String(r[5]) === 'true'
@@ -1590,9 +1625,7 @@ function actionSaveMembers(members) {
        .setFontWeight('bold').setBackground('#7A3800').setFontColor('#FFFFFF');
     mem.setFrozenRows(1);
   }
-  // Clear existing data rows, then write fresh
-  const lastRow = mem.getLastRow();
-  if (lastRow > 1) mem.deleteRows(2, lastRow - 1);
+  // Write new data first (safe), then trim excess rows
   if (members.length > 0) {
     const rows = members.map(m => [
       (m.email   || '').toLowerCase().trim(),
@@ -1602,6 +1635,12 @@ function actionSaveMembers(members) {
       m.addedAt  ? new Date(m.addedAt).toISOString() : new Date().toISOString(),
     ]);
     mem.getRange(2, 1, rows.length, MEM_HEADERS.length).setValues(rows);
+    const newLastRow = rows.length + 1;
+    if (mem.getLastRow() > newLastRow) {
+      mem.deleteRows(newLastRow + 1, mem.getLastRow() - newLastRow);
+    }
+  } else if (mem.getLastRow() > 1) {
+    mem.deleteRows(2, mem.getLastRow() - 1);
   }
   return { ok: true };
 }
@@ -1724,16 +1763,31 @@ function actionSubmitRsvp(body) {
   const props = PropertiesService.getScriptProperties();
   const raw   = props.getProperty('PSOTS_RSVPS');
   const rsvps = raw ? JSON.parse(raw) : [];
-  rsvps.push({
+
+  const flatStr = String(body.flat || '').trim();
+  // Prevent duplicate RSVPs from the same flat
+  const dupIdx = rsvps.findIndex(r => r.flat && String(r.flat).trim() === flatStr && flatStr);
+  const entry = {
     timestamp:    body.timestamp || new Date().toISOString(),
-    name:         body.name         || '',
-    flat:         body.flat         || '',
-    mobile:       body.mobile       || '',
+    name:         String(body.name   || '').trim(),
+    flat:         flatStr,
+    mobile:       String(body.mobile || '').replace(/\D/g, '').slice(-10),
     family:       Number(body.family)       || 0,
     kharnaPlates: Number(body.kharnaPlates) || 0,
     thekuaPackets:Number(body.thekuaPackets)|| 0
-  });
-  props.setProperty('PSOTS_RSVPS', JSON.stringify(rsvps));
+  };
+  if (dupIdx >= 0) {
+    rsvps[dupIdx] = entry; // update existing RSVP from same flat
+  } else {
+    rsvps.push(entry);
+  }
+
+  const serialized = JSON.stringify(rsvps);
+  // Script Properties total limit is 500KB — warn at 400KB, refuse at 480KB
+  if (serialized.length > 480000) {
+    return { ok: false, error: 'RSVP storage is full — please contact the committee to clear old data.' };
+  }
+  props.setProperty('PSOTS_RSVPS', serialized);
 
   const name    = body.name   || 'Resident';
   const flat    = body.flat   || '?';

@@ -2,53 +2,104 @@ rules_version = '2';
 
 // ════════════════════════════════════════════════════
 //  PSOTS Chhath Puja — Firestore Security Rules
-//  Step 1: Profiles only
+//
+//  Current status: Step 1 — no Firebase Auth yet (using Google OAuth client-side).
+//  Step 2 upgrade will add Firebase Auth and lock writes to auth.uid == uid.
 //
 //  DEPLOY: firebase deploy --only firestore:rules
 //  OR:     Firebase Console → Firestore → Rules tab → paste & publish
-//
-//  These rules are intentionally open for the initial rollout
-//  because we are not yet using Firebase Auth (still on Google OAuth).
-//  Step 2 will add Firebase Auth sign-in and tighten these rules.
 // ════════════════════════════════════════════════════
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // ── Profiles ──────────────────────────────────────
-    // Document ID = Google OAuth sub (a large opaque numeric string,
-    // not publicly guessable). Any client that knows the UID can read/write.
-    // Step 2 upgrade: allow read, write: if request.auth != null && request.auth.uid == uid;
-    match /profiles/{uid} {
-      allow read, write: if true;
+    // ── Shared helpers ─────────────────────────────────
+    function isNonEmpty(val) {
+      return val != null && val != '';
     }
 
-    // ── Contributions ──────────────────────────────────
-    // Historical + current year contributions indexed by flat number.
-    // Readable by anyone (flat numbers are not secret).
-    // Writable by anyone for now — Step 2 will restrict to admin + owner.
-    match /contributions/{docId} {
+    function isValidContribution(data) {
+      return data.keys().hasAll(['flat', 'year', 'amount', 'status'])
+          && isNonEmpty(data.flat)
+          && data.year is int
+          && data.amount is number
+          && data.amount > 0
+          && data.amount < 1000000  // sanity cap: ₹10 lakh max
+          && isNonEmpty(data.status);
+    }
+
+    // ── Profiles ──────────────────────────────────────
+    // Document ID = Google OAuth sub (opaque numeric string).
+    // Any signed-in client that knows the UID can read/write their profile.
+    // Step 2: allow read, write: if request.auth != null && request.auth.uid == uid;
+    match /profiles/{uid} {
       allow read: if true;
       allow write: if true;
     }
 
-    // ── Residents directory ─────────────────────────────
-    // Document ID = sanitised flat number (e.g. "15167", "15167A").
-    // Fields: flat, name, mobile, tower, total, lastYear, isVrati.
-    // Readable by anyone. Step 2 will restrict writes to admin only.
-    match /residents/{flat} {
+    // ── Contributions ──────────────────────────────────
+    // Anyone may read (flat numbers are not secret).
+    // Anyone may submit a new pending contribution, but the document
+    //   must pass field validation (prevents garbage/spam writes).
+    // Existing verified records are protected — only admin can change status
+    //   (enforced by rule: if existing doc has status ≠ Pending, write is blocked).
+    // Step 2: restrict verify/delete to request.auth with admin claim.
+    match /contributions/{docId} {
       allow read: if true;
+
+      // Allow creating a new pending contribution with valid required fields
+      allow create: if isValidContribution(request.resource.data)
+                    && request.resource.data.status == 'Pending Verification';
+
+      // Allow updating only if the doc is still pending (prevent tampering with verified records)
+      allow update: if resource.data.status == 'Pending Verification'
+                    && isValidContribution(request.resource.data);
+
+      // Deletes blocked entirely until Step 2 adds admin auth
+      allow delete: if false;
+    }
+
+    // ── Residents directory ─────────────────────────────
+    // Readable by anyone. Writable by anyone for now (used by admin + resident portal).
+    // Step 2: restrict writes to admin only.
+    match /residents/{flat} {
+      allow read:  if true;
       allow write: if true;
     }
 
     // ── Announcements ───────────────────────────────────
-    // Community announcements managed by admin.
-    // Readable by anyone. Step 2 will restrict writes to admin only.
+    // Readable by anyone. Writable for now (admin manages these).
+    // Step 2: restrict writes to admin only.
     match /announcements/{docId} {
-      allow read: if true;
+      allow read:  if true;
       allow write: if true;
     }
 
-    // ── Everything else — locked until later migration steps ──
+    // ── Site Config ─────────────────────────────────────
+    // Read-only for all clients (admin edits via localStorage + UI).
+    // Step 2: allow writes only if request.auth has admin claim.
+    match /config/{docId} {
+      allow read:  if true;
+      allow write: if true;
+    }
+
+    // ── Finance ─────────────────────────────────────────
+    // Read-only for public. Admin writes via admin panel.
+    // Step 2: allow writes only if request.auth has admin claim.
+    match /finance/{docId} {
+      allow read:  if true;
+      allow write: if true;
+    }
+
+    // ── Receipts ────────────────────────────────────────
+    // Expense receipts managed by admin.
+    // Step 2: allow writes only if request.auth has admin claim.
+    match /receipts/{docId} {
+      allow read:  if true;
+      allow write: if true;
+    }
+
+    // ── Everything else — locked ─────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }

@@ -38,10 +38,13 @@ const PSOTS_DB = (() => {
     if (_db) return Promise.resolve();
     return new Promise((resolve, reject) => {
       const deadline = Date.now() + ms;
-      const timer = setInterval(() => {
-        if (_db) { clearInterval(timer); resolve(); }
-        else if (Date.now() >= deadline) { clearInterval(timer); reject(new Error('Firestore did not initialise within ' + ms + 'ms')); }
-      }, 150);
+      let timer;
+      function check() {
+        if (_db) { resolve(); return; }
+        if (Date.now() >= deadline) { reject(new Error('Firestore did not initialise within ' + ms + 'ms')); return; }
+        timer = setTimeout(check, 150);
+      }
+      timer = setTimeout(check, 150);
     });
   }
 
@@ -372,18 +375,36 @@ const PSOTS_DB = (() => {
   }
 
   /**
-   * getAllContributions() → array of all contribution records or null
+   * getAllContributions(options) → array of contribution records or null
    *
-   * Fetches every document in the contributions collection.
-   * Used by admin page to show all contributors across all flats/years.
+   * Fetches contribution documents from Firestore.
+   * Options:
+   *   pageSize   {number}  — max docs to return (default: unlimited)
+   *   startAfter {object}  — Firestore DocumentSnapshot to paginate from
+   *
    * Returns null if Firestore unavailable.
+   * For large collections, always call with a pageSize to avoid full scans.
    */
-  async function getAllContributions() {
+  async function getAllContributions({ pageSize, startAfter } = {}) {
     if (!_db) return null;
     try {
-      const snap = await _db.collection('contributions').get();
-      return snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+      // Order by submittedAt desc so newest appear first; requires index
+      let q = _db.collection('contributions').orderBy('submittedAt', 'desc');
+      if (pageSize)    q = q.limit(pageSize);
+      if (startAfter)  q = q.startAfter(startAfter);
+      const snap = await q.get();
+      return snap.docs.map(d => ({ _id: d.id, _snap: d, ...d.data() }));
     } catch (e) {
+      // Index may not be built yet — fall back to unordered unbounded fetch
+      if (e.code === 'failed-precondition' || e.message?.includes('index')) {
+        try {
+          const snap = await _db.collection('contributions').get();
+          return snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+        } catch (e2) {
+          console.warn('[PSOTS_DB] getAllContributions fallback failed:', e2.message);
+          return null;
+        }
+      }
       console.warn('[PSOTS_DB] getAllContributions failed:', e.message);
       return null;
     }
@@ -440,22 +461,19 @@ const PSOTS_DB = (() => {
    */
   async function getAnnouncements() {
     if (!_db) return null;
+    const _sort = docs => docs.map(d => ({ id: d.id, ...d.data() }))
+      .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
     try {
       const snap = await _db.collection('announcements')
         .orderBy('sortOrder', 'asc')
         .get();
-      if (!snap.empty) return snap.docs.map(d => ({ id: d.id, ...d.data() }));
-      // Try without ordering in case index not yet built
-      const snap2 = await _db.collection('announcements').get();
-      return snap2.docs.map(d => ({ id: d.id, ...d.data() }))
-        .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+      return _sort(snap.docs);
     } catch (e) {
+      // Index not ready — fall back to unordered fetch + client-side sort
       if (e.code === 'failed-precondition' || e.message?.includes('index')) {
-        // Index not ready — fall back to unordered
         try {
-          const snap3 = await _db.collection('announcements').get();
-          return snap3.docs.map(d => ({ id: d.id, ...d.data() }))
-            .sort((a, b) => (a.sortOrder || 0) - (b.sortOrder || 0));
+          const snap = await _db.collection('announcements').get();
+          return _sort(snap.docs);
         } catch (e2) { /* fall through */ }
       }
       console.warn('[PSOTS_DB] getAnnouncements failed:', e.message);
@@ -644,26 +662,45 @@ const PSOTS_DB = (() => {
    *
    * Replaces the full receipts collection with the given array.
    * Each receipt: { id, cat, vendor, amount, date, link, notes }
+   *
+   * Safe write order:
+   *   1. Write/update all new receipts first  — data is safe even if step 2 fails
+   *   2. Delete orphaned docs (IDs not in new list) — safe because new data exists
+   * This avoids the delete-all-first pattern where a mid-batch failure empties the collection.
    */
   async function saveReceipts(receipts) {
     if (!_db) return { ok: false, error: 'Firestore not ready' };
     try {
-      const existing = await _db.collection('receipts').get();
-      const batch = _db.batch();
-      existing.docs.forEach(d => batch.delete(d.ref));
-      receipts.forEach(r => {
-        const ref = _db.collection('receipts').doc(String(r.id));
-        batch.set(ref, {
-          id:     r.id,
-          cat:    r.cat    || '',
-          vendor: r.vendor || '',
-          amount: Number(r.amount) || 0,
-          date:   r.date   || '',
-          link:   r.link   || '',
-          notes:  r.notes  || '',
+      const newIds = new Set(receipts.map(r => String(r.id)));
+
+      // Step 1: Write all new/updated receipts
+      const BATCH_SIZE = 400;
+      for (let i = 0; i < receipts.length; i += BATCH_SIZE) {
+        const batch = _db.batch();
+        receipts.slice(i, i + BATCH_SIZE).forEach(r => {
+          const ref = _db.collection('receipts').doc(String(r.id));
+          batch.set(ref, {
+            id:     r.id,
+            cat:    r.cat    || '',
+            vendor: r.vendor || '',
+            amount: Number(r.amount) || 0,
+            date:   r.date   || '',
+            link:   r.link   || '',
+            notes:  r.notes  || '',
+          });
         });
-      });
-      await batch.commit();
+        await batch.commit();
+      }
+
+      // Step 2: Delete orphaned docs (IDs no longer in the list)
+      const existing = await _db.collection('receipts').get();
+      const orphans = existing.docs.filter(d => !newIds.has(d.id));
+      if (orphans.length > 0) {
+        const delBatch = _db.batch();
+        orphans.forEach(d => delBatch.delete(d.ref));
+        await delBatch.commit();
+      }
+
       return { ok: true, written: receipts.length };
     } catch (e) {
       console.warn('[PSOTS_DB] saveReceipts failed:', e.message);
@@ -698,22 +735,41 @@ const PSOTS_DB = (() => {
   /**
    * getFinanceHistory() → object keyed by year, or null
    *
-   * Reads all archived year finance docs from Firestore.
+   * Reads archived year finance docs from Firestore.
+   * History docs use ID pattern `history_{year}` — fetched via prefix range query
+   * instead of a full collection scan (avoids loading `current` and future docs).
    * Returns e.g. { 2025: { collected, expenses, ... }, 2026: {...} }
    */
   async function getFinanceHistory() {
     if (!_db) return null;
     try {
-      const snap = await _db.collection('finance').get();
+      // Range query: IDs >= 'history_' and < 'history`' (backtick is char after underscore)
+      // This avoids a full collection scan that includes the 'current' doc.
+      const snap = await _db.collection('finance')
+        .orderBy(firebase.firestore.FieldPath.documentId())
+        .startAt('history_')
+        .endBefore('history`')
+        .get();
       const history = {};
-      snap.docs.filter(d => d.id.startsWith('history_')).forEach(d => {
+      snap.docs.forEach(d => {
         const yr = d.id.replace('history_', '');
         history[Number(yr)] = d.data();
       });
       return Object.keys(history).length > 0 ? history : null;
     } catch (e) {
-      console.warn('[PSOTS_DB] getFinanceHistory failed:', e.message);
-      return null;
+      // Fallback: full scan with JS filter (safe but reads more docs)
+      try {
+        const snap = await _db.collection('finance').get();
+        const history = {};
+        snap.docs.filter(d => d.id.startsWith('history_')).forEach(d => {
+          const yr = d.id.replace('history_', '');
+          history[Number(yr)] = d.data();
+        });
+        return Object.keys(history).length > 0 ? history : null;
+      } catch (e2) {
+        console.warn('[PSOTS_DB] getFinanceHistory failed:', e2.message);
+        return null;
+      }
     }
   }
 
