@@ -2247,19 +2247,22 @@ async function _doLoadAdminCon() {
     } catch(e) {}
   }
 
-  // 5. Always merge in Firestore pending entries so they show even when full scan fails
+  // 5. Always merge in current-year Firestore entries so they show even when full scan fails.
+  //    Uses getCurrentYearContributions (not just pending) so verified entries don't disappear
+  //    after being approved, even when getAllContributions() times out on slow connections.
   if (typeof PSOTS_DB !== 'undefined') {
     try {
-      const pending = await Promise.race([
-        PSOTS_DB.getPendingContributions(),
-        new Promise((_, rej) => setTimeout(() => rej(new Error('pending-timeout')), 8000))
+      const currentYear = new Date().getFullYear();
+      const curYear = await Promise.race([
+        PSOTS_DB.getCurrentYearContributions(currentYear),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('curYear-timeout')), 8000))
       ]);
-      if (Array.isArray(pending) && pending.length > 0) {
+      if (Array.isArray(curYear) && curYear.length > 0) {
         const existingIds = new Set(allConData.map(r => r._id).filter(Boolean));
-        const newPending  = pending.map(_mapConRow).filter(r => !existingIds.has(r._id));
-        allConData = [...allConData, ...newPending];
+        const newRows = curYear.map(_mapConRow).filter(r => !existingIds.has(r._id));
+        allConData = [...allConData, ...newRows];
       }
-    } catch(e) { console.warn('[Admin] getPendingContributions failed:', e.message || e); }
+    } catch(e) { console.warn('[Admin] getCurrentYearContributions failed:', e.message || e); }
   }
 
   if (allConData.length > 0) {
