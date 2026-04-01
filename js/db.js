@@ -389,9 +389,27 @@ const PSOTS_DB = (() => {
     }
   }
 
-  /* ════════════════════════════════════════════════════
-     ANNOUNCEMENTS API
-  ════════════════════════════════════════════════════ */
+  /**
+   * getPendingContributions() → array or null
+   *
+   * Targeted query for entries with status "Pending Verification".
+   * Much faster than getAllContributions() (filters server-side, returns few docs).
+   * Used by admin as a supplement so pending entries always surface even when the
+   * full collection scan times out on slow connections.
+   */
+  async function getPendingContributions() {
+    if (!_db) return null;
+    try {
+      const snap = await _db.collection('contributions')
+        .where('status', '==', 'Pending Verification')
+        .get();
+      return snap.docs.map(d => ({ _id: d.id, ...d.data() }));
+    } catch (e) {
+      console.warn('[PSOTS_DB] getPendingContributions failed:', e.message);
+      return null;
+    }
+  }
+
 
   /**
    * getAnnouncements() → array of announcement objects or null
@@ -741,7 +759,7 @@ const PSOTS_DB = (() => {
 
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, deleteContribution, deleteContributionsByYear, syncContributions, savePendingContribution, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, getPendingContributions, deleteContribution, deleteContributionsByYear, syncContributions, savePendingContribution, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();

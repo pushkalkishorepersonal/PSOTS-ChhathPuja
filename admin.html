@@ -2244,11 +2244,29 @@ async function _doLoadAdminCon() {
       const res  = await fetch(url + '?action=list_all');
       const data = await res.json();
       allConData = (data.all || []).map(_mapConRow);
-      PsotsCache.set('contributors_all', allConData, CACHE_TTL.contributors);
-      renderConTable(allConData);
-      updateDashStats();
-      return;
     } catch(e) {}
+  }
+
+  // 5. Always merge in Firestore pending entries so they show even when full scan fails
+  if (typeof PSOTS_DB !== 'undefined') {
+    try {
+      const pending = await Promise.race([
+        PSOTS_DB.getPendingContributions(),
+        new Promise((_, rej) => setTimeout(() => rej(new Error('pending-timeout')), 8000))
+      ]);
+      if (Array.isArray(pending) && pending.length > 0) {
+        const existingIds = new Set(allConData.map(r => r._id).filter(Boolean));
+        const newPending  = pending.map(_mapConRow).filter(r => !existingIds.has(r._id));
+        allConData = [...allConData, ...newPending];
+      }
+    } catch(e) { console.warn('[Admin] getPendingContributions failed:', e.message || e); }
+  }
+
+  if (allConData.length > 0) {
+    PsotsCache.set('contributors_all', allConData, CACHE_TTL.contributors);
+    renderConTable(allConData);
+    updateDashStats();
+    return;
   }
 
   // If a prior call already loaded good data, never replace it with an error
@@ -2508,7 +2526,9 @@ async function deleteEntriesByYear() {
   const yr = prompt('Enter the year whose entries you want to permanently delete from Firestore:\n(e.g. 2026)', '2026');
   if (!yr || isNaN(yr)) return;
   const year = parseInt(yr);
-  const preview = allConData.filter(r => r.year === year || Number(r.year) === year);
+  const currentYear = new Date().getFullYear();
+  // Use same grouping logic as renderConTable: entries with null/0 year → current year
+  const preview = allConData.filter(r => (parseInt(r.year) || currentYear) === year);
   if (!confirm(`Delete ALL ${preview.length} Firestore entries for year ${year}?\n\nThis CANNOT be undone. The entries will also be removed from local view.`)) return;
 
   if (typeof PSOTS_DB === 'undefined') { toast('Firestore not available', 'error'); return; }
