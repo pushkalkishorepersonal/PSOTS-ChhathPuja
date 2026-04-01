@@ -1650,7 +1650,10 @@ function handleAdminLogin(response) {
   enterAdmin(u);
 }
 
+let _adminEntered = false; // guard against double initialisation (GSI callback + localStorage auto-login)
 function enterAdmin(u) {
+  if (_adminEntered) return;
+  _adminEntered = true;
   currentAdminUser = u;
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('adminApp').style.display = 'block';
@@ -2248,8 +2251,8 @@ async function _doLoadAdminCon() {
     } catch(e) {}
   }
 
-  // If a parallel/prior call already loaded data, don't overwrite it with the error
-  if (allConData.length > 0) { renderConTable(allConData); return; }
+  // If a prior call already loaded good data, never replace it with an error
+  if (allConData.length > 0) { renderConTable(allConData); updateDashStats(); return; }
   container.innerHTML = '<div style="text-align:center;padding:2rem;color:#c03000;font-size:.88rem">⚠️ Could not load contributors. Check Firestore connection or Apps Script URL in Settings.</div>';
 }
 
