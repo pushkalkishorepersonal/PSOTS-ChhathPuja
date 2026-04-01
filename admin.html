@@ -2288,18 +2288,25 @@ function fmtConDate(ts, dateFallback) {
     if (n >= 11 && n <= 13) return n + 'th';
     switch (n % 10) { case 1: return n+'st'; case 2: return n+'nd'; case 3: return n+'rd'; default: return n+'th'; }
   }
-  // Try ts first (e.g. "2026-03-18 13:40" or ISO)
+  // Try ts first — handles ISO, "YYYY-MM-DD HH:MM", and Indian Sheet format "D/M/YYYY, HH:MM:SS"
   let dt = null;
   if (ts) {
-    // Normalise space-separated datetime to ISO
-    const norm = String(ts).trim().replace(' ', 'T');
-    dt = new Date(norm);
-    if (isNaN(dt)) dt = null;
+    const s = String(ts).trim();
+    // Indian Sheet format: "2/4/2026, 01:42:56" or "24/3/2026, 20:56:41" → DD/MM/YYYY
+    const indian = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:[,\s]+(\d{1,2}):(\d{2})(?::(\d{2}))?)?/);
+    if (indian) {
+      dt = new Date(+indian[3], +indian[2]-1, +indian[1], +(indian[4]||0), +(indian[5]||0), +(indian[6]||0));
+      if (isNaN(dt)) dt = null;
+    }
+    if (!dt) {
+      const norm = s.replace(' ', 'T');
+      dt = new Date(isNaN(s) ? norm : +s);
+      if (isNaN(dt)) dt = null;
+    }
   }
   // Fallback: dateFallback field (DD/MM/YYYY or YYYY-MM-DD etc.)
   if (!dt && dateFallback) {
     const df = String(dateFallback).trim();
-    // DD/MM/YYYY
     const ddmm = df.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
     if (ddmm) dt = new Date(+ddmm[3], +ddmm[2]-1, +ddmm[1]);
     else { dt = new Date(df); if (isNaN(dt)) dt = null; }
