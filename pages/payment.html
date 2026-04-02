@@ -321,6 +321,14 @@
       <div class="sb-icon">🎉</div>
       <h4>जय छठी मैया!</h4>
       <p id="successTxt">Your contribution has been recorded. The committee will verify and confirm shortly.</p>
+      <!-- WhatsApp confirmation deep-link (href set by JS after submit) -->
+      <a id="waConfirmBtn" href="#" target="_blank" rel="noopener"
+         style="display:none;margin-top:1rem;background:#25d366;color:#fff;border-radius:50px;
+                padding:.65rem 1.4rem;font-size:.84rem;font-weight:700;text-decoration:none;
+                align-items:center;gap:.5rem;box-shadow:0 4px 14px rgba(37,211,102,.35);
+                transition:background .2s">
+        <span style="font-size:1rem">💬</span> Confirm on WhatsApp
+      </a>
       <a href="../portal.html" style="display:block;margin-top:.75rem;font-size:.82rem;color:var(--or);text-decoration:none;font-weight:600">View my contributions in Portal →</a>
     </div>
   </div><!-- /conf-body -->
@@ -744,6 +752,21 @@ async function submitForm(){
   openConfirm();
   document.getElementById('successBox').style.display='block';
   document.getElementById('successTxt').textContent=`₹${parseInt(amount).toLocaleString('en-IN')} recorded! The committee will verify and confirm shortly. 🙏`;
+
+  // Build WhatsApp deep-link so the resident can send a quick confirmation message
+  const _waNum = C.waOrg || '919482088904';
+  const _waMsg = encodeURIComponent(
+    `🌅 *PSOTS Chhath Puja 2026 — Payment Confirmation*\n\n` +
+    `नमस्ते 🙏\n\n` +
+    `I have paid *₹${parseInt(amount).toLocaleString('en-IN')}* via UPI for Chhath Puja 2026.\n` +
+    (flat && flat !== '—' ? `Flat: *${flat}*\n` : '') +
+    (name && name !== 'Anonymous Contributor' ? `Name: ${name}\n` : '') +
+    `\nPlease verify my contribution.\n\nजय छठी मैया! 🌅`
+  );
+  const waBtn = document.getElementById('waConfirmBtn');
+  waBtn.href = `https://wa.me/${_waNum}?text=${_waMsg}`;
+  waBtn.style.display = 'inline-flex';
+
   document.getElementById('successBox').scrollIntoView({behavior:'smooth',block:'center'});
 }
 

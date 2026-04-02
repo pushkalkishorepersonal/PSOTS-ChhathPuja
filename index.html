@@ -707,7 +707,21 @@
 <footer>
   <div class="ft-t">🌅 PSOTS — छठ महापर्व 2026</div>
   <p>पंच वर्ष महोत्सव · Nov 1–4, 2026 · Society Ghat</p>
-  <p>WhatsApp: <span>9482088904</span> · <span>9902837002</span> · <span>chhath.psots.in</span></p>
+  <p>
+    <a href="https://wa.me/919482088904" target="_blank" rel="noopener" style="color:rgba(255,220,120,.8);text-decoration:none">💬 9482088904</a>
+    &nbsp;·&nbsp;
+    <a href="https://wa.me/919902837002" target="_blank" rel="noopener" style="color:rgba(255,220,120,.8);text-decoration:none">💬 9902837002</a>
+    &nbsp;·&nbsp;<span>chhath.psots.in</span>
+  </p>
+  <!-- Web Share / invite button -->
+  <p style="margin-top:.75rem">
+    <button id="shareBtn" onclick="psotShare()"
+      style="background:rgba(255,194,0,.15);border:1px solid rgba(255,194,0,.35);color:var(--gold,#ffc200);
+             border-radius:50px;padding:.4rem 1.1rem;font-size:.78rem;font-weight:700;cursor:pointer;
+             font-family:'DM Sans',system-ui,sans-serif;transition:background .2s">
+      📲 Invite Neighbours
+    </button>
+  </p>
   <p style="margin-top:.8rem;font-size:.7rem">
     <a href="pages/privacy-policy.html" style="color:rgba(255,220,120,.65);text-decoration:none;margin:0 .5rem">Privacy Policy</a> ·
     <a href="pages/terms.html" style="color:rgba(255,220,120,.65);text-decoration:none;margin:0 .5rem">Terms &amp; Conditions</a> ·
@@ -766,6 +780,25 @@ function toggleMobSec(id){
     revOb.observe(t);
   });
 })();
+
+/* ── Web Share API — "Invite Neighbours" ───────────────────────────────── */
+function psotShare() {
+  const C = window.PSOTS || {};
+  const url  = C.siteUrl || 'https://chhath.psots.in';
+  const title = C.eventName || 'PSOTS Chhath Puja 2026';
+  const text  = '🌅 ' + title + '\n\nNov 1–4, 2026 · Society Ghat, Prestige Song of the South\nजय छठी मैया! 🙏\n';
+
+  if (navigator.share) {
+    navigator.share({ title: title, text: text, url: url }).catch(function () {});
+  } else {
+    // Fallback: open WhatsApp with pre-filled share message
+    const wa = (C.waOrg || '919482088904');
+    const msg = encodeURIComponent(text + url);
+    // Open WA share to contacts (no specific number — opens picker)
+    window.open('https://api.whatsapp.com/send?text=' + msg, '_blank', 'noopener');
+  }
+}
+
 if(!_li){
   const _lockStyle='padding:1.4rem .8rem;text-align:center;display:flex;flex-direction:column;align-items:center;gap:.55rem';
   const _lockHtml='<div style="'+_lockStyle+'"><div style="font-size:1.4rem">🔒</div><div style="font-size:.82rem;font-weight:700;color:var(--or)">Sign in to view</div><div style="font-size:.74rem;color:var(--lbr)">Login with Google or email OTP</div></div>';

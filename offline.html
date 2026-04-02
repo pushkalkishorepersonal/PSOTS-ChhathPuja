@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Offline — PSOTS Chhath Puja 2026</title>
+  <script src="/js/config.js"></script>
+  <style>
+    :root{--or:#e85c00;--gold:#ffc200;--ink:#1a0800;--cream:#fdf5e0;--warm:#fff8f0;--lbr:#a05828;--maroon:#3d1000}
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',system-ui,sans-serif;background:var(--cream);color:var(--ink);min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem;text-align:center}
+    .sun{font-size:4rem;margin-bottom:1rem;animation:srise 1.2s ease-out both}
+    @keyframes srise{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:none}}
+    h1{font-size:1.4rem;font-weight:800;color:var(--maroon);margin-bottom:.4rem}
+    .sub{font-size:.9rem;color:var(--lbr);margin-bottom:2rem;line-height:1.6}
+    .card{background:#fff;border:1.5px solid #f0d5b8;border-radius:16px;padding:1.3rem 1.5rem;width:100%;max-width:380px;text-align:left;margin-bottom:.75rem;box-shadow:0 2px 12px rgba(26,8,0,.05)}
+    .card-title{font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--lbr);margin-bottom:.75rem}
+    .row{display:flex;justify-content:space-between;align-items:baseline;padding:.38rem 0;border-bottom:1px solid #f5ebe0;font-size:.88rem}
+    .row:last-child{border-bottom:none}
+    .row .lbl{color:#6b3a18;font-weight:500}
+    .row .val{font-weight:700;color:var(--ink)}
+    .row .val.or{color:var(--or)}
+    .row .val.green{color:#2e7d32}
+    .upi-box{background:linear-gradient(135deg,#fff5e8,#ffe8cc);border:1.5px dashed rgba(232,92,0,.4);border-radius:12px;padding:.85rem 1rem;margin-top:.5rem;text-align:center}
+    .upi-label{font-size:.72rem;color:var(--lbr);font-weight:600;margin-bottom:.3rem}
+    .upi-id{font-size:1.1rem;font-weight:900;color:var(--or);letter-spacing:.02em}
+    .wa-row{display:flex;flex-direction:column;gap:.5rem;margin-top:.5rem}
+    .wa-btn{display:flex;align-items:center;gap:.6rem;background:#f0faf5;border:1.5px solid rgba(37,211,102,.3);border-radius:10px;padding:.65rem .9rem;text-decoration:none;color:#1a5c3a;font-weight:600;font-size:.85rem;transition:background .2s}
+    .wa-btn:hover{background:#dcfce7}
+    .wa-btn .icon{font-size:1.2rem}
+    .wa-btn .num{font-size:.78rem;color:#4a7c59}
+    .retry-btn{margin-top:1.5rem;background:linear-gradient(135deg,var(--or),#c93800);color:#fff;border:none;border-radius:50px;padding:.7rem 2rem;font-size:.9rem;font-weight:700;cursor:pointer;box-shadow:0 4px 14px rgba(232,92,0,.35);transition:transform .15s}
+    .retry-btn:active{transform:scale(.97)}
+    .note{font-size:.74rem;color:var(--lbr);margin-top:1.5rem;line-height:1.6}
+  </style>
+</head>
+<body>
+  <div class="sun">🌅</div>
+  <h1>You're Offline</h1>
+  <p class="sub">No internet connection right now.<br>Here's everything you need until you're back online.</p>
+
+  <!-- Event timings -->
+  <div class="card">
+    <div class="card-title">Chhath Puja 2026 — Key Timings</div>
+    <div class="row"><span class="lbl">Kharna</span><span class="val" id="kharnaVal">Nov 2 · 7:00 PM · Community Hall</span></div>
+    <div class="row"><span class="lbl">Sandhya Arghya 🌇</span><span class="val or" id="eveVal">Nov 3 · 5:45 PM · Society Ghat</span></div>
+    <div class="row"><span class="lbl">Usha Arghya 🌅</span><span class="val or" id="mornVal">Nov 4 · 6:15 AM · Society Ghat</span></div>
+    <div class="row"><span class="lbl">Venue</span><span class="val">Society Ghat, PSOTS</span></div>
+  </div>
+
+  <!-- UPI payment info -->
+  <div class="card">
+    <div class="card-title">Pay Your Contribution (UPI)</div>
+    <div class="upi-box">
+      <div class="upi-label">UPI ID</div>
+      <div class="upi-id" id="upiVal">9482088904@sbi</div>
+    </div>
+    <div class="row" style="margin-top:.75rem"><span class="lbl">Payee Name</span><span class="val" id="payeeVal">ChhathPuja2026PSOTS</span></div>
+    <div style="font-size:.74rem;color:var(--lbr);margin-top:.5rem;line-height:1.55">After payment, open this app when online and submit your confirmation at <strong>pages/payment.html</strong></div>
+  </div>
+
+  <!-- Contact committee -->
+  <div class="card">
+    <div class="card-title">Contact Committee</div>
+    <div class="wa-row" id="waLinks">
+      <a class="wa-btn" href="https://wa.me/919482088904?text=Hi%2C+I+need+help+with+Chhath+Puja+2026" target="_blank" rel="noopener">
+        <span class="icon">💬</span>
+        <span><div>WhatsApp Committee</div><div class="num">+91 9482088904</div></span>
+      </a>
+      <a class="wa-btn" href="https://wa.me/919902837002?text=Hi%2C+I+need+help+with+Chhath+Puja+2026" target="_blank" rel="noopener">
+        <span class="icon">💬</span>
+        <span><div>WhatsApp (Alternate)</div><div class="num">+91 9902837002</div></span>
+      </a>
+    </div>
+  </div>
+
+  <button class="retry-btn" onclick="window.location.reload()">Try Again</button>
+  <p class="note">This page is cached by the app and works without internet.<br>Event details shown above are from your last online visit.</p>
+
+  <script>
+    // Populate from config.js if available (cached values from last online visit)
+    (function(){
+      const C = window.PSOTS || {};
+      if (C.upiId)     document.getElementById('upiVal').textContent   = C.upiId;
+      if (C.payeeName) document.getElementById('payeeVal').textContent = C.payeeName;
+      if (C.arghyaEvening) document.getElementById('eveVal').textContent  = (C.arghyaEvening.date||'Nov 3, 2026') + ' · ' + (C.arghyaEvening.time||'5:45 PM') + ' · Society Ghat';
+      if (C.arghyaMorning) document.getElementById('mornVal').textContent = (C.arghyaMorning.date||'Nov 4, 2026') + ' · ' + (C.arghyaMorning.time||'6:15 AM') + ' · Society Ghat';
+      if (C.kharnaTime) document.getElementById('kharnaVal').textContent  = (C.kharnaTime.date||'Nov 2, 2026') + ' · ' + (C.kharnaTime.time||'7:00 PM') + ' · ' + (C.kharnaTime.location||'Community Hall');
+
+      // Update WA links with configured numbers
+      const wa1 = C.waOrg  || '919482088904';
+      const wa2 = C.waOrg2 || '919902837002';
+      const msg = encodeURIComponent('Hi, I need help with PSOTS Chhath Puja 2026');
+      const links = document.getElementById('waLinks');
+      links.innerHTML =
+        `<a class="wa-btn" href="https://wa.me/${wa1}?text=${msg}" target="_blank" rel="noopener"><span class="icon">💬</span><span><div>WhatsApp Committee</div><div class="num">+${wa1}</div></span></a>` +
+        `<a class="wa-btn" href="https://wa.me/${wa2}?text=${msg}" target="_blank" rel="noopener"><span class="icon">💬</span><span><div>WhatsApp (Alternate)</div><div class="num">+${wa2}</div></span></a>`;
+    })();
+  </script>
+</body>
+</html>

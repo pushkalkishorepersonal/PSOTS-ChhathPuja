@@ -19,6 +19,7 @@ const CACHE_VERSION = 'psots-v1';
 const PRECACHE = [
   '/',
   '/index.html',
+  '/offline.html',
   '/manifest.json',
   '/css/style.css',
   '/js/config.js',
@@ -97,9 +98,9 @@ self.addEventListener('fetch', function (e) {
           return networkRes;
         })
         .catch(function () {
-          // Offline fallback: serve cached version or index
+          // Offline fallback: serve cached version, then dedicated offline page
           return caches.match(req)
-            .then(function (cached) { return cached || caches.match('/index.html'); });
+            .then(function (cached) { return cached || caches.match('/offline.html'); });
         })
     );
     return;

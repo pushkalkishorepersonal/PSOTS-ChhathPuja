@@ -133,3 +133,79 @@ window.PSOTS.daysLeft   = () => Math.max(0, Math.ceil((new Date(PSOTS.eventStart
     });
   }
 })();
+
+/* ── PWA: "Add to Home Screen" install banner ───────────────────────────────
+ *  Shows a small bottom banner when the browser fires beforeinstallprompt.
+ *  Dismissed state persists in localStorage for 30 days.
+ *  Styled to match the site palette (maroon/gold) without any external deps.
+ * ─────────────────────────────────────────────────────────────────────────── */
+(function _psotsInstallBanner() {
+  const DISMISS_KEY = 'psots_pwa_dismissed';
+  const DISMISS_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days
+
+  function wasDismissed() {
+    try {
+      const ts = parseInt(localStorage.getItem(DISMISS_KEY) || '0', 10);
+      return ts && (Date.now() - ts) < DISMISS_TTL;
+    } catch (e) { return false; }
+  }
+
+  let _deferredPrompt = null;
+
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    _deferredPrompt = e;
+    if (wasDismissed()) return;
+
+    // Delay slightly so the page content loads first
+    setTimeout(function () {
+      if (!_deferredPrompt) return;
+
+      const banner = document.createElement('div');
+      banner.id = 'psots-install-banner';
+      banner.innerHTML =
+        '<style>' +
+        '#psots-install-banner{position:fixed;bottom:0;left:0;right:0;z-index:9999;' +
+        'background:linear-gradient(135deg,#3d1000,#2d0800);color:#fff;' +
+        'display:flex;align-items:center;gap:.75rem;padding:.9rem 1.1rem 1.1rem;' +
+        'box-shadow:0 -4px 24px rgba(0,0,0,.35);animation:pib .35s ease both}' +
+        '@keyframes pib{from{transform:translateY(100%)}to{transform:translateY(0)}}' +
+        '#psots-install-banner .pib-icon{font-size:2rem;flex-shrink:0}' +
+        '#psots-install-banner .pib-text{flex:1;min-width:0}' +
+        '#psots-install-banner .pib-title{font-weight:700;font-size:.88rem;color:#ffc200;margin-bottom:.15rem}' +
+        '#psots-install-banner .pib-sub{font-size:.75rem;color:rgba(255,220,160,.78);line-height:1.4}' +
+        '#psots-install-banner .pib-install{background:linear-gradient(135deg,#e85c00,#c93800);' +
+        'color:#fff;border:none;border-radius:50px;padding:.5rem 1.1rem;font-size:.8rem;font-weight:700;' +
+        'cursor:pointer;white-space:nowrap;flex-shrink:0;box-shadow:0 3px 10px rgba(232,92,0,.4)}' +
+        '#psots-install-banner .pib-close{background:rgba(255,255,255,.1);border:none;color:rgba(255,255,255,.6);' +
+        'border-radius:50%;width:28px;height:28px;cursor:pointer;font-size:.9rem;flex-shrink:0;display:flex;align-items:center;justify-content:center}' +
+        '</style>' +
+        '<div class="pib-icon">🌅</div>' +
+        '<div class="pib-text">' +
+          '<div class="pib-title">Add to Home Screen</div>' +
+          '<div class="pib-sub">One tap access — schedules, payments, updates even offline</div>' +
+        '</div>' +
+        '<button class="pib-install" onclick="window._psotsInstall()">Install</button>' +
+        '<button class="pib-close" onclick="window._psotsInstallDismiss()" title="Dismiss">✕</button>';
+
+      document.body.appendChild(banner);
+    }, 3000);
+  });
+
+  window._psotsInstall = function () {
+    if (!_deferredPrompt) return;
+    _deferredPrompt.prompt();
+    _deferredPrompt.userChoice.then(function () {
+      _deferredPrompt = null;
+      const b = document.getElementById('psots-install-banner');
+      if (b) b.remove();
+    });
+  };
+
+  window._psotsInstallDismiss = function () {
+    try { localStorage.setItem(DISMISS_KEY, String(Date.now())); } catch (e) {}
+    _deferredPrompt = null;
+    const b = document.getElementById('psots-install-banner');
+    if (b) { b.style.animation = 'pib .3s ease reverse'; setTimeout(function () { b.remove(); }, 300); }
+  };
+})();
