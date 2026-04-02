@@ -2,53 +2,109 @@ rules_version = '2';
 
 // ════════════════════════════════════════════════════
 //  PSOTS Chhath Puja — Firestore Security Rules
-//  Step 1: Profiles only
+//
+//  Step 2: Firebase Auth is now active.
+//  - Profiles locked to owner (request.auth.uid == uid)
+//  - Contributions: create requires auth, admin-only update/delete
+//  - Admin-only collections: announcements, config, finance, receipts, residents
 //
 //  DEPLOY: firebase deploy --only firestore:rules
 //  OR:     Firebase Console → Firestore → Rules tab → paste & publish
-//
-//  These rules are intentionally open for the initial rollout
-//  because we are not yet using Firebase Auth (still on Google OAuth).
-//  Step 2 will add Firebase Auth sign-in and tighten these rules.
 // ════════════════════════════════════════════════════
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
+    // ── Shared helpers ─────────────────────────────────
+
+    function isNonEmpty(val) {
+      return val != null && val != '';
+    }
+
+    // Checks Firebase Auth token email against admin list.
+    // Add additional admin emails to the list as needed.
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.token.email in [
+               'pushkalkishore@gmail.com'
+             ];
+    }
+
+    function isValidContribution(data) {
+      return data.keys().hasAll(['flat', 'year', 'amount', 'status'])
+          && isNonEmpty(data.flat)
+          && data.year is int
+          && data.amount is number
+          && data.amount > 0
+          && data.amount < 1000000  // sanity cap: ₹10 lakh max
+          && isNonEmpty(data.status);
+    }
+
     // ── Profiles ──────────────────────────────────────
-    // Document ID = Google OAuth sub (a large opaque numeric string,
-    // not publicly guessable). Any client that knows the UID can read/write.
-    // Step 2 upgrade: allow read, write: if request.auth != null && request.auth.uid == uid;
+    // Document ID = Firebase Auth UID.
+    // Read: only the owning user (or admin).
+    // Write: only the owning user (or admin).
     match /profiles/{uid} {
-      allow read, write: if true;
+      allow read:  if request.auth != null && (request.auth.uid == uid || isAdmin());
+      allow write: if request.auth != null && (request.auth.uid == uid || isAdmin());
     }
 
     // ── Contributions ──────────────────────────────────
-    // Historical + current year contributions indexed by flat number.
-    // Readable by anyone (flat numbers are not secret).
-    // Writable by anyone for now — Step 2 will restrict to admin + owner.
+    // Read: any signed-in user may read contributions.
+    // Create: any signed-in user may submit a new pending contribution with valid fields.
+    // Update/Delete: admin only (for verify / reject / cleanup).
     match /contributions/{docId} {
-      allow read: if true;
-      allow write: if true;
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null
+                    && isValidContribution(request.resource.data)
+                    && request.resource.data.status == 'Pending Verification';
+
+      allow update: if isAdmin();
+      allow delete: if isAdmin();
     }
 
     // ── Residents directory ─────────────────────────────
-    // Document ID = sanitised flat number (e.g. "15167", "15167A").
-    // Fields: flat, name, mobile, tower, total, lastYear, isVrati.
-    // Readable by anyone. Step 2 will restrict writes to admin only.
+    // Read: any signed-in user.
+    // Write: admin only.
     match /residents/{flat} {
-      allow read: if true;
-      allow write: if true;
+      allow read:  if request.auth != null;
+      allow write: if isAdmin();
     }
 
     // ── Announcements ───────────────────────────────────
-    // Community announcements managed by admin.
-    // Readable by anyone. Step 2 will restrict writes to admin only.
+    // Read: public (unauthenticated visitors can see announcements).
+    // Write: admin only.
     match /announcements/{docId} {
-      allow read: if true;
-      allow write: if true;
+      allow read:  if true;
+      allow write: if isAdmin();
     }
 
-    // ── Everything else — locked until later migration steps ──
+    // ── Site Config ─────────────────────────────────────
+    // Read: public (JS needs config values like upiId on page load).
+    // Write: admin only.
+    match /config/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Finance ─────────────────────────────────────────
+    // Read: public (finance page shows summary publicly).
+    // Write: admin only.
+    match /finance/{docId} {
+      allow read:  if true;
+      allow write: if isAdmin();
+    }
+
+    // ── Receipts ────────────────────────────────────────
+    // Read: signed-in users only (contains expense details).
+    // Write: admin only.
+    match /receipts/{docId} {
+      allow read:  if request.auth != null;
+      allow write: if isAdmin();
+    }
+
+    // ── Everything else — locked ─────────────────────────
     match /{document=**} {
       allow read, write: if false;
     }

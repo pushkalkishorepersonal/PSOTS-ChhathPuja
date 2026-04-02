@@ -8,9 +8,11 @@
   <link rel="stylesheet" href="../css/style.css"/>
   <script src="../js/config.js"></script>
   <script src="../js/auth-gate.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-firestore-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.22.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics-compat.js"></script>
   <script src="../js/firebase-config.js"></script>
   <script src="../js/db.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSi2BTRuu7PkXE8AHa012XqgVYjTIyrUsoA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
@@ -208,7 +210,7 @@
     <!-- UPI ID + amount line — always visible -->
     <div class="upi-id-row" style="margin-bottom:.6rem">
       <span style="font-size:.76rem;color:#6b3a18;white-space:nowrap">UPI ID:</span>
-      <span class="upi-id-text">9482088904@sbi</span>
+      <span class="upi-id-text" id="upiIdDisplay">Loading…</span>
       <button class="copy-btn" id="copyBtn" onclick="copyUpiId()">📋 Copy</button>
     </div>
     <p id="amtDisplay" style="font-size:.78rem;color:#6b3a18;margin:0 0 .75rem;text-align:center">Amount: enter above</p>
@@ -319,6 +321,14 @@
       <div class="sb-icon">🎉</div>
       <h4>जय छठी मैया!</h4>
       <p id="successTxt">Your contribution has been recorded. The committee will verify and confirm shortly.</p>
+      <!-- WhatsApp confirmation deep-link (href set by JS after submit) -->
+      <a id="waConfirmBtn" href="#" target="_blank" rel="noopener"
+         style="display:none;margin-top:1rem;background:#25d366;color:#fff;border-radius:50px;
+                padding:.65rem 1.4rem;font-size:.84rem;font-weight:700;text-decoration:none;
+                align-items:center;gap:.5rem;box-shadow:0 4px 14px rgba(37,211,102,.35);
+                transition:background .2s">
+        <span style="font-size:1rem">💬</span> Confirm on WhatsApp
+      </a>
       <a href="../portal.html" style="display:block;margin-top:.75rem;font-size:.82rem;color:var(--or);text-decoration:none;font-weight:600">View my contributions in Portal →</a>
     </div>
   </div><!-- /conf-body -->
@@ -358,12 +368,11 @@ function initQR(){
       correctLevel:QRCode.CorrectLevel.M
     });
   }catch(e){
-    // Fallback: external API
-    const img=document.createElement('img');
-    img.style.cssText='width:180px;height:180px;border-radius:4px;display:block';
-    img.alt='UPI QR Code';
-    img.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&qzone=2&data=${encodeURIComponent(buildUpiUri(''))}`;
-    container.insertBefore(img,container.firstChild);
+    // QR library unavailable — show UPI ID text in place of QR
+    const el=document.createElement('div');
+    el.style.cssText='width:180px;height:180px;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#fff5e8;font-size:.72rem;font-weight:700;color:#7a3800;text-align:center;padding:12px;box-sizing:border-box;border:1.5px solid #f0d5b8;word-break:break-all;line-height:1.5';
+    el.innerHTML='<div>📲 Copy the<br>UPI ID below<br><span style="color:var(--or)">' + C.upiId + '</span></div>';
+    container.insertBefore(el,container.firstChild);
   }
 }
 function updateQRAmount(amount){
@@ -375,9 +384,7 @@ function updateQRAmount(amount){
     if(badge)badge.style.display='none';
   }
   if(_qr){try{_qr.makeCode(uri);}catch(e){} return;}
-  // Fallback img update
-  const img=document.querySelector('#qrContainer img');
-  if(img)img.src=`https://api.qrserver.com/v1/create-qr-code/?size=200x200&qzone=2&data=${encodeURIComponent(uri)}`;
+  // Fallback div — amount update not needed (UPI ID shown, user enters amount manually)
 }
 function downloadQR(){
   try{
@@ -436,44 +443,65 @@ function checkPreviousSubmission(){
 
 async function fetchLastSheetEntry(){
   const banner=document.getElementById('lastEntryBanner');
-  if(!banner||!C.scriptUrl||C.scriptUrl.includes('YOUR_APPS')) return;
+  if(!banner) return;
   const flat=(userProfile.flat||'').trim();
   const mobile=(userProfile.mobile||'').replace(/\D/g,'').slice(-10);
   if(!flat&&!mobile) return; // nothing to look up
   banner.style.display='block';
+
+  function _renderList(list){
+    const currentYear=_ACTIVE_YR;
+    const filtered=list.filter(c=>Number(c.year)===currentYear);
+    const txt=document.getElementById('lastEntryTxt');
+    const meta=document.getElementById('lastEntryMeta');
+    if(!filtered.length){
+      txt.textContent='No contributions found for '+currentYear+' yet.';
+      return;
+    }
+    const last=filtered[0];
+    const statusColor=last.status&&last.status.includes('Received')?'#2e7d32':'#c06000';
+    txt.textContent='Here\'s what we have on record for '+currentYear+' — make sure this matches before submitting again.';
+    meta.innerHTML=[
+      last.name?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">👤 ${last.name}</span>`:'',
+      last.amount?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">💰 ₹${parseInt(last.amount).toLocaleString('en-IN')}</span>`:'',
+      last.date&&last.date!=='null'&&last.date!=='undefined'?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">📅 ${last.date}</span>`:'',
+      last.method&&last.method!=='null'&&last.method!=='undefined'?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">📲 ${last.method}</span>`:'',
+      last.status?`<span class="asb-chip" style="border-color:${statusColor};color:${statusColor}">${last.status}</span>`:'',
+      filtered.length>1?`<span class="asb-chip" style="border-color:#f0d5b8;color:#9b6030">+${filtered.length-1} more entr${filtered.length-1===1?'y':'ies'} this year</span>`:''
+    ].join('');
+  }
+
+  // Layer 1: Try Firestore first (fast, no quota limits)
+  if(typeof PSOTS_DB!=='undefined'&&flat){
+    try{
+      const list=await PSOTS_DB.getContributions(flat);
+      if(list!==null){
+        _renderList(list.map(c=>({...c,year:Number(c.year||_ACTIVE_YR)}))
+          .sort((a,b)=>(b.submittedAt||0)-(a.submittedAt||0)));
+        return; // done — no need for Apps Script call
+      }
+    }catch(e){ /* fall through to Apps Script */ }
+  }
+
+  // Layer 2: Apps Script fallback
+  if(!C.scriptUrl||C.scriptUrl.includes('YOUR_APPS')){banner.style.display='none';return;}
   try{
     const params=new URLSearchParams({action:'myContribs'});
     if(flat) params.append('flat',flat);
     if(mobile) params.append('mobile',mobile);
     const r=await fetch(C.scriptUrl+'?'+params.toString());
     const d=await r.json();
-    const currentYear=new Date().getFullYear();
-    const list=(d.contributions||[]).filter(c=>Number(c.year)===currentYear);
-    const txt=document.getElementById('lastEntryTxt');
-    const meta=document.getElementById('lastEntryMeta');
-    if(!list.length){
-      txt.textContent='No contributions found for '+currentYear+' yet. Be the first from your flat!';
-      return;
-    }
-    const last=list[0]; // already sorted latest-first
-    const statusColor=last.status&&last.status.includes('Received')?'#2e7d32':'#c06000';
-    txt.textContent='Here\'s what we have on record for '+currentYear+' — make sure this matches before submitting again.';
-    meta.innerHTML=[
-      last.name?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">👤 ${last.name}</span>`:'',
-      last.amount?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">💰 ₹${parseInt(last.amount).toLocaleString('en-IN')}</span>`:'',
-      last.date&&last.date!=='null'?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">📅 ${last.date}</span>`:'',
-      last.method&&last.method!=='null'?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">📲 ${last.method}</span>`:'',
-      last.status?`<span class="asb-chip" style="border-color:${statusColor};color:${statusColor}">${last.status}</span>`:'',
-      list.length>1?`<span class="asb-chip" style="border-color:#f0d5b8;color:#9b6030">+${list.length-1} more entr${list.length-1===1?'y':'ies'} this year</span>`:''
-    ].join('');
+    _renderList(d.contributions||[]);
   }catch(e){
-    // Network error — silently hide, don't alarm the user
-    banner.style.display='none';
+    banner.style.display='none'; // network error — hide silently
   }
 }
 
 // Init
 window.addEventListener('DOMContentLoaded',()=>{
+  // Populate UPI ID from config (never hardcode in HTML)
+  const upiDisplay=document.getElementById('upiIdDisplay');
+  if(upiDisplay) upiDisplay.textContent=C.upiId;
   initLayout();
   initQR();
   checkPreviousSubmission();
@@ -676,9 +704,31 @@ async function submitForm(){
 
   const btn=document.getElementById('submitBtn');
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Submitting…';
+
   const now=new Date();
   const paymentDate=now.toISOString().slice(0,10); // "YYYY-MM-DD" — unambiguous
   const submittedAt=now.toISOString();             // "YYYY-MM-DDTHH:MM:SS.mmmZ"
+
+  // Server-side duplicate guard: check Firestore for a same-flat submission in last 24h
+  // (localStorage guard can be cleared — this is the real enforcement)
+  if(_payMode!=='anon'&&flat&&typeof PSOTS_DB!=='undefined'){
+    try{
+      const existing=await PSOTS_DB.getContributions(flat);
+      if(existing){
+        const cutoff=Date.now()-24*60*60*1000;
+        const recentDup=existing.find(c=>
+          Number(c.year)===_ACTIVE_YR&&
+          Number(c.amount)===parseInt(amount)&&
+          (c.status==='pending'||c.status==='Pending Verification')&&
+          (c.submittedAt||0)>cutoff
+        );
+        if(recentDup){
+          btn.disabled=false;btn.innerHTML='Submit Confirmation 🙏';
+          return showErr('A pending submission for ₹'+parseInt(amount).toLocaleString('en-IN')+' from Flat '+flat+' already exists (submitted within last 24h). Please wait for the committee to verify before submitting again.');
+        }
+      }
+    }catch(e){ /* non-blocking — proceed even if check fails */ }
+  }
   const isPortalUser=!!currentUser;
 
   // Save to Firestore first — get back the auto-generated doc ID
@@ -706,6 +756,21 @@ async function submitForm(){
   openConfirm();
   document.getElementById('successBox').style.display='block';
   document.getElementById('successTxt').textContent=`₹${parseInt(amount).toLocaleString('en-IN')} recorded! The committee will verify and confirm shortly. 🙏`;
+
+  // Build WhatsApp deep-link so the resident can send a quick confirmation message
+  const _waNum = C.waOrg || '919482088904';
+  const _waMsg = encodeURIComponent(
+    `🌅 *PSOTS Chhath Puja 2026 — Payment Confirmation*\n\n` +
+    `नमस्ते 🙏\n\n` +
+    `I have paid *₹${parseInt(amount).toLocaleString('en-IN')}* via UPI for Chhath Puja 2026.\n` +
+    (flat && flat !== '—' ? `Flat: *${flat}*\n` : '') +
+    (name && name !== 'Anonymous Contributor' ? `Name: ${name}\n` : '') +
+    `\nPlease verify my contribution.\n\nजय छठी मैया! 🌅`
+  );
+  const waBtn = document.getElementById('waConfirmBtn');
+  waBtn.href = `https://wa.me/${_waNum}?text=${_waMsg}`;
+  waBtn.style.display = 'inline-flex';
+
   document.getElementById('successBox').scrollIntoView({behavior:'smooth',block:'center'});
 }
 

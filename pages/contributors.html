@@ -119,6 +119,22 @@
 <div class="page-content">
   <div class="card">
 
+    <!-- ── My Status (no login needed) ── -->
+    <div id="myStatusBox" style="background:linear-gradient(135deg,#fff8f0,#ffe8cc);border:1.5px solid rgba(232,92,0,.22);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1rem">
+      <div style="font-size:.8rem;font-weight:700;color:#5a2e0c;margin-bottom:.6rem">🏠 Check My Contribution Status</div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <input id="myFlatInp" type="text" placeholder="Enter your flat no. (e.g. A-101)"
+          style="flex:1;border:1.5px solid #f0d5b8;border-radius:10px;padding:.58rem .85rem;font-size:.88rem;font-family:'DM Sans',sans-serif;background:#fff;outline:none;color:#1a0800;transition:border-color .2s"
+          onfocus="this.style.borderColor='#e85c00'" onblur="this.style.borderColor='#f0d5b8'"
+          onkeydown="if(event.key==='Enter')checkMyStatus()"/>
+        <button onclick="checkMyStatus()"
+          style="background:linear-gradient(135deg,#e85c00,#c93800);color:#fff;border:none;border-radius:10px;padding:.58rem 1.1rem;font-size:.83rem;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0;font-family:'DM Sans',sans-serif">
+          Check
+        </button>
+      </div>
+      <div id="myStatusResult" style="display:none;margin-top:.85rem"></div>
+    </div>
+
     <!-- Search -->
     <div class="search-wrap">
       <span class="search-icon">🔍</span>
@@ -455,6 +471,93 @@ function setFilter(m, el){
   });
   el.classList.add('on');
   renderList();
+}
+
+/* ── My Status: flat lookup without login ─────────────────────────────────── */
+async function checkMyStatus() {
+  const inp = document.getElementById('myFlatInp');
+  const res = document.getElementById('myStatusResult');
+  const flat = inp.value.trim();
+  if (!flat) { inp.focus(); return; }
+
+  res.style.display = 'block';
+  res.innerHTML = '<div style="font-size:.82rem;color:#6b3a18">Checking…</div>';
+
+  const _activeYr = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
+  const wa = (window.PSOTS && window.PSOTS.waOrg) || '919482088904';
+  let records = [];
+
+  // Try Firestore first (loaded via firebase-config.js on this page)
+  try {
+    if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length) {
+      const snap = await firebase.firestore().collection('contributions')
+        .where('flat', '==', flat).orderBy('submittedAt', 'desc').get();
+      if (!snap.empty) snap.forEach(d => records.push(d.data()));
+    }
+  } catch(e) { /* fall through to Apps Script */ }
+
+  // Fallback to Apps Script
+  if (!records.length) {
+    const su = (window.PSOTS && window.PSOTS.scriptUrl) || localStorage.getItem('psots_script_url') || '';
+    if (su) {
+      try {
+        const r = await fetch(su + '?action=myContribs&flat=' + encodeURIComponent(flat));
+        const d = await r.json();
+        if (Array.isArray(d.contribs)) records = d.contribs;
+      } catch(e) {}
+    }
+  }
+
+  if (!records.length) {
+    res.innerHTML =
+      '<div style="font-size:.84rem;color:#8b3000;font-weight:600;margin-bottom:.5rem">No contributions found for flat <strong>' + flat + '</strong></div>' +
+      '<div style="font-size:.78rem;color:#6b3a18;line-height:1.55;margin-bottom:.7rem">Not submitted yet? You can contribute now, or if you already paid please contact the committee.</div>' +
+      '<div style="display:flex;gap:.5rem;flex-wrap:wrap">' +
+        '<a href="payment.html" style="display:inline-flex;align-items:center;gap:.35rem;background:linear-gradient(135deg,#e85c00,#c93800);color:#fff;border-radius:50px;padding:.45rem 1rem;font-size:.78rem;font-weight:700;text-decoration:none">💰 Contribute Now</a>' +
+        '<a href="https://wa.me/' + wa + '?text=' + encodeURIComponent('Hi, I need help checking my contribution for Flat ' + flat + ' — PSOTS Chhath Puja 2026') + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:.35rem;background:#25d366;color:#fff;border-radius:50px;padding:.45rem 1rem;font-size:.78rem;font-weight:700;text-decoration:none">💬 WhatsApp Committee</a>' +
+      '</div>';
+    return;
+  }
+
+  // Show this year's record prominently, then history summary
+  const thisYr = records.filter(r => Number(r.year) === _activeYr);
+  const older  = records.filter(r => Number(r.year) !== _activeYr);
+
+  function statusBadge(s) {
+    if (!s) return '<span style="background:#fff8dc;color:#a07000;border-radius:50px;padding:.12rem .55rem;font-size:.72rem;font-weight:700">⏳ Pending</span>';
+    if (s.includes('Received') || s.includes('✅')) return '<span style="background:#dcfce7;color:#166534;border-radius:50px;padding:.12rem .55rem;font-size:.72rem;font-weight:700">✅ Verified</span>';
+    if (s.includes('Rejected') || s.includes('❌')) return '<span style="background:#fee2e2;color:#991b1b;border-radius:50px;padding:.12rem .55rem;font-size:.72rem;font-weight:700">❌ Rejected</span>';
+    return '<span style="background:#fff8dc;color:#a07000;border-radius:50px;padding:.12rem .55rem;font-size:.72rem;font-weight:700">⏳ ' + s + '</span>';
+  }
+
+  const fmtAmt = n => '₹' + parseInt(n || 0).toLocaleString('en-IN');
+  let html = '';
+
+  if (thisYr.length) {
+    const latest = thisYr[0];
+    const isPending = !latest.status?.includes('Received') && !latest.status?.includes('❌');
+    html += '<div style="background:#fff;border:1.5px solid #f0d5b8;border-radius:11px;padding:.8rem 1rem;margin-bottom:.6rem">' +
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:.4rem">' +
+        '<span style="font-size:.85rem;font-weight:700;color:#1a0800">' + _activeYr + ' Contribution</span>' +
+        statusBadge(latest.status) +
+      '</div>' +
+      '<div style="font-size:.8rem;color:#6b3a18">' + fmtAmt(latest.amount) + ' · ' + (latest.method || 'UPI') + (latest.date ? ' · ' + latest.date : '') + '</div>' +
+      (isPending
+        ? '<div style="margin-top:.65rem;display:flex;gap:.45rem;flex-wrap:wrap">' +
+            '<a href="https://wa.me/' + wa + '?text=' + encodeURIComponent('Hi, I paid ₹' + parseInt(latest.amount).toLocaleString('en-IN') + ' for PSOTS Chhath Puja 2026. Flat: ' + flat + '. Please verify my contribution.') + '" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:.35rem;background:#25d366;color:#fff;border-radius:50px;padding:.4rem .85rem;font-size:.76rem;font-weight:700;text-decoration:none">💬 Remind Committee</a>' +
+          '</div>'
+        : '') +
+      '</div>';
+  } else {
+    html += '<div style="font-size:.82rem;color:#8b3000;margin-bottom:.5rem">No contribution for <strong>' + _activeYr + '</strong> yet.</div>';
+  }
+
+  if (older.length) {
+    const prev = older.reduce((s, r) => s + (parseFloat(r.amount) || 0), 0);
+    html += '<div style="font-size:.76rem;color:#6b3a18;margin-top:.3rem">Previous years: ' + older.length + ' contribution' + (older.length > 1 ? 's' : '') + ' totalling ' + fmtAmt(prev) + '</div>';
+  }
+
+  res.innerHTML = html;
 }
 
 loadList();
