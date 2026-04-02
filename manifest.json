@@ -1,0 +1,55 @@
+{
+  "name": "PSOTS Chhath Puja 2026",
+  "short_name": "छठ 2026",
+  "description": "PSOTS Chhath Puja 2026 — पंच वर्ष महोत्सव · Prestige Song of the South, Bengaluru",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#fdf5e0",
+  "theme_color": "#3d1000",
+  "lang": "hi-IN",
+  "categories": ["events", "lifestyle"],
+  "icons": [
+    {
+      "src": "/images/chhath-logo-sugarcane-v2.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/images/chhath-logo-sugarcane-v2.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "screenshots": [
+    {
+      "src": "/images/chhath-prasad-thali.png",
+      "sizes": "800x600",
+      "type": "image/png",
+      "label": "Chhath Puja prasad thali"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Submit Payment",
+      "short_name": "Payment",
+      "url": "/pages/payment.html",
+      "icons": [{ "src": "/images/logo-main.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "View Schedule",
+      "short_name": "Schedule",
+      "url": "/pages/schedule.html",
+      "icons": [{ "src": "/images/logo-main.png", "sizes": "96x96" }]
+    },
+    {
+      "name": "Announcements",
+      "short_name": "Updates",
+      "url": "/pages/announcements.html",
+      "icons": [{ "src": "/images/logo-main.png", "sizes": "96x96" }]
+    }
+  ]
+}

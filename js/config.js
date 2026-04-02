@@ -105,3 +105,31 @@ window.PSOTS = {
 window.PSOTS.activeYear = new Date(window.PSOTS.eventStart).getFullYear();
 window.PSOTS.fmt        = n => '₹' + parseInt(n||0).toLocaleString('en-IN');
 window.PSOTS.daysLeft   = () => Math.max(0, Math.ceil((new Date(PSOTS.eventStart)-new Date())/86400000));
+
+/* ── PWA: inject manifest link + register Service Worker ────────────────────
+ *  Runs on every page (config.js is universal).
+ *  The manifest href is always absolute so it works from /pages/ sub-paths.
+ * ─────────────────────────────────────────────────────────────────────────── */
+(function _psotsInstallPWA() {
+  // Inject <link rel="manifest"> if not already present
+  if (!document.querySelector('link[rel="manifest"]')) {
+    const link = document.createElement('link');
+    link.rel   = 'manifest';
+    link.href  = '/manifest.json';
+    document.head.appendChild(link);
+  }
+  // Register the Service Worker
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('/sw.js', { scope: '/' })
+        .then(function (reg) {
+          console.info('[PSOTS SW] registered, scope:', reg.scope);
+          // Check for updates on each page load (won't disrupt current session)
+          reg.update().catch(function () {});
+        })
+        .catch(function (err) {
+          console.warn('[PSOTS SW] registration failed:', err.message);
+        });
+    });
+  }
+})();

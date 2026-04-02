@@ -23,6 +23,12 @@ window.PSOTS_FIREBASE_CONFIG = {
   storageBucket:     'psots-chhath.firebasestorage.app',
   messagingSenderId: '379285397692',
   appId:             '1:379285397692:web:dbd36403ee0b5e076eb0b9',
+  measurementId:     'FILL_IN',  // Firebase Console → Analytics → Data streams → Measurement ID
+
+  // App Check: Firebase Console → App Check → Register app → reCAPTCHA v3
+  // Then Google Cloud Console → APIs → reCAPTCHA Enterprise → create site key
+  // Paste the SITE key (not secret key) here:
+  appCheckSiteKey:   'FILL_IN',
 };
 
 /* ── Firebase Auth initialisation (runs after SDK loads) ──────────────── */
@@ -36,6 +42,36 @@ window.PSOTS_FIREBASE_CONFIG = {
     /* ── 1. Ensure app is initialised (db.js may already do this) ─── */
     if (!firebase.apps.length) firebase.initializeApp(cfg);
     const auth = firebase.auth();
+
+    /* ── 1a. App Check — protect Firestore quota from bots ───────── */
+    //  Requires firebase-app-check-compat.js loaded before this script.
+    //  reCAPTCHA v3 is invisible to users (no checkbox/challenge).
+    //  Get your site key: Firebase Console → App Check → Apps → register.
+    if (typeof firebase.appCheck === 'function'
+        && cfg.appCheckSiteKey && cfg.appCheckSiteKey !== 'FILL_IN') {
+      try {
+        firebase.appCheck().activate(
+          new firebase.appCheck.ReCaptchaV3Provider(cfg.appCheckSiteKey),
+          true  // auto-refresh tokens in background
+        );
+        console.info('[PSOTS AppCheck] reCAPTCHA v3 active ✓');
+      } catch (acErr) {
+        console.warn('[PSOTS AppCheck] Activation failed:', acErr.message);
+      }
+    }
+
+    /* ── 1b. Analytics — page-view tracking ──────────────────────── */
+    //  Requires firebase-analytics-compat.js loaded before this script.
+    //  Measurement ID: Firebase Console → Project Settings → Web app → Data streams.
+    if (typeof firebase.analytics === 'function'
+        && cfg.measurementId && cfg.measurementId !== 'FILL_IN') {
+      try {
+        firebase.analytics();
+        console.info('[PSOTS Analytics] ready ✓');
+      } catch (anErr) {
+        console.warn('[PSOTS Analytics] Init failed:', anErr.message);
+      }
+    }
 
     /* ── 2. Persist session across browser restarts ───────────────── */
     auth.setPersistence(firebase.auth.Auth.Persistence.LOCAL).catch(() => {});
