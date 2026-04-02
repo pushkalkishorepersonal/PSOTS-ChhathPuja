@@ -705,6 +705,10 @@ async function submitForm(){
   const btn=document.getElementById('submitBtn');
   btn.disabled=true;btn.innerHTML='<span class="spinner"></span>Submitting…';
 
+  const now=new Date();
+  const paymentDate=now.toISOString().slice(0,10); // "YYYY-MM-DD" — unambiguous
+  const submittedAt=now.toISOString();             // "YYYY-MM-DDTHH:MM:SS.mmmZ"
+
   // Server-side duplicate guard: check Firestore for a same-flat submission in last 24h
   // (localStorage guard can be cleared — this is the real enforcement)
   if(_payMode!=='anon'&&flat&&typeof PSOTS_DB!=='undefined'){
@@ -715,7 +719,7 @@ async function submitForm(){
         const recentDup=existing.find(c=>
           Number(c.year)===_ACTIVE_YR&&
           Number(c.amount)===parseInt(amount)&&
-          c.status==='Pending Verification'&&
+          (c.status==='pending'||c.status==='Pending Verification')&&
           (c.submittedAt||0)>cutoff
         );
         if(recentDup){
@@ -725,24 +729,24 @@ async function submitForm(){
       }
     }catch(e){ /* non-blocking — proceed even if check fails */ }
   }
-
-  const dateStr=new Date().toLocaleDateString('en-IN',{day:'2-digit',month:'2-digit',year:'numeric'});
   const isPortalUser=!!currentUser;
 
-  // Save to Firestore via PSOTS_DB (waits up to 5s for DB to initialise)
+  // Save to Firestore first — get back the auto-generated doc ID
+  let docId='';
   if(typeof PSOTS_DB!=='undefined'){
     try{
       const r=await PSOTS_DB.savePendingContribution({
         name,flat,mobile,year:_ACTIVE_YR,
-        amount:parseInt(amount),method:'UPI',date:dateStr,
+        amount:parseInt(amount),method:'UPI',
+        paymentDate,source:isPortalUser?'portal':'guest',
       });
-      if(!r.ok) console.warn('[Payment] Firestore save failed:',r.error);
+      if(r.ok) docId=r.id||'';
+      else console.warn('[Payment] Firestore save failed:',r.error);
     }catch(e){ console.warn('[Payment] Firestore save error:',e); }
   }
-  // Apps Script backup
+  // Apps Script audit log — passes docId so Sheet row links back to Firestore doc
   if(C.scriptUrl&&!C.scriptUrl.includes('YOUR_APPS')){
-    const ts=new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'});
-    try{await fetch(C.scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({timestamp:ts,name,flat,mobile,amount,date:dateStr,method:'UPI',status:'Pending Verification',accountType:isPortalUser?'Portal 🔐':'Guest 👤',userId:currentUser?.id||''})});}catch(e){}
+    try{await fetch(C.scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({timestamp:submittedAt,name,flat,mobile,amount,paymentDate,method:'UPI',status:'pending',accountType:isPortalUser?'Portal 🔐':'Guest 👤',userId:currentUser?.id||'',docId})});}catch(e){}
   }
   // Save cookies for guest
   if(!currentUser){['name','flat','mobile'].forEach(k=>{const d=new Date();d.setTime(d.getTime()+365*864e5);document.cookie=`cp_${k}=${encodeURIComponent(document.getElementById('f-'+k).value)};expires=${d.toUTCString()};path=/;SameSite=Lax`;});}
