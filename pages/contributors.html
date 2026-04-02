@@ -488,11 +488,15 @@ async function checkMyStatus() {
   let records = [];
 
   // Try Firestore first (loaded via firebase-config.js on this page)
+  // No orderBy — avoids composite-index requirement and missing-field errors on old records.
+  // Sort in JS after fetching.
   try {
     if (typeof firebase !== 'undefined' && firebase.apps && firebase.apps.length) {
       const snap = await firebase.firestore().collection('contributions')
-        .where('flat', '==', flat).orderBy('submittedAt', 'desc').get();
+        .where('flat', '==', flat).get();
       if (!snap.empty) snap.forEach(d => records.push(d.data()));
+      // Sort newest first in JS
+      records.sort((a, b) => (b.submittedAt || 0) - (a.submittedAt || 0));
     }
   } catch(e) { /* fall through to Apps Script */ }
 
@@ -503,7 +507,9 @@ async function checkMyStatus() {
       try {
         const r = await fetch(su + '?action=myContribs&flat=' + encodeURIComponent(flat));
         const d = await r.json();
-        if (Array.isArray(d.contribs)) records = d.contribs;
+        // Apps Script returns { contributions: [...] }
+        if (Array.isArray(d.contributions)) records = d.contributions;
+        else if (Array.isArray(d.contribs))  records = d.contribs; // legacy fallback
       } catch(e) {}
     }
   }
