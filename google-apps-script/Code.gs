@@ -24,8 +24,8 @@ const SHEET_RECEIPTS      = 'Receipts';
 const SHEET_ROLE_PERMS    = 'RolePerms';
 
 // ─── Column headers ───
-// Col indices: 0=Timestamp 1=Name 2=Flat 3=Mobile 4=Amount 5=Method 6=PaymentDate 7=Status 8=AccountType 9=UserID 10=Year 11=DocId
-const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','PaymentDate','Status','AccountType','UserID','Year','DocId'];
+// Col indices: 0=Timestamp 1=Name 2=Flat 3=Mobile 4=Amount 5=Method 6=PaymentDate 7=Status 8=AccountType 9=UserID 10=Year 11=DocId 12=ReceiptNo
+const CON_HEADERS  = ['Timestamp','Name','Flat','Mobile','Amount','Method','PaymentDate','Status','AccountType','UserID','Year','DocId','ReceiptNo'];
 const PROF_HEADERS = ['UserID','Name','Email','Flat','Mobile','IsVrati','Photo','LastUpdated','WaOptIn'];
 const FIN_HEADERS  = ['Key','Value'];
 const ANN_HEADERS  = ['Tag','Meta','Text'];
@@ -261,8 +261,15 @@ function doGet(e) {
     case 'sendFonnteMessage':
       result = actionSendFonnteMessage({
         targets: (e.parameter.targets || '').split(',').filter(Boolean),
-        message: e.parameter.message || ''
+        message: e.parameter.message || '',
+        buttons: e.parameter.buttons || ''
       });
+      break;
+    case 'getNextReceiptNo':
+      result = actionGetNextReceiptNo(e.parameter);
+      break;
+    case 'fonnteWebhook':
+      result = actionFonnteWebhook(e.parameter);
       break;
     default:
       result = { error: 'Unknown action: ' + action };
@@ -316,6 +323,10 @@ function doPost(e) {
       result = actionSubmitVolunteer(body);
     } else if (body.action === 'sendFonnteMessage') {
       result = actionSendFonnteMessage(body);
+    } else if (body.action === 'storePendingApproval') {
+      result = actionStorePendingApproval(body);
+    } else if (body.action === 'fonnteWebhook' || body.type === 'button_reply' || body.type === 'text') {
+      result = actionFonnteWebhook(body);
     } else {
       // Default: new contribution
       result = actionAddContribution(body);
@@ -439,6 +450,8 @@ function actionAddContribution(body) {
   // timestamp stored as ISO string — no locale ambiguity
   const timestamp = body.timestamp || new Date().toISOString();
 
+  const receiptNo = body.receiptNo || '';
+
   sheet.appendRow([
     timestamp,
     name,
@@ -451,21 +464,24 @@ function actionAddContribution(body) {
     body.accountType || 'Guest 👤',
     body.userId || '',
     year,
-    body.docId  || ''   // Firestore auto-ID — links Sheet row ↔ Firestore doc
+    body.docId  || '',  // Firestore auto-ID — links Sheet row ↔ Firestore doc
+    receiptNo           // globally unique receipt number
   ]);
 
-  // Notify committee on WhatsApp (fire-and-forget)
-  try { notifyCommitteeWhatsApp(body); } catch(e) {}
+  // Notify committee on WhatsApp with receipt number (fire-and-forget)
+  try { notifyCommitteeWhatsApp({ ...body, receiptNo }); } catch(e) {}
 
   // Send WhatsApp receipt to contributor (fire-and-forget)
   try { sendContributorWhatsApp({
-    phone:  body.mobile || '',
-    name:   body.name   || '',
-    flat:   body.flat   || '',
-    amount: body.amount || '',
-    method: body.method || 'UPI',
-    date:   paymentDate,
-    txnid:  ''
+    phone:     body.mobile    || '',
+    name:      body.name      || '',
+    flat:      body.flat      || '',
+    amount:    body.amount    || '',
+    method:    body.method    || 'UPI',
+    date:      paymentDate,
+    receiptNo: receiptNo,
+    docId:     body.docId     || '',
+    txnid:     ''
   }); } catch(e) {}
 
   return { success: true, message: 'Contribution recorded!' };
@@ -1337,23 +1353,194 @@ function authorizeExternalRequests() {
 }
 
 function sendContributorWhatsApp(p) {
-  const amt = p.amount ? '₹' + parseFloat(p.amount).toLocaleString('en-IN') : '';
-  const ref = p.txnid  ? '\n🔖 Ref: ' + p.txnid : '';
+  const C      = getSiteConfig() || {};
+  const year   = C.activeYear   || new Date().getFullYear();
+  const event  = C.eventName    || ('PSOTS Chhath Puja ' + year);
+  const site   = C.siteUrl      || 'https://chhath.psots.in';
+  const amt    = p.amount ? '₹' + parseFloat(p.amount).toLocaleString('en-IN') : '';
+  const rNo    = p.receiptNo || '';
+  const portal = site + '/portal.html';
+  const receiptLink = rNo ? site + '/pages/payment.html?receipt=' + encodeURIComponent(rNo) : '';
 
   const msg =
-    '🌅 *PSOTS Chhath Puja 2026*\n' +
-    '✅ *Payment Received*\n\n' +
-    '👤 ' + (p.name || 'Contributor') + '\n' +
-    (p.flat   ? '🏠 Flat ' + p.flat + ' · Prestige Song of the South\n' : '') +
-    '💰 *' + amt + '*' +
-    (p.method ? ' via ' + p.method : '') + '\n' +
-    (p.date   ? '📅 ' + p.date + '\n' : '') +
-    ref + '\n\n' +
-    (p.verified ? '✅ Payment confirmed by gateway.\n' : '⏳ Will be verified by committee within 24 hours.\n') +
-    '👉 View receipt: chhath.psots.in/portal.html\n\n' +
-    'जय छठी मैया! 🙏';
+    '🌅 *Thank you, ' + (p.name || 'Dear Resident') + '!*\n\n' +
+    'Your contribution of *' + amt + '* for\n' +
+    '*' + event + '*\n' +
+    'has been submitted successfully.\n\n' +
+    (rNo          ? '🧾 *Receipt No:* `' + rNo + '`\n'            : '') +
+    (p.flat       ? '🏠 Flat ' + p.flat + '\n'                    : '') +
+    (p.method     ? '📲 Paid via ' + p.method + '\n'              : '') +
+    '⏳ *Status:* Pending verification\n\n' +
+    (receiptLink  ? '📥 *Save receipt:*\n' + receiptLink + '\n\n' : '') +
+    '🔗 *Track status:*\n' + portal + '\n\n' +
+    'The committee will verify your payment shortly.\n' +
+    '_Jai Chhathi Maiya! 🌅_';
 
   sendWA(p.phone, msg);
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Globally unique receipt number (LockService counter)
+   GET ?action=getNextReceiptNo&year=2026
+   Returns { ok, seq, receiptNo }
+   Uses LockService so concurrent requests never get the same seq.
+══════════════════════════════════════════════════════════ */
+function actionGetNextReceiptNo(params) {
+  const year = parseInt(params.year) || new Date().getFullYear();
+  const lock = LockService.getScriptLock();
+  try {
+    lock.waitLock(10000); // wait up to 10s for the lock
+  } catch(e) {
+    return { ok: false, error: 'Could not acquire lock: ' + e.message };
+  }
+  try {
+    const key   = 'receiptSeq_' + year;
+    const props = PropertiesService.getScriptProperties();
+    const seq   = parseInt(props.getProperty(key) || '0', 10) + 1;
+    props.setProperty(key, String(seq));
+    const now = new Date();
+    const pad = function(n) { return String(n).padStart(2, '0'); };
+    const ds  = String(year) + pad(now.getMonth() + 1) + pad(now.getDate());
+    const receiptNo = 'PSOTS-' + year + '-' + ds + '-' + String(seq).padStart(4, '0');
+    return { ok: true, seq: seq, receiptNo: receiptNo };
+  } catch(e) {
+    return { ok: false, error: e.message };
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Store pending-approval metadata for Fonnte webhook
+   Called by payment.html via POST after contribution is saved.
+   Keyed by receiptNo so webhook can look it up on button reply.
+   TTL: entries are deleted after successful webhook processing.
+══════════════════════════════════════════════════════════ */
+function actionStorePendingApproval(body) {
+  const receiptNo = String(body.receiptNo || '').trim();
+  if (!receiptNo) return { ok: false, error: 'receiptNo required' };
+  const props = PropertiesService.getScriptProperties();
+  props.setProperty('pend_' + receiptNo, JSON.stringify({
+    receiptNo: receiptNo,
+    docId:     body.docId   || '',
+    flat:      body.flat    || '',
+    name:      body.name    || '',
+    mobile:    String(body.mobile  || '').replace(/\D/g, '').slice(-10),
+    amount:    parseInt(body.amount) || 0,
+    storedAt:  Date.now()
+  }));
+  return { ok: true };
+}
+
+/* ══════════════════════════════════════════════════════════
+   ACTION: Fonnte webhook — committee tapped an approval button
+   Fonnte sends a webhook POST (or GET) to our script URL.
+   We parse the button reply text, find the matching pending
+   approval record, update the Sheet status, then send a WA
+   confirmation to the resident if approved.
+
+   Button reply format: "✅ Appr #0042" / "❌ Reject #0042" / "⏳ Hold #0042"
+   The #NNNN suffix is the last 4 digits of the receipt number.
+══════════════════════════════════════════════════════════ */
+function actionFonnteWebhook(body) {
+  const msg    = String(body.message || body.msg || body.text || '').trim();
+  const sender = String(body.sender  || body.from || '').replace(/\D/g, '');
+
+  if (!msg) return { ok: false, error: 'Empty message' };
+
+  // Only committee members should be able to trigger this
+  const props   = PropertiesService.getScriptProperties();
+  const waOrg   = String(props.getProperty('PSOTS_WAORG')  || '919482088904').replace(/\D/g, '');
+  const waOrg2  = String(props.getProperty('PSOTS_WAORG2') || '919902837002').replace(/\D/g, '');
+  if (sender && sender !== waOrg && sender !== waOrg2) {
+    return { ok: false, error: 'Sender not authorised: ' + sender };
+  }
+
+  // Determine action from button label
+  var action;
+  if (msg.toLowerCase().includes('appr') || msg.includes('✅')) {
+    action = 'verified';
+  } else if (msg.toLowerCase().includes('reject') || msg.includes('❌')) {
+    action = 'rejected';
+  } else if (msg.toLowerCase().includes('hold') || msg.toLowerCase().includes('pend') || msg.includes('⏳')) {
+    action = 'pending';
+  } else {
+    return { ok: false, error: 'Could not determine action from: ' + msg };
+  }
+
+  // Extract 4-digit sequence from "#0042" pattern
+  var seqMatch = msg.match(/#(\d{4})/);
+  if (!seqMatch) return { ok: false, error: 'No receipt sequence found in: ' + msg };
+  const seq4 = seqMatch[1];
+
+  // Find the matching pending approval record by receipt suffix
+  var record = null;
+  var recordKey = null;
+  var allKeys = props.getKeys().filter(function(k) { return k.startsWith('pend_') && k.endsWith('-' + seq4); });
+  if (allKeys.length > 0) {
+    recordKey = allKeys[0];
+    try { record = JSON.parse(props.getProperty(recordKey)); } catch(e) {}
+  }
+  if (!record) return { ok: false, error: 'No pending approval found for #' + seq4 };
+
+  // Map action to display status
+  const statusMap = {
+    verified: 'Cash/UPI Received ✓',
+    rejected: 'Rejected ✗',
+    pending:  'Pending Verification'
+  };
+  const displayStatus = statusMap[action];
+
+  // Update Google Sheet by matching DocId (col 12) or flat+receiptNo fallback
+  const sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(SHEET_CONTRIBUTIONS);
+  if (sheet && sheet.getLastRow() > 1) {
+    const data   = sheet.getRange(2, 1, sheet.getLastRow() - 1, CON_HEADERS.length).getValues();
+    var updated  = false;
+    for (var i = 0; i < data.length; i++) {
+      var rowDocId    = String(data[i][11] || '');
+      var rowReceipt  = String(data[i][12] || '');
+      if ((record.docId && rowDocId === record.docId) || (rowReceipt === record.receiptNo)) {
+        sheet.getRange(i + 2, 8).setValue(displayStatus);       // col 8 = Status (1-indexed)
+        if (action === 'verified') {
+          sheet.getRange(i + 2, 8).setBackground('#d9ead3');
+        } else if (action === 'rejected') {
+          sheet.getRange(i + 2, 8).setBackground('#fce8e6');
+        }
+        updated = true;
+        break;
+      }
+    }
+    Logger.log('Fonnte webhook: ' + action + ' for ' + record.receiptNo + ', sheet updated=' + updated);
+  }
+
+  // Send WA to resident on approval or rejection
+  const token = props.getProperty('FONNTE_TOKEN');
+  if (token && record.mobile) {
+    var residentMsg;
+    if (action === 'verified') {
+      residentMsg =
+        '✅ *Payment Confirmed — PSOTS Chhath Puja*\n\n' +
+        'Dear ' + (record.name || 'Resident') + ',\n\n' +
+        'Your contribution of *₹' + parseInt(record.amount).toLocaleString('en-IN') + '* ' +
+        '(Receipt: `' + record.receiptNo + '`) has been *verified* by the committee. 🙏\n\n' +
+        'जय छठी मैया! 🌅';
+    } else if (action === 'rejected') {
+      residentMsg =
+        '❌ *Payment Update — PSOTS Chhath Puja*\n\n' +
+        'Dear ' + (record.name || 'Resident') + ',\n\n' +
+        'Your submission (Receipt: `' + record.receiptNo + '`) could not be verified. ' +
+        'Please contact the committee for details.\n\n' +
+        'Committee: https://wa.me/' + waOrg;
+    }
+    if (residentMsg) {
+      sendWA('91' + record.mobile, residentMsg);
+    }
+  }
+
+  // Clean up the pending record
+  if (recordKey) props.deleteProperty(recordKey);
+
+  return { ok: true, action: action, receipt: record.receiptNo, name: record.name };
 }
 
 /* ══════════════════════════════════════════════════════════
@@ -1390,14 +1577,25 @@ function actionSendFonnteMessage(body) {
   if (!targets.length) return { ok: false, msg: 'No valid phone numbers after normalisation' };
 
   try {
+    // Base payload — always sent
+    var payload = {
+      target:      targets.join(','),
+      message:     message,
+      countryCode: '91'
+    };
+    // Button message — add type + button labels when provided
+    // Fonnte format: button="Label1|Label2|Label3" (max 3, max 20 chars each)
+    var buttons = String(body.buttons || '').trim();
+    if (buttons) {
+      payload.type   = 'button';
+      payload.button = buttons.split('|').slice(0, 3)
+                              .map(function(b) { return b.trim().slice(0, 20); })
+                              .join('|');
+    }
     var resp = UrlFetchApp.fetch('https://api.fonnte.com/send', {
       method:  'post',
       headers: { 'Authorization': token },
-      payload: {
-        target:      targets.join(','),
-        message:     message,
-        countryCode: '91'
-      },
+      payload: payload,
       muteHttpExceptions: true
     });
     var parsed = JSON.parse(resp.getContentText());
@@ -1443,23 +1641,54 @@ function sendWA(phone, message) {
    Script Properties: COMMITTEE_PHONE (e.g. 919482088904)
 ══════════════════════════════════════════════════════════ */
 function notifyCommitteeWhatsApp(body) {
-  const props = PropertiesService.getScriptProperties();
-  const phone = props.getProperty('COMMITTEE_PHONE');
+  const C      = getSiteConfig() || {};
+  const year   = C.activeYear   || new Date().getFullYear();
+  const event  = C.eventName    || ('PSOTS Chhath Puja ' + year);
+  const site   = C.siteUrl      || 'https://chhath.psots.in';
+
+  const props  = PropertiesService.getScriptProperties();
+  const phone  = props.getProperty('COMMITTEE_PHONE') || (C.waOrg || '');
   if (!phone) return;
 
-  const amt    = body.amount ? '₹' + parseFloat(body.amount).toLocaleString('en-IN') : '?';
-  const name   = body.name   || 'Unknown';
-  const flat   = body.flat   || '?';
-  const method = body.method || 'UPI';
-  const date   = body.date   || Utilities.formatDate(new Date(), Session.getScriptTimeZone(), 'dd MMM yyyy');
+  const amt      = body.amount ? '₹' + parseFloat(body.amount).toLocaleString('en-IN') : '?';
+  const name     = body.name    || 'Unknown';
+  const flat     = body.flat    || '?';
+  const method   = body.method  || 'UPI';
+  const rNo      = body.receiptNo || '';
+  const docId    = body.docId   || '';
+  const adminUrl = docId
+    ? site + '/admin.html?review=' + encodeURIComponent(docId)
+    : site + '/admin.html';
+  const seq4     = rNo ? rNo.slice(-4) : '????';
 
   const msg =
-    '🌅 *New Chhath 2026 Payment*\n' +
-    '👤 ' + name + ' · Flat ' + flat + '\n' +
-    '💰 ' + amt + ' via ' + method + '\n' +
-    '📅 ' + date + '\n' +
-    '⏳ Pending verification';
+    '🪔 *New Payment — ' + event + '*\n\n' +
+    '👤 *' + name + '*  |  🏠 Flat *' + flat + '*\n' +
+    '💰 *' + amt + '* via ' + method + '\n' +
+    (rNo ? '🧾 Receipt: `' + rNo + '`\n' : '') +
+    '🕐 ' + Utilities.formatDate(new Date(), 'Asia/Kolkata', 'dd MMM yyyy, hh:mm a') + '\n\n' +
+    '👉 *One-tap review:*\n' + adminUrl + '\n\n' +
+    '_Tap a button below to update status:_';
 
+  // Send as Fonnte button message if token is set; otherwise plain sendWA
+  const token = props.getProperty('FONNTE_TOKEN');
+  if (token) {
+    const buttons = '✅ Appr #' + seq4 + '|❌ Reject #' + seq4 + '|⏳ Hold #' + seq4;
+    // Send to primary and secondary committee contacts
+    const waOrg2 = String(C.waOrg2 || props.getProperty('PSOTS_WAORG2') || '').replace(/\D/g, '');
+    var normalise = function(p) {
+      p = String(p || '').replace(/\D/g, '');
+      if (!p) return null;
+      if (p.startsWith('0')) p = p.slice(1);
+      if (!p.startsWith('91')) p = '91' + p;
+      return p.length >= 12 ? p : null;
+    };
+    var targets = [normalise(phone), normalise(waOrg2)].filter(Boolean).join(',');
+    if (targets) {
+      actionSendFonnteMessage({ targets: targets.split(','), message: msg, buttons: buttons });
+      return;
+    }
+  }
   sendWA(phone, msg);
 }
 

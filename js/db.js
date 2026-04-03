@@ -801,6 +801,8 @@ const PSOTS_DB = (() => {
         mobile:      String(record.mobile || ''),
         submittedAt: Date.now(),
         source:      record.source || 'portal',
+        ...(record.receiptNo ? { receiptNo: record.receiptNo } : {}),
+        ...(record.userId    ? { userId:    record.userId    } : {}),
       });
       return { ok: true, id: docRef.id };
     } catch (e) {
@@ -852,9 +854,44 @@ const PSOTS_DB = (() => {
     }
   }
 
+  /**
+   * getNextReceiptNo(year) → { ok, receiptNo, seq }
+   *
+   * Atomically increments the global receipt counter for the year using a
+   * Firestore transaction — guarantees uniqueness across all devices/browsers.
+   * Format: PSOTS-{year}-{YYYYMMDD}-{4-digit-seq}
+   * e.g.   PSOTS-2026-20261103-0042
+   *
+   * Falls back with { ok:false } if Firestore is unavailable — caller should
+   * then try Apps Script (LockService) or local PSOTS_RECEIPT.generate().
+   */
+  async function getNextReceiptNo(year) {
+    const yr = year || new Date().getFullYear();
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      const counterRef = _db.collection('meta').doc('counters');
+      const field      = 'receiptSeq_' + yr;
+      const seq = await _db.runTransaction(async t => {
+        const doc     = await t.get(counterRef);
+        const current = doc.exists ? (doc.data()[field] || 0) : 0;
+        const next    = current + 1;
+        t.set(counterRef, { [field]: next }, { merge: true });
+        return next;
+      });
+      const now = new Date();
+      const _p  = n => String(n).padStart(2, '0');
+      const ds  = String(yr) + _p(now.getMonth() + 1) + _p(now.getDate());
+      const receiptNo = 'PSOTS-' + yr + '-' + ds + '-' + String(seq).padStart(4, '0');
+      return { ok: true, seq, receiptNo };
+    } catch (e) {
+      console.warn('[PSOTS_DB] getNextReceiptNo failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, getPendingContributions, getCurrentYearContributions, deleteContribution, deleteContributionsByYear, syncContributions, savePendingContribution, updateContributionStatus, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, getPendingContributions, getCurrentYearContributions, deleteContribution, deleteContributionsByYear, syncContributions, savePendingContribution, updateContributionStatus, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig, getNextReceiptNo };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();

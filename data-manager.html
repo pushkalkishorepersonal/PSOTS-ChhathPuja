@@ -110,8 +110,13 @@
   #toast.error{background:var(--red)}
   .sp{display:inline-block;width:13px;height:13px;border:2px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:middle;margin-right:5px}
   @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* Hide app header when global psots-nav is present (nav-component active) */
+  body:has(#psots-nav) header { display: none; }
   </style>
   <script src="js/config.js"></script>
+  <!-- Nav component — injects global site nav; CSS above hides header when active -->
+  <script src="js/nav-component.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check-compat.js"></script>
@@ -1508,5 +1513,6 @@ function toast(m, t='') {
   setTimeout(() => el.className = '', 3500);
 }
 </script>
+<script src="js/footer-component.js"></script>
 </body>
 </html>
