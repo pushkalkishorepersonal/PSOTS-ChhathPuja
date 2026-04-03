@@ -1714,7 +1714,27 @@ function logout() {
 function initAdmin() {
   PsotsCache.invalidate('contributors_all'); // always fetch fresh on page load
   loadScriptUrl();
-  loadAdminCon();
+  // If ?review=DOCID is in the URL, jump to that contribution after data loads
+  const _reviewDocId = new URLSearchParams(location.search).get('review');
+  loadAdminCon().then(() => {
+    if (!_reviewDocId) return;
+    switchTab('contributors'); // switch to contributors tab
+    setTimeout(() => {
+      const card = document.getElementById('con-card-' + _reviewDocId);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        // Highlight the card with a pulsing outline for 4 seconds
+        const orig = card.style.outline;
+        card.style.outline = '3px solid #e85c00';
+        card.style.boxShadow = '0 0 0 6px rgba(232,92,0,.2)';
+        setTimeout(() => { card.style.outline = orig; card.style.boxShadow = ''; }, 4000);
+      } else {
+        // Card not found — try searching for it in the search box
+        const search = document.getElementById('conSearchAdmin');
+        if (search) { search.value = _reviewDocId.slice(-4); filterAdminCon(); }
+      }
+    }, 400);
+  }).catch(() => {});
   loadAnnouncements();
   loadDayEditor();
   initBroadcast();
@@ -2189,6 +2209,7 @@ async function loadAdminCon() {
   } finally {
     _conLoading = false;
   }
+  // Always resolves (never rejects) so callers can safely .then()
 }
 
 async function _doLoadAdminCon() {
@@ -2357,7 +2378,8 @@ function _conCardHtml(r) {
   const borderColor = isPending ? 'rgba(234,179,8,.35)' : isVerified ? 'rgba(46,125,50,.2)' : 'rgba(192,57,43,.2)';
   const towerTxt    = fp.tower ? ` · T${fp.tower}` : '';
   const utr         = r.utr || r.ref || '';
-  return `<div style="background:#fff;border:1.5px solid ${borderColor};border-radius:13px;padding:.9rem 1rem;display:grid;gap:.5rem">
+  const cardId = r._id ? `con-card-${r._id}` : '';
+  return `<div ${cardId ? `id="${cardId}"` : ''} style="background:#fff;border:1.5px solid ${borderColor};border-radius:13px;padding:.9rem 1rem;display:grid;gap:.5rem">
     <div style="display:flex;align-items:flex-start;gap:.7rem">
       <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,${col},${col}cc);display:flex;align-items:center;justify-content:center;font-family:'DM Sans',sans-serif;font-weight:900;font-size:.88rem;color:#fff;flex-shrink:0">${initials}</div>
       <div style="flex:1;min-width:0">

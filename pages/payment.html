@@ -554,6 +554,35 @@ window.addEventListener('DOMContentLoaded',()=>{
   // Auto-activate mode from URL param (e.g. ?mode=anon from homepage tile)
   const urlMode = new URLSearchParams(location.search).get('mode');
   if(urlMode === 'anon') setMode('anon');
+
+  // ?receipt=PSOTS-2026-... — show receipt from WA link or shared URL
+  const urlReceipt = new URLSearchParams(location.search).get('receipt');
+  if(urlReceipt && typeof PSOTS_RECEIPT !== 'undefined'){
+    const stored = PSOTS_RECEIPT.load(urlReceipt);
+    if(stored){
+      _lastReceiptData = stored;
+      // Show a sticky receipt card at the top of the page
+      const card = document.createElement('div');
+      card.style.cssText = 'background:linear-gradient(135deg,#f0fff4,#e4fce9);border:1.5px solid #a5d6a7;border-radius:16px;padding:1.2rem 1.4rem;margin-bottom:1.2rem;text-align:center';
+      card.innerHTML =
+        '<div style="font-size:1.6rem;margin-bottom:.35rem">🧾</div>' +
+        '<div style="font-size:.95rem;font-weight:700;color:#1b5e20;margin-bottom:.2rem">Your Receipt</div>' +
+        '<div style="font-family:\'DM Sans\',sans-serif;font-size:.88rem;color:#e85c00;font-weight:900;letter-spacing:.04em;margin-bottom:.75rem">' + urlReceipt + '</div>' +
+        '<div style="display:flex;gap:.5rem;justify-content:center;flex-wrap:wrap">' +
+          '<button onclick="printReceipt()" style="background:linear-gradient(135deg,#e85c00,#c93800);color:#fff;border:none;border-radius:50px;padding:.5rem 1.2rem;font-size:.82rem;font-weight:700;cursor:pointer;font-family:\'DM Sans\',sans-serif">🖨 Print</button>' +
+          '<button onclick="downloadReceipt()" style="background:#fff;color:#e85c00;border:1.5px solid rgba(232,92,0,.35);border-radius:50px;padding:.5rem 1.2rem;font-size:.82rem;font-weight:700;cursor:pointer;font-family:\'DM Sans\',sans-serif">⬇ Save</button>' +
+        '</div>';
+      const pc = document.querySelector('.page-content');
+      if(pc) pc.insertBefore(card, pc.firstChild);
+    } else {
+      // Receipt not in localStorage (different device) — prompt to submit fresh
+      const note = document.createElement('div');
+      note.style.cssText = 'background:linear-gradient(135deg,#fff8f0,#fff3e8);border:1.5px solid rgba(232,92,0,.2);border-radius:14px;padding:1rem 1.2rem;margin-bottom:1rem;font-size:.82rem;color:#6b3a18;line-height:1.65';
+      note.innerHTML = '🧾 <strong>Receipt ' + urlReceipt + '</strong> — This receipt was generated on another device. To download it again, please contact the committee or check your WhatsApp for the saved receipt link.';
+      const pc = document.querySelector('.page-content');
+      if(pc) pc.insertBefore(note, pc.firstChild);
+    }
+  }
 });
 
 // QR is primary on all devices — app shortcuts are optional and collapsed by default
@@ -753,6 +782,8 @@ async function submitForm(){
         name,flat,mobile,year:_ACTIVE_YR,
         amount:parseInt(amount),method:'UPI',
         paymentDate,source:isPortalUser?'portal':'guest',
+        receiptNo,
+        userId:currentUser?.id||'',
       });
       if(r.ok) docId=r.id||'';
       else console.warn('[Payment] Firestore save failed:',r.error);
@@ -760,28 +791,48 @@ async function submitForm(){
   }
   // Apps Script audit log — passes docId so Sheet row links back to Firestore doc
   if(C.scriptUrl&&!C.scriptUrl.includes('YOUR_APPS')){
-    try{await fetch(C.scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({timestamp:submittedAt,name,flat,mobile,amount,paymentDate,method:'UPI',status:'pending',accountType:isPortalUser?'Portal 🔐':'Guest 👤',userId:currentUser?.id||'',docId})});}catch(e){}
+    try{await fetch(C.scriptUrl,{method:'POST',mode:'no-cors',headers:{'Content-Type':'application/json'},body:JSON.stringify({timestamp:submittedAt,name,flat,mobile,amount,paymentDate,method:'UPI',status:'pending',accountType:isPortalUser?'Portal 🔐':'Guest 👤',userId:currentUser?.id||'',docId,receiptNo})});}catch(e){}
   }
   // Save cookies for guest
   if(!currentUser){['name','flat','mobile'].forEach(k=>{const d=new Date();d.setTime(d.getTime()+365*864e5);document.cookie=`cp_${k}=${encodeURIComponent(document.getElementById('f-'+k).value)};expires=${d.toUTCString()};path=/;SameSite=Lax`;});}
   // 24h cooldown guard
   localStorage.setItem(SUBMIT_KEY,JSON.stringify({name,flat,amount,ts:Date.now()}));
 
-  // Generate receipt
+  // Generate receipt number — server-first for global uniqueness
+  // Priority: 1) Apps Script LockService  2) Firestore transaction  3) local fallback
   let receiptNo='';
-  if(typeof PSOTS_RECEIPT!=='undefined'){
-    try{
+  try{
+    // 1. Apps Script counter (LockService — guaranteed globally unique)
+    if(C.scriptUrl&&!C.scriptUrl.includes('YOUR_APPS')){
+      const rr=await fetch(C.scriptUrl+'?action=getNextReceiptNo&year='+_ACTIVE_YR);
+      const rd=await rr.json();
+      if(rd.ok) receiptNo=rd.receiptNo;
+    }
+    // 2. Firestore transaction (globally unique if Apps Script unavailable)
+    if(!receiptNo&&typeof PSOTS_DB!=='undefined'){
+      const frd=await PSOTS_DB.getNextReceiptNo(_ACTIVE_YR);
+      if(frd.ok) receiptNo=frd.receiptNo;
+    }
+    // 3. Local fallback (per-device — only if both server sources fail)
+    if(!receiptNo&&typeof PSOTS_RECEIPT!=='undefined'){
       receiptNo=PSOTS_RECEIPT.generate(_ACTIVE_YR);
+    }
+  }catch(e){ console.warn('[Payment] Receipt number error:',e); }
+
+  if(receiptNo&&typeof PSOTS_RECEIPT!=='undefined'){
+    try{
       _lastReceiptData={
         receiptNo,name,flat,mobile,
         amount:parseInt(amount),
         method:'UPI',
         year:_ACTIVE_YR,
         date:new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}),
+        society:(window.PSOTS&&window.PSOTS.society)||'Prestige Song of the South, Bengaluru',
+        eventName:(window.PSOTS&&window.PSOTS.eventName)||('PSOTS Chhath Puja '+_ACTIVE_YR),
         docId
       };
       PSOTS_RECEIPT.saveLocal(_lastReceiptData);
-    }catch(e){console.warn('[Payment] Receipt generation error:',e);}
+    }catch(e){console.warn('[Payment] Receipt save error:',e);}
   }
 
   lockSubmitButton('✅ Submitted — awaiting verification');
