@@ -7,6 +7,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:ital,wght@0,700;0,900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css"/>
   <script src="../js/config.js"></script>
+  <!-- Shared navigation — injects global nav bar -->
+  <script src="../js/nav-component.js"></script>
   <style>
   /* ── Arghya highlight strip ── */
   .arghya-strip{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:.8rem;background:linear-gradient(135deg,#2d0800,#3d1500);border-radius:16px;padding:1.2rem 1.4rem;margin-bottom:1.8rem;border:1px solid rgba(255,194,0,.18)}
@@ -415,5 +417,7 @@ if (su) {
   }).catch(() => {});
 }
 </script>
+<!-- Shared footer injected from config -->
+<script src="../js/footer-component.js"></script>
 </body>
 </html>

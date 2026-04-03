@@ -4,9 +4,13 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <meta name="google-site-verification" content="Zs-4PgHfIPCHXtvDE1ZvyLV3vXpAnrrE_VPXhVZ5Pzg" />
-  <title>PSOTS — छठ महापर्व 2026 · पंच वर्ष महोत्सव</title>
+  <!-- Title is updated dynamically by config.js (see end of <body>) -->
+  <title>PSOTS — छठ महापर्व · Chhath Puja</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:ital,wght@0,700;0,900;1,700;1,900&family=DM+Sans:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+  <!-- Shared nav — injects the global navigation bar automatically -->
+  <script src="js/config.js"></script>
+  <script src="js/nav-component.js"></script>
   <style>
   :root{--or:#e85c00;--saff:#ff8c00;--gold:#ffc200;--gilt:#ffe680;--ink:#1a0800;--cream:#fdf5e0;--warm:#fff8f0;--lbr:#a05828;--green:#2e7d32;--br:#6b3010;--maroon:#3d1000;--dmaroon:#2d0800;--navy:#0d2244}
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -452,13 +456,7 @@
 </head>
 <body>
 
-<nav>
-  <div class="nb">
-    <span class="nd"><img src="images/logo-main.png" alt="PSOTS" width="40" height="40" style="display:block;object-fit:contain"/></span>
-    <div><div class="nn">PSOTS छठ महापर्व 2026</div><div class="ns">पंच वर्ष महोत्सव</div></div>
-  </div>
-  <a class="nav-portal-btn" href="portal.html" id="navPortalBtn">👤 My Account</a>
-</nav>
+<!-- Navigation injected by js/nav-component.js (loaded in <head>) -->
 
 <div class="live-banner" id="liveBanner">
   <div class="lb-text"><span class="lb-dot"></span><span id="lbText">Chhath Puja is LIVE!</span></div>
@@ -476,11 +474,11 @@
   <div class="h-water"></div>
   <div class="h-lotus">🪷 🪷 🪷 🪷 🪷</div>
   <div class="h-content">
-    <div class="h-badge"><span class="h-badge-v">V</span><span class="h-badge-t">Fifth Year · पंच वर्ष महोत्सव</span></div>
+    <div class="h-badge" id="heroBadge"><span class="h-badge-v">V</span><span class="h-badge-t" id="heroBadgeText">Fifth Year · पंच वर्ष महोत्सव</span></div>
     <div class="h-hindi">छठ महापर्व</div>
     <div class="h-eng">Chhath</div>
     <div class="h-puja">Puja</div>
-    <div class="h-sub">PSOTS · Prestige Song of the South · 2026</div>
+    <div class="h-sub" id="heroSub">PSOTS · Prestige Song of the South</div>
     <div class="h-sub2">जय छठी मैया 🙏</div>
     <div class="arghya-strip">
       <div class="ac"><div class="ac-icon">🌇</div><div><div class="ac-label">संध्या अर्घ्य — Evening</div><div class="ac-time" id="eve-time">5:45 PM</div><div class="ac-date" id="eve-date">Nov 3, 2026 · Society Ghat</div></div></div>
@@ -513,7 +511,7 @@
 <section class="dashboard">
   <div class="dash-hd">
     <span class="dash-ey">✦ Tap any card to explore ✦</span>
-    <h2 class="dash-title">Everything about Chhath 2026</h2>
+    <h2 class="dash-title" id="dashTitle">Everything about Chhath</h2>
     <p class="dash-sub">Each card opens its own full page — tap, explore, tap back</p>
   </div>
 
@@ -521,7 +519,7 @@
 
     <div class="tile t-sched">
       <div class="sh">
-        <div><div class="sh-ey">✦ Four Holy Days · Nov 1–4, 2026</div><div class="sh-title">📅 Event Schedule</div></div>
+        <div><div class="sh-ey" id="schedEyebrow">✦ Four Holy Days</div><div class="sh-title">📅 Event Schedule</div></div>
         <div class="sh-right">
           <div class="sh-nav">
             <button class="sh-btn" id="schedPrev" aria-label="Previous">‹</button>
@@ -704,32 +702,8 @@
   </div>
 </section>
 
-<footer>
-  <div class="ft-t">🌅 PSOTS — छठ महापर्व 2026</div>
-  <p>पंच वर्ष महोत्सव · Nov 1–4, 2026 · Society Ghat</p>
-  <p>
-    <a href="https://wa.me/919482088904" target="_blank" rel="noopener" style="color:rgba(255,220,120,.8);text-decoration:none">💬 9482088904</a>
-    &nbsp;·&nbsp;
-    <a href="https://wa.me/919902837002" target="_blank" rel="noopener" style="color:rgba(255,220,120,.8);text-decoration:none">💬 9902837002</a>
-    &nbsp;·&nbsp;<span>chhath.psots.in</span>
-  </p>
-  <!-- Web Share / invite button -->
-  <p style="margin-top:.75rem">
-    <button id="shareBtn" onclick="psotShare()"
-      style="background:rgba(255,194,0,.15);border:1px solid rgba(255,194,0,.35);color:var(--gold,#ffc200);
-             border-radius:50px;padding:.4rem 1.1rem;font-size:.78rem;font-weight:700;cursor:pointer;
-             font-family:'DM Sans',system-ui,sans-serif;transition:background .2s">
-      📲 Invite Neighbours
-    </button>
-  </p>
-  <p style="margin-top:.8rem;font-size:.7rem">
-    <a href="pages/privacy-policy.html" style="color:rgba(255,220,120,.65);text-decoration:none;margin:0 .5rem">Privacy Policy</a> ·
-    <a href="pages/terms.html" style="color:rgba(255,220,120,.65);text-decoration:none;margin:0 .5rem">Terms &amp; Conditions</a> ·
-    <a href="pages/refund-policy.html" style="color:rgba(255,220,120,.65);text-decoration:none;margin:0 .5rem">Refund Policy</a>
-  </p>
-</footer>
-
-<script src="js/config.js"></script>
+<!-- Footer injected by js/footer-component.js (loaded below) -->
+<script src="js/footer-component.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
@@ -738,6 +712,60 @@
 <script src="js/firebase-config.js"></script>
 <script src="js/db.js"></script>
 <script>
+/* ── Config-driven page branding ──────────────────────────────────
+   All year/event references are injected from window.PSOTS so the
+   page never needs editing when rolling over to a new year.
+   To update: change js/config.js → window.PSOTS.eventStart etc.
+─────────────────────────────────────────────────────────────────── */
+(function applyBranding() {
+  var C = window.PSOTS || {};
+  var yr  = C.activeYear || new Date(C.eventStart || '').getFullYear() || new Date().getFullYear();
+  var soc = C.society    || 'Prestige Song of the South';
+  var evtDate = C.eventStart ? new Date(C.eventStart) : null;
+
+  // Document title
+  document.title = 'PSOTS — छठ महापर्व ' + yr + ' · Chhath Puja';
+
+  // Hero subtitle
+  var heroSub = document.getElementById('heroSub');
+  if (heroSub) heroSub.textContent = 'PSOTS · ' + soc + ' · ' + yr;
+
+  // Dashboard header
+  var dashTitle = document.getElementById('dashTitle');
+  if (dashTitle) dashTitle.textContent = 'Everything about Chhath ' + yr;
+
+  // Schedule eyebrow dates (format: Nov 1–4 derived from eventStart + 3 days)
+  if (evtDate && !isNaN(evtDate)) {
+    var endDate = new Date(evtDate); endDate.setDate(evtDate.getDate() + 3);
+    var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    var rangeStr = months[evtDate.getMonth()] + ' ' + evtDate.getDate() + '–' + endDate.getDate() + ', ' + yr;
+    var schedEy = document.getElementById('schedEyebrow');
+    if (schedEy) schedEy.textContent = '✦ Four Holy Days · ' + rangeStr;
+  }
+
+  // Arghya times (already has IDs; update from config if available)
+  if (C.arghyaEvening) {
+    var eveT = document.getElementById('eve-time');
+    var eveD = document.getElementById('eve-date');
+    if (eveT) eveT.textContent = C.arghyaEvening.time;
+    if (eveD) eveD.textContent = C.arghyaEvening.date + ' · Society Ghat';
+    var schEve = document.getElementById('sch-eve-time');
+    if (schEve) schEve.textContent = '🌇 ' + C.arghyaEvening.time;
+  }
+  if (C.arghyaMorning) {
+    var mornT = document.getElementById('morn-time');
+    var mornD = document.getElementById('morn-date');
+    if (mornT) mornT.textContent = C.arghyaMorning.time;
+    if (mornD) mornD.textContent = C.arghyaMorning.date + ' · Society Ghat';
+    var schMorn = document.getElementById('sch-morn-time');
+    if (schMorn) schMorn.textContent = '🌅 ' + C.arghyaMorning.time;
+  }
+  if (C.kharnaTime) {
+    var kh = document.getElementById('sch-eve-time-kh');
+    if (kh) kh.textContent = '🍚 ' + C.kharnaTime.time;
+  }
+})();
+
 const evt=new Date(window.PSOTS?PSOTS.eventStart:'2026-11-01T06:00:00');
 function tick(){const d=evt-new Date();if(d<=0){document.getElementById('countdown').innerHTML='<div style="font-family:\'Yatra One\',serif;font-size:1.3rem;color:var(--gold)">🌅 जय छठी मैया!</div>';return}const p=n=>String(Math.floor(n)).padStart(2,'0');document.getElementById('cd-d').textContent=p(d/864e5);document.getElementById('cd-h').textContent=p((d%864e5)/36e5);document.getElementById('cd-m').textContent=p((d%36e5)/6e4);document.getElementById('cd-s').textContent=p((d%6e4)/1e3)}
 tick();setInterval(tick,1000);
