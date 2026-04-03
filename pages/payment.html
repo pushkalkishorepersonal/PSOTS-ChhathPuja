@@ -455,50 +455,94 @@ function checkPreviousSubmission(){
   lockSubmitButton('✅ Already Submitted Today');
 }
 
+// Tracks the highest-priority status found for this year's contributions
+let _yearContribStatus = null; // 'verified' | 'pending' | 'rejected' | null
+let _extraPaymentAcknowledged = false;
+
 async function fetchLastSheetEntry(){
   const banner=document.getElementById('lastEntryBanner');
   if(!banner) return;
   const flat=(userProfile.flat||'').trim();
   const mobile=(userProfile.mobile||'').replace(/\D/g,'').slice(-10);
-  if(!flat&&!mobile) return; // nothing to look up
-  banner.style.display='block';
+  if(!flat&&!mobile) return;
 
   function _renderList(list){
-    const currentYear=_ACTIVE_YR;
-    const filtered=list.filter(c=>Number(c.year)===currentYear);
-    const txt=document.getElementById('lastEntryTxt');
-    const meta=document.getElementById('lastEntryMeta');
-    if(!filtered.length){
-      txt.textContent='No contributions found for '+currentYear+' yet.';
-      return;
+    const filtered=list.filter(c=>Number(c.year)===_ACTIVE_YR)
+      .sort((a,b)=>(b.submittedAt||0)-(a.submittedAt||0));
+    if(!filtered.length){ banner.style.display='none'; return; }
+
+    // Determine dominant status for this year
+    const hasVerified  = filtered.some(c=>c.status==='verified'||String(c.status).includes('Received'));
+    const hasPending   = filtered.some(c=>c.status==='pending'||String(c.status).includes('Pending'));
+    const hasRejected  = filtered.some(c=>c.status==='rejected'||String(c.status).includes('Reject'));
+    _yearContribStatus = hasVerified?'verified':hasPending?'pending':hasRejected?'rejected':null;
+
+    const totalVerified = filtered
+      .filter(c=>c.status==='verified'||String(c.status).includes('Received'))
+      .reduce((s,c)=>s+(parseInt(c.amount)||0),0);
+    const last = filtered[0];
+
+    banner.style.display='block';
+
+    if(_yearContribStatus==='verified'){
+      // ✅ Verified — allow additional payment but warn clearly
+      banner.style.background='linear-gradient(135deg,#f0fff4,#e4fce9)';
+      banner.style.borderColor='#a5d6a7';
+      document.querySelector('#lastEntryBanner .asb-title').innerHTML=
+        '✅ Contribution Verified — ₹'+totalVerified.toLocaleString('en-IN')+' confirmed for '+_ACTIVE_YR;
+      document.getElementById('lastEntryTxt').textContent=
+        'The committee has verified your '+_ACTIVE_YR+' contribution. '+
+        'If you\'re submitting an additional payment, tick the box below to confirm your intent.';
+      document.getElementById('lastEntryMeta').innerHTML=
+        filtered.map(c=>{
+          const st=c.status==='verified'||String(c.status).includes('Received')
+            ?'<span class="asb-chip" style="border-color:#a5d6a7;color:#2e7d32">✅ Verified</span>'
+            :'<span class="asb-chip" style="border-color:#f0d5b8;color:#c06000">⏳ Pending</span>';
+          return (c.amount?'<span class="asb-chip" style="border-color:#a5d6a7;color:#1b5e20">₹'+parseInt(c.amount).toLocaleString('en-IN')+'</span>':'')+
+                 (c.receiptNo?'<span class="asb-chip" style="border-color:#a5d6a7;color:#1b5e20;font-family:monospace;font-size:.68rem">'+c.receiptNo+'</span>':'')+st;
+        }).join('&ensp;');
+      // Insert "additional payment" acknowledgment checkbox above submit
+      _ensureAdditionalPaymentAck();
+    } else if(_yearContribStatus==='pending'){
+      // ⏳ Pending — show warning and lock submit; offer override
+      banner.style.background='linear-gradient(135deg,#fffbeb,#fef9c3)';
+      banner.style.borderColor='rgba(234,179,8,.5)';
+      document.querySelector('#lastEntryBanner .asb-title').style.color='#92400e';
+      document.querySelector('#lastEntryBanner .asb-title').textContent=
+        '⏳ Pending Submission — awaiting committee verification';
+      document.getElementById('lastEntryTxt').textContent=
+        'You already have a pending submission for ₹'+parseInt(last.amount||0).toLocaleString('en-IN')+
+        '. The committee will verify it shortly. Please wait before submitting again to avoid duplicates.';
+      document.getElementById('lastEntryMeta').innerHTML=[
+        last.receiptNo?`<span class="asb-chip" style="border-color:rgba(234,179,8,.5);color:#92400e;font-family:monospace;font-size:.68rem">${last.receiptNo}</span>`:'',
+        last.amount?`<span class="asb-chip" style="border-color:rgba(234,179,8,.5);color:#92400e">₹${parseInt(last.amount).toLocaleString('en-IN')}</span>`:'',
+        `<span class="asb-chip" style="border-color:rgba(234,179,8,.5);color:#b45309">⏳ Pending Verification</span>`
+      ].join('');
+      // Lock submit until resident explicitly overrides
+      _lockPendingSubmit();
+    } else if(_yearContribStatus==='rejected'){
+      banner.style.background='linear-gradient(135deg,#fff1f2,#fce8e6)';
+      banner.style.borderColor='rgba(192,57,43,.3)';
+      document.querySelector('#lastEntryBanner .asb-title').style.color='#c0392b';
+      document.querySelector('#lastEntryBanner .asb-title').textContent='❌ Previous Submission Rejected — please resubmit';
+      document.getElementById('lastEntryTxt').textContent=
+        'Your last submission was not verified. You can submit a new entry below. Contact the committee if you have questions.';
+      document.getElementById('lastEntryMeta').innerHTML='';
     }
-    const last=filtered[0];
-    const statusColor=last.status&&last.status.includes('Received')?'#2e7d32':'#c06000';
-    txt.textContent='Here\'s what we have on record for '+currentYear+' — make sure this matches before submitting again.';
-    meta.innerHTML=[
-      last.name?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">👤 ${last.name}</span>`:'',
-      last.amount?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">💰 ₹${parseInt(last.amount).toLocaleString('en-IN')}</span>`:'',
-      last.date&&last.date!=='null'&&last.date!=='undefined'?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">📅 ${last.date}</span>`:'',
-      last.method&&last.method!=='null'&&last.method!=='undefined'?`<span class="asb-chip" style="border-color:#f0d5b8;color:#7a3800">📲 ${last.method}</span>`:'',
-      last.status?`<span class="asb-chip" style="border-color:${statusColor};color:${statusColor}">${last.status}</span>`:'',
-      filtered.length>1?`<span class="asb-chip" style="border-color:#f0d5b8;color:#9b6030">+${filtered.length-1} more entr${filtered.length-1===1?'y':'ies'} this year</span>`:''
-    ].join('');
   }
 
-  // Layer 1: Try Firestore first (fast, no quota limits)
+  // Layer 1: Firestore
   if(typeof PSOTS_DB!=='undefined'&&flat){
     try{
       const list=await PSOTS_DB.getContributions(flat);
       if(list!==null){
-        _renderList(list.map(c=>({...c,year:Number(c.year||_ACTIVE_YR)}))
-          .sort((a,b)=>(b.submittedAt||0)-(a.submittedAt||0)));
-        return; // done — no need for Apps Script call
+        _renderList(list.map(c=>({...c,year:Number(c.year||_ACTIVE_YR)})));
+        return;
       }
-    }catch(e){ /* fall through to Apps Script */ }
+    }catch(e){}
   }
-
-  // Layer 2: Apps Script fallback
-  if(!C.scriptUrl||C.scriptUrl.includes('YOUR_APPS')){banner.style.display='none';return;}
+  // Layer 2: Apps Script
+  if(!C.scriptUrl||C.scriptUrl.includes('YOUR_APPS')){return;}
   try{
     const params=new URLSearchParams({action:'myContribs'});
     if(flat) params.append('flat',flat);
@@ -506,9 +550,50 @@ async function fetchLastSheetEntry(){
     const r=await fetch(C.scriptUrl+'?'+params.toString());
     const d=await r.json();
     _renderList(d.contributions||[]);
-  }catch(e){
-    banner.style.display='none'; // network error — hide silently
+  }catch(e){}
+}
+
+function _lockPendingSubmit(){
+  const btn=document.getElementById('submitBtn');
+  if(!btn) return;
+  btn.disabled=true;
+  btn.style.opacity='.5';
+  btn.textContent='⏳ Pending verification — wait or override below';
+  // Add an override option
+  let ov=document.getElementById('pendingOverride');
+  if(ov) return;
+  ov=document.createElement('label');
+  ov.id='pendingOverride';
+  ov.style.cssText='display:flex;align-items:center;gap:.6rem;background:#fffbeb;border:1.5px solid rgba(234,179,8,.4);border-radius:.75rem;padding:.75rem 1rem;margin-top:.6rem;cursor:pointer';
+  ov.innerHTML='<input type="checkbox" style="width:18px;height:18px;accent-color:#b45309;cursor:pointer;flex-shrink:0" onchange="togglePendingOverride(this)"/>'+
+    '<span style="font-size:.82rem;font-weight:600;color:#92400e">I understand — I\'m submitting a <u>different</u> payment (e.g. a top-up or additional contribution)</span>';
+  const submitBtn=document.getElementById('submitBtn');
+  submitBtn.parentNode.insertBefore(ov,submitBtn);
+}
+
+function togglePendingOverride(cb){
+  const btn=document.getElementById('submitBtn');
+  if(!btn) return;
+  if(cb.checked){
+    btn.disabled=false;
+    btn.style.opacity='1';
+    btn.textContent='Submit Additional Confirmation 🙏';
+  }else{
+    btn.disabled=true;
+    btn.style.opacity='.5';
+    btn.textContent='⏳ Pending verification — wait or override below';
   }
+}
+
+function _ensureAdditionalPaymentAck(){
+  if(document.getElementById('additionalPayAck')) return;
+  const ack=document.createElement('label');
+  ack.id='additionalPayAck';
+  ack.style.cssText='display:flex;align-items:center;gap:.6rem;background:#f0fff4;border:1.5px solid #a5d6a7;border-radius:.75rem;padding:.75rem 1rem;margin-top:.6rem;cursor:pointer';
+  ack.innerHTML='<input type="checkbox" id="additionalPayChk" style="width:18px;height:18px;accent-color:#228b22;cursor:pointer;flex-shrink:0"/>'+
+    '<span style="font-size:.82rem;font-weight:600;color:#1b5e20">I confirm this is an <u>additional</u> payment for '+_ACTIVE_YR+' — separate from my verified contribution</span>';
+  const submitBtn=document.getElementById('submitBtn');
+  submitBtn.parentNode.insertBefore(ack,submitBtn);
 }
 
 // Init
@@ -731,6 +816,11 @@ async function submitForm(){
 
   if(!document.getElementById('ivePaidCheck').checked)return showErr('Please tick "I\'ve paid" to confirm your payment.');
   if(!amount||amount<1)return showErr('Please enter the contribution amount above.');
+  // If verified contribution exists and resident hasn't acknowledged additional payment
+  if(_yearContribStatus==='verified'){
+    const ack=document.getElementById('additionalPayChk');
+    if(ack&&!ack.checked)return showErr('You already have a verified contribution this year. Please tick the "additional payment" box above to confirm your intent.');
+  }
 
   if(_payMode==='anon'){
     name='Anonymous Contributor';
@@ -758,16 +848,24 @@ async function submitForm(){
     try{
       const existing=await PSOTS_DB.getContributions(flat);
       if(existing){
+        const thisYear=existing.filter(c=>Number(c.year)===_ACTIVE_YR);
+        // Block: exact duplicate pending within 24h (same amount, still pending)
         const cutoff=Date.now()-24*60*60*1000;
-        const recentDup=existing.find(c=>
-          Number(c.year)===_ACTIVE_YR&&
+        const exactDup=thisYear.find(c=>
           Number(c.amount)===parseInt(amount)&&
           (c.status==='pending'||c.status==='Pending Verification')&&
           (c.submittedAt||0)>cutoff
         );
-        if(recentDup){
+        if(exactDup){
           btn.disabled=false;btn.innerHTML='Submit Confirmation 🙏';
-          return showErr('A pending submission for ₹'+parseInt(amount).toLocaleString('en-IN')+' from Flat '+flat+' already exists (submitted within last 24h). Please wait for the committee to verify before submitting again.');
+          const rno=exactDup.receiptNo?` (Receipt: ${exactDup.receiptNo})`:'';
+          return showErr('A pending submission for ₹'+parseInt(amount).toLocaleString('en-IN')+' from Flat '+flat+' already exists'+rno+'. Please wait for the committee to verify it before submitting again.');
+        }
+        // Warn: any other pending submission this year (different amount — different payment)
+        const anyPending=thisYear.find(c=>c.status==='pending'||c.status==='Pending Verification');
+        if(anyPending&&!document.getElementById('pendingOverride')?.querySelector('input')?.checked){
+          btn.disabled=false;btn.innerHTML='Submit Confirmation 🙏';
+          return showErr('You already have a pending submission for ₹'+parseInt(anyPending.amount||0).toLocaleString('en-IN')+' awaiting verification. Tick the override checkbox to submit an additional payment.');
         }
       }
     }catch(e){ /* non-blocking — proceed even if check fails */ }
