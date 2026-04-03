@@ -1,0 +1,155 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   PSOTS CHHATH — DESIGN SYSTEM
+   Single source of truth for all design tokens.
+
+   ✦ HOW TO USE ✦
+   All tokens live in :root as CSS custom properties.
+   Every component, page, and animation reads ONLY from these tokens.
+   To retheme the entire site, change values here — nothing else.
+
+   ✦ YEAR-OVER-YEAR MAINTENANCE ✦
+   Branding words (year, event name) are injected by JS from config.js.
+   Only update config.js for annual changes. This file stays unchanged.
+═══════════════════════════════════════════════════════════════════════ */
+
+:root {
+
+  /* ─── BRAND PALETTE ─── */
+  /* Saffron — primary action colour */
+  --c-saffron:        #e85c00;
+  --c-saffron-light:  #ff8c00;
+  --c-saffron-dark:   #c93800;
+  --c-saffron-xdark:  #a82800;
+
+  /* Gold — headings, highlights, borders on dark */
+  --c-gold:           #ffc200;
+  --c-gold-light:     #ffe680;
+  --c-gold-dim:       rgba(255,194,0,.55);
+  --c-gold-faint:     rgba(255,194,0,.14);
+
+  /* Maroon — backgrounds, dark surfaces (replaces black) */
+  --c-maroon-900:     #1a0500;   /* deepest */
+  --c-maroon-800:     #2d0800;
+  --c-maroon-700:     #3d1000;
+  --c-maroon-600:     #5c1800;
+  --c-maroon-500:     #7a2800;
+  --c-maroon-400:     #a05828;
+  --c-maroon-300:     #c4803c;
+
+  /* Ivory — page backgrounds, light surfaces */
+  --c-ivory-900:      #1a0800;   /* text on light */
+  --c-ivory-100:      #fef9f0;
+  --c-ivory-50:       #fffdf8;
+  --c-bg:             #fdf0e0;   /* page background */
+  --c-warm:           #fff8f0;   /* card background */
+  --c-cream:          #fdf5e0;
+
+  /* Water / Navy — hero sky, accent */
+  --c-water-900:      #091430;
+  --c-water-800:      #0d2244;
+  --c-water-700:      #1a3a6e;
+
+  /* Semantic */
+  --c-success:        #2e7d32;
+  --c-success-light:  rgba(46,125,50,.12);
+  --c-error:          #c0392b;
+  --c-error-light:    rgba(192,57,43,.12);
+  --c-whatsapp:       #25d366;
+  --c-whatsapp-dark:  #1da851;
+
+  /* Vermillion — used for live indicators */
+  --c-vermil:         #dc2f00;
+
+  /* ─── TYPOGRAPHY ─── */
+  --font-display:     'Playfair Display', Georgia, serif;
+  --font-devotional:  'Yatra One', cursive;
+  --font-body:        'DM Sans', system-ui, -apple-system, sans-serif;
+
+  /* Fluid type scale — clamp(mobile, viewport, desktop) */
+  --text-2xs:   clamp(0.625rem, 1.5vw,  0.75rem);
+  --text-xs:    clamp(0.75rem,  2vw,    0.875rem);
+  --text-sm:    clamp(0.8rem,   2.2vw,  0.9rem);
+  --text-base:  clamp(0.875rem, 2.5vw,  1rem);
+  --text-md:    clamp(1rem,     3vw,    1.125rem);
+  --text-lg:    clamp(1.1rem,   3.5vw,  1.25rem);
+  --text-xl:    clamp(1.25rem,  4vw,    1.5rem);
+  --text-2xl:   clamp(1.5rem,   5vw,    2rem);
+  --text-3xl:   clamp(2rem,     6vw,    2.75rem);
+  --text-4xl:   clamp(2.5rem,   8vw,    3.75rem);
+  --text-hero:  clamp(3.25rem,  10vw,   7rem);
+
+  /* ─── SPACING ─── (4px base grid) */
+  --sp-1:   0.25rem;    /*  4px */
+  --sp-2:   0.5rem;     /*  8px */
+  --sp-3:   0.75rem;    /* 12px */
+  --sp-4:   1rem;       /* 16px */
+  --sp-5:   1.25rem;    /* 20px */
+  --sp-6:   1.5rem;     /* 24px */
+  --sp-7:   1.75rem;    /* 28px */
+  --sp-8:   2rem;       /* 32px */
+  --sp-10:  2.5rem;     /* 40px */
+  --sp-12:  3rem;       /* 48px */
+  --sp-14:  3.5rem;     /* 56px */
+  --sp-16:  4rem;       /* 64px */
+  --sp-20:  5rem;       /* 80px */
+  --sp-24:  6rem;       /* 96px */
+
+  /* ─── BORDERS / RADII ─── */
+  --r-sm:   6px;
+  --r-md:   10px;
+  --r-lg:   14px;
+  --r-xl:   18px;
+  --r-2xl:  22px;
+  --r-3xl:  28px;
+  --r-pill: 9999px;
+
+  /* ─── SHADOWS ─── */
+  --sh-xs:  0 1px 4px  rgba(93,30,0,.06);
+  --sh-sm:  0 2px 10px rgba(93,30,0,.09);
+  --sh-md:  0 4px 24px rgba(93,30,0,.12);
+  --sh-lg:  0 8px 40px rgba(93,30,0,.18);
+  --sh-xl:  0 16px 64px rgba(93,30,0,.22);
+  --sh-2xl: 0 24px 80px rgba(93,30,0,.28);
+  --sh-gold:0 0 24px rgba(255,194,0,.35);
+
+  /* ─── LAYOUT ─── */
+  --nav-height:     60px;
+  --content-max:    880px;
+  --content-wide:   1120px;
+  --content-wider:  1280px;
+  --sidebar-width:  260px;
+
+  /* ─── MOTION ─── */
+  --ease-out:   cubic-bezier(.22, 1, .36, 1);
+  --ease-spring:cubic-bezier(.34, 1.56, .64, 1);
+  --ease-in:    cubic-bezier(.4, 0, 1, 1);
+  --t-fast:  .18s;
+  --t-base:  .28s;
+  --t-slow:  .5s;
+
+  /* ─── Z-INDEX SCALE ─── */
+  --z-base:   1;
+  --z-above:  10;
+  --z-sticky: 100;
+  --z-nav:    300;
+  --z-modal:  800;
+  --z-toast:  999;
+}
+
+/* ─── DARK SURFACE OVERRIDES ───
+   Apply .ds-* to sections with dark backgrounds to flip token values.
+   Components inside automatically pick up correct colours. */
+.ds-maroon {
+  --c-text-primary:  rgba(255,237,200,.95);
+  --c-text-secondary:rgba(255,224,130,.72);
+  --c-border:        rgba(255,194,0,.18);
+  --c-surface:       rgba(255,194,0,.07);
+}
+
+/* ─── REDUCED MOTION ─── */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    transition-duration: .001ms !important;
+  }
+}

@@ -7,6 +7,8 @@
   <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:ital,wght@0,700;0,900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="../css/style.css"/>
   <script src="../js/config.js"></script>
+  <!-- Shared navigation — injects global nav bar -->
+  <script src="../js/nav-component.js"></script>
   <!-- Firebase SDK — Firestore as primary source -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -562,5 +564,7 @@ async function checkMyStatus() {
 
 loadList();
 </script>
+<!-- Shared footer injected from config -->
+<script src="../js/footer-component.js"></script>
 </body>
 </html>

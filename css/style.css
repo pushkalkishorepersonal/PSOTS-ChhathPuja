@@ -1,46 +1,51 @@
 /* ═══════════════════════════════════════════════════════════════
-   PSOTS CHHATH 2026 — PREMIUM SHARED STYLES
-   Grand Makeover · Sacred Warmth · Panch Varsh Mahotsav
-   Palette: saffron · gold · deep maroon · warm ivory · no black
+   PSOTS CHHATH — PREMIUM SHARED STYLES
+   Sacred Warmth · Panch Varsh Mahotsav · Year-over-year Ready
+
+   ARCHITECTURE:
+   ┌─ css/design-system.css ─ Design tokens (edit once, changes everything)
+   └─ css/style.css ──────── Shared components (this file)
+
+   All inner pages: <link rel="stylesheet" href="../css/style.css">
+   All pages also: <script src="../js/nav-component.js"></script>
+                   <script src="../js/footer-component.js"></script>
 ═══════════════════════════════════════════════════════════════ */
 
+/* Import design token foundation — must come first */
+@import url('./design-system.css');
+
 :root {
-  /* Core Brand */
-  --or:      #e85c00;
-  --saff:    #ff8c00;
-  --gold:    #ffc200;
-  --gilt:    #ffe680;
+  /* Legacy aliases — keep for backward compatibility with inline styles */
+  --or:      var(--c-saffron);
+  --saff:    var(--c-saffron-light);
+  --gold:    var(--c-gold);
+  --gilt:    var(--c-gold-light);
   --vermil:  #dc2f00;
   --turmeric:#e8a200;
 
-  /* Warm Darks (replacing blacks) */
-  --ink:     #2d0a00;
-  --crimson: #3d1000;
-  --maroon:  #5c1800;
-  --brick:   #7a2800;
+  --ink:     var(--c-ivory-900);
+  --crimson: var(--c-maroon-700);
+  --maroon:  var(--c-maroon-600);
+  --brick:   var(--c-maroon-500);
   --br:      #6b3010;
-  --lbr:     #a05828;
+  --lbr:     var(--c-maroon-400);
 
-  /* Blues / Water */
-  --navy:    #0d1e3d;
-  --deep-navy: #091430;
-  --water:   #122048;
+  --navy:    var(--c-water-800);
+  --deep-navy: var(--c-water-900);
+  --water:   var(--c-water-800);
 
-  /* Lights */
-  --cream:   #fdf5e0;
-  --warm:    #fff8f0;
-  --ivory:   #fef9f0;
-  --bg:      #fdf0e0;
+  --cream:   var(--c-cream);
+  --warm:    var(--c-warm);
+  --ivory:   var(--c-ivory-100);
+  --bg:      var(--c-bg);
 
-  /* Utility */
-  --green:   #2e7d32;
-  --wa:      #25d366;
-  --red:     #c0392b;
+  --green:   var(--c-success);
+  --wa:      var(--c-whatsapp);
+  --red:     var(--c-error);
 
-  /* Shadows */
-  --shadow:    0 4px 24px rgba(93,30,0,.1);
-  --shadow-lg: 0 12px 48px rgba(93,30,0,.18);
-  --shadow-xl: 0 24px 80px rgba(93,30,0,.22);
+  --shadow:    var(--sh-md);
+  --shadow-lg: var(--sh-lg);
+  --shadow-xl: var(--sh-xl);
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -63,10 +68,12 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════════════
-   PAGE NAV — inner pages
+   PAGE NAV — fallback for pages not yet using nav-component.js
+   When nav-component.js is present, #psots-nav replaces this.
+   Kept for backward compatibility during gradual migration.
 ══════════════════════════════════════════════════════════════ */
 .page-nav {
-  height: 56px; padding: 0 1.4rem;
+  height: var(--nav-height, 60px); padding: 0 1.4rem;
   display: flex; align-items: center; justify-content: space-between;
   background: linear-gradient(135deg, rgba(61,16,0,.96) 0%, rgba(45,10,0,.96) 100%);
   backdrop-filter: blur(24px) saturate(200%);
@@ -101,6 +108,9 @@ body {
   letter-spacing: .04em; text-shadow: 0 0 20px rgba(255,194,0,.4);
 }
 .page-nav-action { display: flex; gap: .6rem; align-items: center; }
+/* Hide legacy page-nav when nav-component is active */
+#psots-nav ~ .page-nav,
+body:has(#psots-nav) .page-nav { display: none; }
 
 /* ══════════════════════════════════════════════════════════════
    PAGE HERO STRIP — sacred & grand
