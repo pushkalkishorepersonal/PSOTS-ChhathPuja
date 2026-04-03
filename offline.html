@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Offline — PSOTS Chhath Puja 2026</title>
+  <title>Offline — PSOTS Chhath Puja</title>
   <script src="/js/config.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;600;700;900&family=Yatra+One&display=swap" rel="stylesheet">
   <style>
     :root{--or:#e85c00;--gold:#ffc200;--ink:#1a0800;--cream:#fdf5e0;--warm:#fff8f0;--lbr:#a05828;--maroon:#3d1000}
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -41,7 +43,7 @@
 
   <!-- Event timings -->
   <div class="card">
-    <div class="card-title">Chhath Puja 2026 — Key Timings</div>
+    <div class="card-title" id="timingsTitle">Chhath Puja — Key Timings</div>
     <div class="row"><span class="lbl">Kharna</span><span class="val" id="kharnaVal">Nov 2 · 7:00 PM · Community Hall</span></div>
     <div class="row"><span class="lbl">Sandhya Arghya 🌇</span><span class="val or" id="eveVal">Nov 3 · 5:45 PM · Society Ghat</span></div>
     <div class="row"><span class="lbl">Usha Arghya 🌅</span><span class="val or" id="mornVal">Nov 4 · 6:15 AM · Society Ghat</span></div>
@@ -55,7 +57,6 @@
       <div class="upi-label">UPI ID</div>
       <div class="upi-id" id="upiVal">9482088904@sbi</div>
     </div>
-    <div class="row" style="margin-top:.75rem"><span class="lbl">Payee Name</span><span class="val" id="payeeVal">ChhathPuja2026PSOTS</span></div>
     <div style="font-size:.74rem;color:var(--lbr);margin-top:.5rem;line-height:1.55">After payment, open this app when online and submit your confirmation at <strong>pages/payment.html</strong></div>
   </div>
 
@@ -75,14 +76,18 @@
   </div>
 
   <button class="retry-btn" onclick="window.location.reload()">Try Again</button>
+  <a href="/" style="display:inline-block;margin-top:.85rem;color:#3d1000;font-size:.88rem;font-weight:600;text-decoration:none;opacity:.8">← Back to Home</a>
   <p class="note">This page is cached by the app and works without internet.<br>Event details shown above are from your last online visit.</p>
 
   <script>
     // Populate from config.js if available (cached values from last online visit)
     (function(){
       const C = window.PSOTS || {};
+      // Update page title and card title with active year if available
+      document.title = 'Offline — PSOTS Chhath ' + (C.activeYear || '');
+      const timingsTitle = document.getElementById('timingsTitle');
+      if (timingsTitle) timingsTitle.textContent = 'Chhath Puja ' + (C.activeYear || '') + ' — Key Timings';
       if (C.upiId)     document.getElementById('upiVal').textContent   = C.upiId;
-      if (C.payeeName) document.getElementById('payeeVal').textContent = C.payeeName;
       if (C.arghyaEvening) document.getElementById('eveVal').textContent  = (C.arghyaEvening.date||'Nov 3, 2026') + ' · ' + (C.arghyaEvening.time||'5:45 PM') + ' · Society Ghat';
       if (C.arghyaMorning) document.getElementById('mornVal').textContent = (C.arghyaMorning.date||'Nov 4, 2026') + ' · ' + (C.arghyaMorning.time||'6:15 AM') + ' · Society Ghat';
       if (C.kharnaTime) document.getElementById('kharnaVal').textContent  = (C.kharnaTime.date||'Nov 2, 2026') + ' · ' + (C.kharnaTime.time||'7:00 PM') + ' · ' + (C.kharnaTime.location||'Community Hall');

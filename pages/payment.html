@@ -17,6 +17,8 @@
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics-compat.js"></script>
   <script src="../js/firebase-config.js"></script>
   <script src="../js/db.js"></script>
+  <script src="../js/receipt.js"></script>
+  <script src="../js/notifications.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" integrity="sha512-CNgIRecGo7nphbeZ04Sc13ka07paqdeTu0WR1IM4kNcpmBAUSHSi2BTRuu7PkXE8AHa012XqgVYjTIyrUsoA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
   <style>
   .qr-canvas-wrap{background:#fff;border-radius:12px;padding:14px;box-shadow:0 4px 18px rgba(26,8,0,.1);display:flex;flex-direction:column;align-items:center;gap:8px}
@@ -323,9 +325,19 @@
       <div class="sb-icon">🎉</div>
       <h4>जय छठी मैया!</h4>
       <p id="successTxt">Your contribution has been recorded. The committee will verify and confirm shortly.</p>
+      <!-- Receipt number -->
+      <div id="receiptNoBox" style="display:none;background:linear-gradient(135deg,#fff5e8,#ffe8cc);border:1.5px solid rgba(232,92,0,.25);border-radius:10px;padding:.6rem 1rem;margin:.75rem 0 .5rem;text-align:left">
+        <span style="font-size:.68rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:#6b3a18;display:block;margin-bottom:.15rem">Receipt No.</span>
+        <span id="receiptNoVal" style="font-family:'DM Sans',sans-serif;font-weight:900;font-size:.9rem;color:#e85c00;letter-spacing:.04em"></span>
+      </div>
+      <!-- Receipt action buttons -->
+      <div id="receiptActions" style="display:none;display:flex;gap:.5rem;flex-wrap:wrap;justify-content:center;margin:.4rem 0 .65rem">
+        <button onclick="printReceipt()" style="background:linear-gradient(135deg,var(--or),#c93800);color:#fff;border:none;border-radius:50px;padding:.5rem 1.1rem;font-size:.78rem;font-weight:700;cursor:pointer;box-shadow:0 3px 10px rgba(232,92,0,.3);font-family:'DM Sans',sans-serif">🖨 Print Receipt</button>
+        <button onclick="downloadReceipt()" style="background:#fff;color:var(--or);border:1.5px solid rgba(232,92,0,.35);border-radius:50px;padding:.5rem 1.1rem;font-size:.78rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif">⬇ Save Receipt</button>
+      </div>
       <!-- WhatsApp confirmation deep-link (href set by JS after submit) -->
       <a id="waConfirmBtn" href="#" target="_blank" rel="noopener"
-         style="display:none;margin-top:1rem;background:#25d366;color:#fff;border-radius:50px;
+         style="display:none;margin-top:.5rem;background:#25d366;color:#fff;border-radius:50px;
                 padding:.65rem 1.4rem;font-size:.84rem;font-weight:700;text-decoration:none;
                 align-items:center;gap:.5rem;box-shadow:0 4px 14px rgba(37,211,102,.35);
                 transition:background .2s">
@@ -347,7 +359,7 @@ const C={
   waOrg:     _cfg.waOrg     ||'919482088904',
   scriptUrl: _cfg.scriptUrl ||localStorage.getItem('psots_script_url')||''
 };
-let currentUser=null,userProfile={},lastSubmit={},_qr=null,_payMode='user';
+let currentUser=null,userProfile={},lastSubmit={},_qr=null,_payMode='user',_lastReceiptData=null;
 
 // ── QR helpers ──────────────────────────────────────────────
 const _ACTIVE_YR=(window.PSOTS&&window.PSOTS.activeYear)||new Date().getFullYear();
@@ -754,19 +766,54 @@ async function submitForm(){
   if(!currentUser){['name','flat','mobile'].forEach(k=>{const d=new Date();d.setTime(d.getTime()+365*864e5);document.cookie=`cp_${k}=${encodeURIComponent(document.getElementById('f-'+k).value)};expires=${d.toUTCString()};path=/;SameSite=Lax`;});}
   // 24h cooldown guard
   localStorage.setItem(SUBMIT_KEY,JSON.stringify({name,flat,amount,ts:Date.now()}));
+
+  // Generate receipt
+  let receiptNo='';
+  if(typeof PSOTS_RECEIPT!=='undefined'){
+    try{
+      receiptNo=PSOTS_RECEIPT.generate(_ACTIVE_YR);
+      _lastReceiptData={
+        receiptNo,name,flat,mobile,
+        amount:parseInt(amount),
+        method:'UPI',
+        year:_ACTIVE_YR,
+        date:new Date().toLocaleDateString('en-IN',{day:'numeric',month:'long',year:'numeric'}),
+        docId
+      };
+      PSOTS_RECEIPT.saveLocal(_lastReceiptData);
+    }catch(e){console.warn('[Payment] Receipt generation error:',e);}
+  }
+
   lockSubmitButton('✅ Submitted — awaiting verification');
   openConfirm();
   document.getElementById('successBox').style.display='block';
   document.getElementById('successTxt').textContent=`₹${parseInt(amount).toLocaleString('en-IN')} recorded! The committee will verify and confirm shortly. 🙏`;
 
+  // Show receipt number and action buttons
+  if(receiptNo){
+    const rnoBox=document.getElementById('receiptNoBox');
+    const rnoVal=document.getElementById('receiptNoVal');
+    const rAct=document.getElementById('receiptActions');
+    if(rnoBox){rnoBox.style.display='block';if(rnoVal)rnoVal.textContent=receiptNo;}
+    if(rAct)rAct.style.display='flex';
+  }
+
+  // Send WhatsApp notifications (non-blocking)
+  if(typeof PSOTS_NOTIFY!=='undefined'){
+    PSOTS_NOTIFY.onPaymentSubmitted({name,flat,mobile,amount:parseInt(amount),receiptNo,method:'UPI',eventYear:_ACTIVE_YR})
+      .catch(e=>console.warn('[Payment] Notification error:',e));
+  }
+
   // Build WhatsApp deep-link so the resident can send a quick confirmation message
   const _waNum = C.waOrg || '919482088904';
+  const _eventName = (window.PSOTS&&window.PSOTS.eventName)||('PSOTS Chhath Puja '+_ACTIVE_YR);
   const _waMsg = encodeURIComponent(
-    `🌅 *PSOTS Chhath Puja 2026 — Payment Confirmation*\n\n` +
+    `🌅 *${_eventName} — Payment Confirmation*\n\n` +
     `नमस्ते 🙏\n\n` +
-    `I have paid *₹${parseInt(amount).toLocaleString('en-IN')}* via UPI for Chhath Puja 2026.\n` +
+    `I have paid *₹${parseInt(amount).toLocaleString('en-IN')}* via UPI.\n` +
     (flat && flat !== '—' ? `Flat: *${flat}*\n` : '') +
     (name && name !== 'Anonymous Contributor' ? `Name: ${name}\n` : '') +
+    (receiptNo ? `Receipt No: \`${receiptNo}\`\n` : '') +
     `\nPlease verify my contribution.\n\nजय छठी मैया! 🌅`
   );
   const waBtn = document.getElementById('waConfirmBtn');
@@ -778,6 +825,15 @@ async function submitForm(){
 
 function showErr(m){const e=document.getElementById('errBox');e.textContent='⚠️ '+m;e.style.display='block';e.scrollIntoView({behavior:'smooth',block:'center'});}
 function toast(m,t=''){const e=document.getElementById('toast');e.textContent=m;e.className=t?`show ${t}`:'show';setTimeout(()=>e.className='',3000);}
+
+function printReceipt(){
+  if(typeof PSOTS_RECEIPT==='undefined'||!_lastReceiptData){toast('Receipt not available');return;}
+  try{PSOTS_RECEIPT.print(_lastReceiptData);}catch(e){toast('Could not open print dialog — allow popups and try again');}
+}
+function downloadReceipt(){
+  if(typeof PSOTS_RECEIPT==='undefined'||!_lastReceiptData){toast('Receipt not available');return;}
+  try{PSOTS_RECEIPT.download(_lastReceiptData);}catch(e){toast('Could not download receipt');}
+}
 </script>
 <!-- Shared footer injected from config -->
 <script src="../js/footer-component.js"></script>

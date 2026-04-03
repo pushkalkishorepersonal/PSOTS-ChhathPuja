@@ -6,10 +6,12 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
   <meta http-equiv="Pragma" content="no-cache"/>
   <meta http-equiv="Expires" content="0"/>
-  <title>PSOTS Admin — Chhath 2026</title>
+  <title>PSOTS Admin — Committee Dashboard</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
   <script src="js/config.js"></script>
+  <!-- Nav component — injects global site nav; CSS above hides .admin-nav when active -->
+  <script src="js/nav-component.js"></script>
   <!-- Firebase SDK — Firestore as primary data source -->
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
@@ -413,6 +415,9 @@
   }
   .ft-btn:hover { opacity:.88; transform:translateY(-1px); }
   .ft-btn.primary:hover { box-shadow:0 5px 18px rgba(0,0,0,.28); }
+
+  /* Hide admin-nav when global psots-nav is present (nav-component active) */
+  body:has(#psots-nav) .admin-nav { display: none; }
   </style>
   <link rel="icon" href="images/logo-hindi.png" type="image/png">
   <link rel="apple-touch-icon" href="images/logo-main.png">
@@ -5173,5 +5178,6 @@ function exportReceiptsPDF() {
   win.document.close();
 }
 </script>
+<script src="js/footer-component.js"></script>
 </body>
 </html>
