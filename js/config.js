@@ -34,7 +34,7 @@ window.PSOTS = {
   society:    'Prestige Song of the South, Bengaluru',
   eventStart: '2026-11-01T06:00:00',
   deadline:   '2026-10-25T23:59:00',
-  venue:      'Society Ghat — Prestige Song of the South',
+  venue:      'Amphitheater',
 
   arghyaEvening: { time: '5:45 PM', date: 'Nov 3, 2026' },
   arghyaMorning: { time: '6:15 AM', date: 'Nov 4, 2026' },

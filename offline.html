@@ -45,9 +45,9 @@
   <div class="card">
     <div class="card-title" id="timingsTitle">Chhath Puja — Key Timings</div>
     <div class="row"><span class="lbl">Kharna</span><span class="val" id="kharnaVal">Nov 2 · 7:00 PM · Community Hall</span></div>
-    <div class="row"><span class="lbl">Sandhya Arghya 🌇</span><span class="val or" id="eveVal">Nov 3 · 5:45 PM · Society Ghat</span></div>
-    <div class="row"><span class="lbl">Usha Arghya 🌅</span><span class="val or" id="mornVal">Nov 4 · 6:15 AM · Society Ghat</span></div>
-    <div class="row"><span class="lbl">Venue</span><span class="val">Society Ghat, PSOTS</span></div>
+    <div class="row"><span class="lbl">Sandhya Arghya 🌇</span><span class="val or" id="eveVal">Nov 3 · 5:45 PM · Amphitheater</span></div>
+    <div class="row"><span class="lbl">Usha Arghya 🌅</span><span class="val or" id="mornVal">Nov 4 · 6:15 AM · Amphitheater</span></div>
+    <div class="row"><span class="lbl">Venue</span><span class="val">Amphitheater, PSOTS</span></div>
   </div>
 
   <!-- UPI payment info -->
@@ -88,8 +88,8 @@
       const timingsTitle = document.getElementById('timingsTitle');
       if (timingsTitle) timingsTitle.textContent = 'Chhath Puja ' + (C.activeYear || '') + ' — Key Timings';
       if (C.upiId)     document.getElementById('upiVal').textContent   = C.upiId;
-      if (C.arghyaEvening) document.getElementById('eveVal').textContent  = (C.arghyaEvening.date||'Nov 3, 2026') + ' · ' + (C.arghyaEvening.time||'5:45 PM') + ' · Society Ghat';
-      if (C.arghyaMorning) document.getElementById('mornVal').textContent = (C.arghyaMorning.date||'Nov 4, 2026') + ' · ' + (C.arghyaMorning.time||'6:15 AM') + ' · Society Ghat';
+      if (C.arghyaEvening) document.getElementById('eveVal').textContent  = (C.arghyaEvening.date||'Nov 3, 2026') + ' · ' + (C.arghyaEvening.time||'5:45 PM') + ' · Amphitheater';
+      if (C.arghyaMorning) document.getElementById('mornVal').textContent = (C.arghyaMorning.date||'Nov 4, 2026') + ' · ' + (C.arghyaMorning.time||'6:15 AM') + ' · Amphitheater';
       if (C.kharnaTime) document.getElementById('kharnaVal').textContent  = (C.kharnaTime.date||'Nov 2, 2026') + ' · ' + (C.kharnaTime.time||'7:00 PM') + ' · ' + (C.kharnaTime.location||'Community Hall');
 
       // Update WA links with configured numbers
