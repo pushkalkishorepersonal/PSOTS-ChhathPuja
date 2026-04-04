@@ -161,7 +161,7 @@
       <div>
         <div class="ah-label">संध्या अर्घ्य — Evening Arghya</div>
         <div class="ah-time" id="eve-time">5:45 PM</div>
-        <div class="ah-date" id="eve-date">Nov 3, 2026 · Society Ghat</div>
+        <div class="ah-date" id="eve-date">Nov 3, 2026 · Amphitheater</div>
       </div>
     </div>
     <div class="ah-div"></div>
@@ -170,7 +170,7 @@
       <div>
         <div class="ah-label">उषा अर्घ्य — Morning Arghya</div>
         <div class="ah-time" id="morn-time">6:15 AM</div>
-        <div class="ah-date" id="morn-date">Nov 4, 2026 · Society Ghat</div>
+        <div class="ah-date" id="morn-date">Nov 4, 2026 · Amphitheater</div>
       </div>
     </div>
   </div>
@@ -277,7 +277,7 @@
         </div>
         <div class="day-facts">
           <div class="day-fact highlight">🌇 Sunset Arghya: 5:45 PM</div>
-          <div class="day-fact">📍 Society Ghat</div>
+          <div class="day-fact">📍 Amphitheater</div>
           <div class="day-fact">🎵 Live bhajans</div>
           <div class="day-fact">🪔 Ghat illuminated</div>
         </div>
@@ -310,7 +310,7 @@
         </div>
         <div class="day-facts">
           <div class="day-fact highlight">🌅 Sunrise Arghya: 6:15 AM</div>
-          <div class="day-fact">📍 Society Ghat</div>
+          <div class="day-fact">📍 Amphitheater</div>
           <div class="day-fact">🎉 Cultural programme after</div>
           <div class="day-fact">🙏 Thekua prasad for all</div>
         </div>
@@ -333,7 +333,7 @@
     <div class="logistics">
       <div class="log-item">
         <div class="log-icon">🏊</div>
-        <div><div class="log-title">Main Ghat</div><div class="log-text">Society Ghat — Prestige Song of the South. The ghat is at the far end of the south garden near the swimming pool area.</div></div>
+        <div><div class="log-title">Main Ghat</div><div class="log-text">Amphitheater — Prestige Song of the South. The ghat is at the far end of the south garden near the swimming pool area.</div></div>
       </div>
       <div class="log-item">
         <div class="log-icon">🏛️</div>
@@ -375,11 +375,11 @@ document.querySelectorAll('.reveal,.reveal-l,.reveal-r,.reveal-scale').forEach(e
 const cfg = window.PSOTS || {};
 if (cfg.arghyaEvening) {
   document.getElementById('eve-time').textContent = cfg.arghyaEvening.time || '5:45 PM';
-  document.getElementById('eve-date').textContent = (cfg.arghyaEvening.date || 'Nov 3, 2026') + ' · Society Ghat';
+  document.getElementById('eve-date').textContent = (cfg.arghyaEvening.date || 'Nov 3, 2026') + ' · Amphitheater';
 }
 if (cfg.arghyaMorning) {
   document.getElementById('morn-time').textContent = cfg.arghyaMorning.time || '6:15 AM';
-  document.getElementById('morn-date').textContent = (cfg.arghyaMorning.date || 'Nov 4, 2026') + ' · Society Ghat';
+  document.getElementById('morn-date').textContent = (cfg.arghyaMorning.date || 'Nov 4, 2026') + ' · Amphitheater';
 }
 /* ── Share Arghya timings via WhatsApp / Web Share ─────────────────────── */
 function shareTimings() {
@@ -390,8 +390,8 @@ function shareTimings() {
   const mornDate = (cfg.arghyaMorning && cfg.arghyaMorning.date)  || 'Nov 4, 2026';
   const text =
     '🌅 *PSOTS Chhath Puja 2026 — Arghya Timings*\n\n' +
-    '🌇 *Sandhya Arghya (Evening)*\n' + eveDate + ' · ' + eveTime + ' · Society Ghat\n\n' +
-    '🌅 *Usha Arghya (Morning)*\n' + mornDate + ' · ' + mornTime + ' · Society Ghat\n\n' +
+    '🌇 *Sandhya Arghya (Evening)*\n' + eveDate + ' · ' + eveTime + ' · Amphitheater\n\n' +
+    '🌅 *Usha Arghya (Morning)*\n' + mornDate + ' · ' + mornTime + ' · Amphitheater\n\n' +
     'Venue: Prestige Song of the South\n' +
     'जय छठी मैया! 🙏\n\n' +
     (cfg.siteUrl || 'https://chhath.psots.in') + '/pages/schedule.html';

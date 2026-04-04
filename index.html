@@ -370,7 +370,7 @@
     .ac-icon{font-size:3rem}
     .ac-time{font-size:clamp(1.6rem,3.5vw,2rem)}
     .ac-label{font-size:.95rem}
-    .ac-date{font-size:.82rem;white-space:nowrap}
+    .ac-date{font-size:.82rem;white-space:normal;overflow:hidden;text-overflow:ellipsis}
     .h-cd{gap:1.1rem;padding:0 2rem;margin-bottom:2rem}
     .cdb{padding:1rem 1.8rem;min-width:96px;border-radius:18px}
     .cbn{font-size:clamp(2rem,4vw,2.6rem)}
@@ -460,7 +460,7 @@
 
 <div class="live-banner" id="liveBanner">
   <div class="lb-text"><span class="lb-dot"></span><span id="lbText">Chhath Puja is LIVE!</span></div>
-  <div class="lb-sub" id="lbSub">Join us at the Society Ghat</div>
+  <div class="lb-sub" id="lbSub">Join us at the Amphitheater</div>
 </div>
 
 <section class="hero">
@@ -481,8 +481,8 @@
     <div class="h-sub" id="heroSub">PSOTS · Prestige Song of the South</div>
     <div class="h-sub2">जय छठी मैया 🙏</div>
     <div class="arghya-strip">
-      <div class="ac"><div class="ac-icon">🌇</div><div><div class="ac-label">संध्या अर्घ्य — Evening</div><div class="ac-time" id="eve-time">5:45 PM</div><div class="ac-date" id="eve-date">Nov 3, 2026 · Society Ghat</div></div></div>
-      <div class="ac"><div class="ac-icon">🌅</div><div><div class="ac-label">उषा अर्घ्य — Morning</div><div class="ac-time" id="morn-time">6:15 AM</div><div class="ac-date" id="morn-date">Nov 4, 2026 · Society Ghat</div></div></div>
+      <div class="ac"><div class="ac-icon">🌇</div><div><div class="ac-label">संध्या अर्घ्य — Evening</div><div class="ac-time" id="eve-time">5:45 PM</div><div class="ac-date" id="eve-date">Nov 3, 2026 · Amphitheater</div></div></div>
+      <div class="ac"><div class="ac-icon">🌅</div><div><div class="ac-label">उषा अर्घ्य — Morning</div><div class="ac-time" id="morn-time">6:15 AM</div><div class="ac-date" id="morn-date">Nov 4, 2026 · Amphitheater</div></div></div>
     </div>
     <div class="h-legacy">
       <div class="h-legacy-hd">A Legacy of Devotion · Chhath 2025</div>
@@ -748,7 +748,7 @@
     var eveT = document.getElementById('eve-time');
     var eveD = document.getElementById('eve-date');
     if (eveT) eveT.textContent = C.arghyaEvening.time;
-    if (eveD) eveD.textContent = C.arghyaEvening.date + ' · Society Ghat';
+    if (eveD) eveD.textContent = C.arghyaEvening.date + ' · Amphitheater';
     var schEve = document.getElementById('sch-eve-time');
     if (schEve) schEve.textContent = '🌇 ' + C.arghyaEvening.time;
   }
@@ -756,7 +756,7 @@
     var mornT = document.getElementById('morn-time');
     var mornD = document.getElementById('morn-date');
     if (mornT) mornT.textContent = C.arghyaMorning.time;
-    if (mornD) mornD.textContent = C.arghyaMorning.date + ' · Society Ghat';
+    if (mornD) mornD.textContent = C.arghyaMorning.date + ' · Amphitheater';
     var schMorn = document.getElementById('sch-morn-time');
     if (schMorn) schMorn.textContent = '🌅 ' + C.arghyaMorning.time;
   }
@@ -814,7 +814,7 @@ function psotShare() {
   const C = window.PSOTS || {};
   const url  = C.siteUrl || 'https://chhath.psots.in';
   const title = C.eventName || 'PSOTS Chhath Puja 2026';
-  const text  = '🌅 ' + title + '\n\nNov 1–4, 2026 · Society Ghat, Prestige Song of the South\nजय छठी मैया! 🙏\n';
+  const text  = '🌅 ' + title + '\n\n' + (C.venue||'Amphitheater') + ', PSOTS\nजय छठी मैया! 🙏\n';
 
   if (navigator.share) {
     navigator.share({ title: title, text: text, url: url }).catch(function () {});
@@ -1040,16 +1040,16 @@ function _renderHomepageAnns(list, el){
     const txt=document.getElementById('lbText');
     const sub=document.getElementById('lbSub');
     banner.classList.add('active');
-    if(dayN===1){txt.textContent='Day 1 — Nahay Khay is LIVE!';sub.textContent='Ghat sanctification from 5:30 AM · Society Ghat';}
+    if(dayN===1){txt.textContent='Day 1 — Nahay Khay is LIVE!';sub.textContent='Ghat sanctification from 5:30 AM · Amphitheater';}
     else if(dayN===2){txt.textContent='Day 2 — Kharna is TODAY!';sub.textContent=h<kharnaTime?'Fast day · Kharna Prasad at '+(cfg.kharnaTime&&cfg.kharnaTime.time||'7:00 PM')+' · '+(cfg.kharnaTime&&cfg.kharnaTime.location||'Community Hall'):'Kharna Prasad is being served!';}
     else if(dayN===3){
-      if(h<eveTime){txt.textContent='Day 3 — Sandhya Arghya TODAY!';sub.textContent='Evening Arghya at '+(cfg.arghyaEvening&&cfg.arghyaEvening.time||'5:45 PM')+' · Society Ghat · Be there!';}
-      else{txt.textContent='Sandhya Arghya is HAPPENING NOW!';sub.textContent='Join us at the Society Ghat · जय छठी मैया!';}
+      if(h<eveTime){txt.textContent='Day 3 — Sandhya Arghya TODAY!';sub.textContent='Evening Arghya at '+(cfg.arghyaEvening&&cfg.arghyaEvening.time||'5:45 PM')+' · Amphitheater · Be there!';}
+      else{txt.textContent='Sandhya Arghya is HAPPENING NOW!';sub.textContent='Join us at the Amphitheater · जय छठी मैया!';}
     }
     else if(dayN===4){
-      if(h<mornTime){txt.textContent='Day 4 — Usha Arghya at DAWN!';sub.textContent='Morning Arghya at '+(cfg.arghyaMorning&&cfg.arghyaMorning.time||'6:15 AM')+' · Society Ghat';}
-      else if(h<mornTime+2){txt.textContent='Usha Arghya is HAPPENING NOW!';sub.textContent='Offering to the rising sun · Society Ghat · जय छठी मैया!';}
-      else{txt.textContent='जय छठी मैया! Thekua Prasad Available';sub.textContent='Collect Thekua Prasad at Society Ghat!';}
+      if(h<mornTime){txt.textContent='Day 4 — Usha Arghya at DAWN!';sub.textContent='Morning Arghya at '+(cfg.arghyaMorning&&cfg.arghyaMorning.time||'6:15 AM')+' · Amphitheater';}
+      else if(h<mornTime+2){txt.textContent='Usha Arghya is HAPPENING NOW!';sub.textContent='Offering to the rising sun · Amphitheater · जय छठी मैया!';}
+      else{txt.textContent='जय छठी मैया! Thekua Prasad Available';sub.textContent='Collect Thekua Prasad at Amphitheater!';}
     }
   }
 })();
