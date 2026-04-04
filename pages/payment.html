@@ -374,27 +374,44 @@ function buildUpiUri(amount){
   const base=`upi://pay?pa=${encodeURIComponent(C.upiId)}&pn=${encodeURIComponent(C.payeeName)}&cu=INR&tn=${encodeURIComponent('ChhathPuja'+_ACTIVE_YR)}`;
   return(amount&&parseInt(amount)>=1)?base+`&am=${amount}`:base;
 }
-function initQR(){
+function _renderQR(){
   const container=document.getElementById('qrContainer');
-  // Remove any stale canvas/img before first render
-  container.querySelectorAll('canvas,img').forEach(el=>el.remove());
+  if(!container) return;
+  // Remove any stale canvas/img/fallback-div before render
+  container.querySelectorAll('canvas,img,div.qr-fallback').forEach(el=>el.remove());
   const badge=document.getElementById('qrAmtBadge');
   if(badge)container.appendChild(badge); // keep badge in DOM
+  _qr=new QRCode(container,{
+    text:buildUpiUri(''),width:180,height:180,
+    colorDark:'#2d0800',colorLight:'#ffffff',
+    correctLevel:QRCode.CorrectLevel.M
+  });
+}
+function _showQRFallback(){
+  const container=document.getElementById('qrContainer');
+  if(!container||container.querySelector('canvas,img')) return; // already rendered
+  const el=document.createElement('div');
+  el.className='qr-fallback';
+  el.style.cssText='width:180px;height:180px;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#fff5e8;font-size:.72rem;font-weight:700;color:#7a3800;text-align:center;padding:12px;box-sizing:border-box;border:1.5px solid #f0d5b8;word-break:break-all;line-height:1.5';
+  el.innerHTML='<div>📲 Copy the<br>UPI ID below<br><span style="color:var(--or)">' + C.upiId + '</span></div>';
+  container.insertBefore(el,container.firstChild);
+}
+function initQR(){
   const upiText=document.getElementById('qrUpiText');
   if(upiText)upiText.textContent=C.upiId;
-  try{
-    _qr=new QRCode(container,{
-      text:buildUpiUri(''),width:180,height:180,
-      colorDark:'#2d0800',colorLight:'#ffffff',
-      correctLevel:QRCode.CorrectLevel.M
-    });
-  }catch(e){
-    // QR library unavailable — show UPI ID text in place of QR
-    const el=document.createElement('div');
-    el.style.cssText='width:180px;height:180px;border-radius:4px;display:flex;align-items:center;justify-content:center;background:#fff5e8;font-size:.72rem;font-weight:700;color:#7a3800;text-align:center;padding:12px;box-sizing:border-box;border:1.5px solid #f0d5b8;word-break:break-all;line-height:1.5';
-    el.innerHTML='<div>📲 Copy the<br>UPI ID below<br><span style="color:var(--or)">' + C.upiId + '</span></div>';
-    container.insertBefore(el,container.firstChild);
+  // Retry up to 5 times (50ms apart) in case CDN script finishes just after DOMContentLoaded
+  let attempts=0;
+  function tryRender(){
+    attempts++;
+    try{
+      if(typeof QRCode==='undefined') throw new Error('not loaded');
+      _renderQR();
+    }catch(e){
+      if(attempts<5){ setTimeout(tryRender, attempts*100); }
+      else { _showQRFallback(); }
+    }
   }
+  tryRender();
 }
 function updateQRAmount(amount){
   const uri=buildUpiUri(amount);
@@ -405,7 +422,7 @@ function updateQRAmount(amount){
     if(badge)badge.style.display='none';
   }
   if(_qr){try{_qr.makeCode(uri);}catch(e){} return;}
-  // Fallback div — amount update not needed (UPI ID shown, user enters amount manually)
+  // No QR object yet — fallback text shown, amount not updatable
 }
 function downloadQR(){
   try{
@@ -882,7 +899,10 @@ async function submitForm(){
         }
         // Warn: any other pending submission this year (different amount — different payment)
         const anyPending=thisYear.find(c=>c.status==='pending'||c.status==='Pending Verification');
-        if(anyPending&&!document.getElementById('pendingOverride')?.querySelector('input')?.checked){
+        // Allow through if EITHER the pending-override OR the additional-payment-ack is checked
+        const overrideOk=document.getElementById('pendingOverride')?.querySelector('input')?.checked
+                       ||document.getElementById('additionalPayChk')?.checked;
+        if(anyPending&&!overrideOk){
           btn.disabled=false;btn.innerHTML='Submit Confirmation 🙏';
           return showErr('You already have a pending submission for ₹'+parseInt(anyPending.amount||0).toLocaleString('en-IN')+' awaiting verification. Tick the override checkbox to submit an additional payment.');
         }
