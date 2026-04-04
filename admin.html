@@ -1255,6 +1255,25 @@
       </div>
     </div>
 
+    <!-- Footer Committee Members -->
+    <div class="admin-card" id="footerCmteCard" style="margin-top:1rem;border-left:4px solid #6d3c8f">
+      <div class="ac-title">🪔 Footer Committee</div>
+      <div class="ac-sub">Names and titles shown in the site footer and the public committee page. Positions change each year — update freely. Phone numbers appear as tap-to-call links.</div>
+      <div style="display:flex;align-items:center;gap:.7rem;margin-top:.85rem;margin-bottom:.55rem;flex-wrap:wrap">
+        <label style="font-size:.75rem;font-weight:600;color:var(--br);white-space:nowrap">Year:</label>
+        <select id="cmteYearSel"
+          style="padding:.42rem .85rem;border:1.5px solid #e2d0f0;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;background:#faf4ff;color:var(--ink)"
+          onchange="_onCmteYearChange(this.value)"></select>
+        <span id="cmteYearLoading" style="font-size:.75rem;color:var(--lbr);display:none">Loading…</span>
+      </div>
+      <div id="footerCmteList" style="display:flex;flex-direction:column;gap:.55rem"></div>
+      <div style="display:flex;gap:.6rem;margin-top:.85rem;flex-wrap:wrap">
+        <button class="btn-secondary" onclick="addFooterCmteMember()">＋ Add Member</button>
+        <button class="btn-primary" onclick="saveFooterCmte()">💾 Save</button>
+        <span id="footerCmteStatus" style="font-size:.74rem;color:var(--lbr);align-self:center"></span>
+      </div>
+    </div>
+
     <!-- Team Members -->
     <div class="admin-card" id="teamMembersCard" style="margin-top:1rem">
       <div class="ac-title">👥 Team Members</div>
@@ -1997,7 +2016,7 @@ function switchTab(id) {
     setTimeout(loadReminderList, 400);
   }
   if (id === 'broadcast') loadSubscribers();
-  if (id === 'settings') { loadCmteRoles(); renderAmList(); loadMembersAdmin(); loadRolePerms().then(renderPermMatrix); loadEventConfig(); }
+  if (id === 'settings') { loadCmteRoles(); renderAmList(); loadMembersAdmin(); loadRolePerms().then(renderPermMatrix); loadEventConfig(); _initFooterCmte(); }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -3567,6 +3586,169 @@ function loadCmteRoles() {
       renderCmteRoles();
     }
   });
+}
+
+/* ═══════════════════════════════════════════════════
+   FOOTER COMMITTEE EDITOR
+   Year-aware: stores per-year committee in Firestore config/committee_YEAR.
+   Active year also updates psots_live_config + window.PSOTS.committee.
+═══════════════════════════════════════════════════ */
+let _footerCmte    = []; // [{name, role, phone, wa}]
+let _currentCmteYear = null;
+
+function _buildCmteYearSelector() {
+  const sel = document.getElementById('cmteYearSel');
+  if (!sel) return;
+  const activeYear = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
+  sel.innerHTML = '';
+  for (let y = activeYear; y >= activeYear - 4; y--) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y === activeYear ? y + ' (Active)' : y;
+    sel.appendChild(opt);
+  }
+  sel.value = _currentCmteYear || activeYear;
+}
+
+async function _onCmteYearChange(year) {
+  _currentCmteYear = Number(year);
+  const loading = document.getElementById('cmteYearLoading');
+  if (loading) loading.style.display = 'inline';
+  _footerCmte = [];
+  renderFooterCmte();
+  try {
+    if (typeof PSOTS_DB !== 'undefined') {
+      const data = await PSOTS_DB.getCommitteeByYear(_currentCmteYear);
+      if (data && Array.isArray(data.members) && data.members.length) {
+        _footerCmte = data.members.map(m => ({ name: m.name||'', role: m.role||'', phone: m.phone||'', wa: m.wa||'' }));
+      }
+    }
+  } catch(e) {}
+  if (loading) loading.style.display = 'none';
+  renderFooterCmte();
+}
+
+async function _initFooterCmte() {
+  const activeYear = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
+  _currentCmteYear = activeYear;
+
+  _buildCmteYearSelector();
+
+  // 1. Seed immediately from localStorage / config for active year
+  try {
+    const live = JSON.parse(localStorage.getItem('psots_live_config') || 'null');
+    if (live && Array.isArray(live.committee) && live.committee.length) {
+      _footerCmte = live.committee.map(m => ({ name: m.name||'', role: m.role||'', phone: m.phone||'', wa: m.wa||'' }));
+    } else {
+      _footerCmte = (window.PSOTS.committee || []).map(m => ({ name: m.name||'', role: m.role||'', phone: m.phone||'', wa: m.wa||'' }));
+    }
+  } catch(e) {
+    _footerCmte = (window.PSOTS.committee || []).map(m => ({ name: m.name||'', role: m.role||'', phone: m.phone||'', wa: m.wa||'' }));
+  }
+  renderFooterCmte();
+
+  // 2. Then sync from Firestore year-specific doc
+  try {
+    if (typeof PSOTS_DB !== 'undefined') {
+      const data = await PSOTS_DB.getCommitteeByYear(activeYear);
+      if (data && Array.isArray(data.members) && data.members.length) {
+        _footerCmte = data.members.map(m => ({ name: m.name||'', role: m.role||'', phone: m.phone||'', wa: m.wa||'' }));
+        renderFooterCmte();
+      } else {
+        // Fall back to site config for legacy data
+        const cfg = await PSOTS_DB.getSiteConfig();
+        if (cfg && Array.isArray(cfg.committee) && cfg.committee.length) {
+          _footerCmte = cfg.committee.map(m => ({ name: m.name||'', role: m.role||'', phone: m.phone||'', wa: m.wa||'' }));
+          const live = JSON.parse(localStorage.getItem('psots_live_config') || '{}');
+          live.committee = cfg.committee;
+          localStorage.setItem('psots_live_config', JSON.stringify(live));
+          renderFooterCmte();
+        }
+      }
+    }
+  } catch(e) {}
+}
+
+function renderFooterCmte() {
+  const el = document.getElementById('footerCmteList');
+  if (!el) return;
+  if (_footerCmte.length === 0) {
+    el.innerHTML = '<div style="font-size:.8rem;color:var(--lbr);padding:.5rem 0">No members added yet. Click "+ Add Member" to start.</div>';
+    return;
+  }
+  el.innerHTML = _footerCmte.map((m, i) => `
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:.45rem;align-items:center;background:#faf4ff;border:1.5px solid #e2d0f0;border-radius:12px;padding:.7rem .9rem">
+      <input value="${_esc(m.name)}" placeholder="Full Name *"
+        oninput="_footerCmte[${i}].name=this.value"
+        style="border:1.5px solid #e2d0f0;border-radius:8px;padding:.42rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff;grid-column:1;outline:none"/>
+      <input value="${_esc(m.role)}" placeholder="Title / Role *"
+        oninput="_footerCmte[${i}].role=this.value"
+        style="border:1.5px solid #e2d0f0;border-radius:8px;padding:.42rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff;grid-column:2;outline:none"/>
+      <button onclick="_footerCmte.splice(${i},1);renderFooterCmte()" title="Remove"
+        style="background:none;border:none;padding:.3rem .5rem;font-size:1.1rem;cursor:pointer;color:#c03000;line-height:1;grid-column:3">✕</button>
+      <input value="${_esc(m.phone)}" placeholder="Phone (tap-to-call)"
+        oninput="_footerCmte[${i}].phone=this.value;_footerCmte[${i}].wa=this.value?'91'+this.value.replace(/^0/,''): ''"
+        style="border:1.5px solid #e2d0f0;border-radius:8px;padding:.42rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff;grid-column:1/3;outline:none"/>
+      <span style="font-size:.7rem;color:#8b6aaa;grid-column:1/4">WhatsApp: ${m.wa ? '91'+m.phone : 'auto-set from phone'}</span>
+    </div>`).join('');
+}
+
+function _esc(s) { return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function addFooterCmteMember() {
+  _footerCmte.push({ name: '', role: '', phone: '', wa: '' });
+  renderFooterCmte();
+  // scroll to bottom of list
+  setTimeout(() => document.getElementById('footerCmteList')?.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+}
+
+async function saveFooterCmte() {
+  const valid = _footerCmte.filter(m => m.name.trim() && m.role.trim());
+  if (valid.length === 0) { toast('Add at least one member with name and title', 'error'); return; }
+
+  // Normalise: auto-fill wa from phone, set initial from name
+  const normalised = valid.map(m => ({
+    name:    m.name.trim(),
+    role:    m.role.trim(),
+    phone:   m.phone.trim(),
+    wa:      m.wa.trim() || (m.phone.trim() ? '91' + m.phone.trim().replace(/^0/, '') : ''),
+    initial: m.name.trim().charAt(0).toUpperCase()
+  }));
+
+  const activeYear = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
+  const isActiveYear = (_currentCmteYear === activeYear);
+
+  // If editing active year, also update window.PSOTS + localStorage immediately
+  if (isActiveYear) {
+    window.PSOTS.committee = normalised;
+    try {
+      const live = JSON.parse(localStorage.getItem('psots_live_config') || '{}');
+      live.committee = normalised;
+      localStorage.setItem('psots_live_config', JSON.stringify(live));
+    } catch(e) {}
+  }
+
+  const st = document.getElementById('footerCmteStatus');
+  if (st) st.textContent = 'Saving…';
+  try {
+    if (typeof PSOTS_DB !== 'undefined') {
+      // Save to year-specific Firestore doc
+      await PSOTS_DB.saveCommitteeByYear(_currentCmteYear, normalised);
+      // If active year, also save to siteConfig for legacy footer reads
+      if (isActiveYear) {
+        const existing = await PSOTS_DB.getSiteConfig() || {};
+        await PSOTS_DB.saveSiteConfig({ ...existing, committee: normalised });
+      }
+    }
+    if (st) st.textContent = '✅ Saved';
+    toast('✅ Committee saved for ' + _currentCmteYear + '!', 'success');
+    _footerCmte = normalised;
+    renderFooterCmte();
+  } catch(e) {
+    if (st) st.textContent = '⚠ Saved locally only';
+    toast('Saved locally — Firestore sync failed', 'error');
+  }
+  setTimeout(() => { if (st) st.textContent = ''; }, 4000);
 }
 
 /* ═══════════════════════════════════════════════════

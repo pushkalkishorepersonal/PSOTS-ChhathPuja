@@ -177,6 +177,7 @@
     +         '<li><a href="' + root + 'pages/gallery.html">📸 Gallery</a></li>'
     +         '<li><a href="' + root + 'pages/volunteer.html">🙌 Volunteer</a></li>'
     +         '<li><a href="' + root + 'pages/announcements.html">📢 Announcements</a></li>'
+    +         '<li><a href="' + root + 'pages/committee.html">🪔 Committee</a></li>'
     +       '</ul>'
     +     '</div>'
 

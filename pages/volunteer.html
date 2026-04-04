@@ -158,6 +158,17 @@
     </div>
   </div>
 
+  <!-- ═══ VOLUNTEER WALL ═══ -->
+  <div class="section-divider"><span>🤝 Our Volunteers</span></div>
+  <div class="card" id="volWallCard">
+    <div class="card-title">🤝 Volunteers for Chhath 2026</div>
+    <div class="card-sub">Everyone who signed up to help make Chhath happen. Thank you! 🙏</div>
+    <div id="volWall" style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.85rem;min-height:60px">
+      <span style="font-size:.8rem;color:#a07850">Loading volunteers…</span>
+    </div>
+    <div style="font-size:.72rem;color:#a07850;margin-top:.6rem">Be part of this — sign up above ↑</div>
+  </div>
+
   <!-- ═══ PHOTO UPLOAD ═══ -->
   <div class="section-divider"><span>📸 Share Photos</span></div>
   <div class="card" id="volUploadCard">
@@ -332,10 +343,19 @@ async function submitVolunteer() {
   vols.push(data);
   localStorage.setItem('psots_volunteers', JSON.stringify(vols));
 
+  // Save to Firestore (non-blocking)
+  const volDbData = { name, flat, mobile, days: days.join(', '), tasks: tasks.join(', '), note, status: 'Registered', timestamp: new Date().toISOString() };
+  if (typeof PSOTS_DB !== 'undefined') {
+    try { PSOTS_DB.saveVolunteer(volDbData).catch(() => {}); } catch(e) {}
+  }
+
   btn.textContent = '✅ Signed Up!';
   document.getElementById('volSuccess').style.display = 'block';
   document.getElementById('volSuccessMsg').textContent = `Thank you ${name}! You're signed up for ${days.join(', ')}. The committee will WhatsApp you at ${mobile} with your task assignment.`;
   toast('🤝 Volunteer registered!', 'success');
+
+  // Add the new volunteer to the wall immediately
+  _addVolToWall({ name, flat, tasks: tasks.join(', ') });
 
   // Open WhatsApp confirmation
   setTimeout(() => {
@@ -436,6 +456,61 @@ function volResetUpload() {
   document.getElementById('volUploadBtn').disabled = true;
   document.getElementById('volUploadBtn').textContent = '📸 Submit Photo';
 }
+
+// ── VOLUNTEER WALL ────────────────────────────────────
+const ACTIVE_YEAR = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
+
+function _renderVolWall(vols) {
+  const wall = document.getElementById('volWall');
+  if (!wall) return;
+  if (!vols || vols.length === 0) {
+    wall.innerHTML = '<span style="font-size:.8rem;color:#a07850">Be the first to volunteer! Sign up above.</span>';
+    return;
+  }
+  wall.innerHTML = vols.map(v => _volChipHtml(v)).join('');
+}
+
+function _waUrl(mobile) {
+  if (!mobile) return '';
+  const digits = String(mobile).replace(/\D/g, '').replace(/^0/, '');
+  return digits ? 'https://wa.me/91' + digits : '';
+}
+
+function _volChipHtml(v) {
+  const wa = _waUrl(v.mobile);
+  const waBtn = wa
+    ? ` <a href="${wa}" target="_blank" rel="noopener"
+         style="display:inline-flex;align-items:center;gap:.28rem;background:#25d366;color:#fff;border-radius:50px;padding:.18rem .6rem;font-size:.68rem;font-weight:700;text-decoration:none;margin-left:.35rem;vertical-align:middle">
+         <svg width="11" height="11" viewBox="0 0 24 24" fill="#fff" style="flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.122 1.523 5.862L.057 23.886a.5.5 0 0 0 .611.64l6.249-1.637A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.94 9.94 0 0 1-5.14-1.428l-.368-.22-3.812 1 .963-3.7-.24-.381A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+         Connect</a>`
+    : '';
+  return `<div style="display:inline-flex;align-items:center;background:#fff0e0;border:1px solid #f0d5b8;border-radius:50px;padding:.3rem .9rem .3rem .75rem;font-size:.8rem;font-weight:600;color:#7a3800;white-space:nowrap">🤝 ${v.name} · Flat ${v.flat}${waBtn}</div>`;
+}
+
+function _addVolToWall(v) {
+  const wall = document.getElementById('volWall');
+  if (!wall) return;
+  const placeholder = wall.querySelector('span:only-child');
+  if (placeholder && (placeholder.textContent.includes('Loading') || placeholder.textContent.includes('Be the first'))) {
+    wall.innerHTML = '';
+  }
+  const wrap = document.createElement('div');
+  wrap.innerHTML = _volChipHtml(v);
+  wall.appendChild(wrap.firstElementChild);
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (typeof PSOTS_DB !== 'undefined') {
+    try {
+      const vols = await PSOTS_DB.getPublicVolunteers(ACTIVE_YEAR);
+      _renderVolWall(vols);
+    } catch(e) {
+      _renderVolWall([]);
+    }
+  } else {
+    _renderVolWall([]);
+  }
+});
 </script>
 <!-- Shared footer injected from config -->
 <script src="../js/footer-component.js"></script>

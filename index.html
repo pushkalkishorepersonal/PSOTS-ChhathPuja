@@ -114,16 +114,17 @@
   .t-contrib{grid-column:span 2}
   .t-vol    {grid-column:span 1}
   .t-gallery{grid-column:span 1}
+  .t-cmte   {grid-column:span 1}
   .t-portal {grid-column:span 3}
   .t-faq-s  {grid-column:span 1}
   @media(max-width:680px){
     .tgrid{grid-template-columns:repeat(2,1fr);gap:.85rem}
     .t-sched,.t-pay,.t-portal{grid-column:span 2}
     .t-ann,.t-fin,.t-contrib{grid-column:span 2}
-    .t-wa,.t-vol,.t-gallery,.t-faq-s{grid-column:span 1}
+    .t-wa,.t-vol,.t-gallery,.t-cmte,.t-faq-s{grid-column:span 1}
   }
   @media(max-width:420px){
-    .t-wa,.t-vol,.t-gallery,.t-faq-s{grid-column:span 2}
+    .t-wa,.t-vol,.t-gallery,.t-cmte,.t-faq-s{grid-column:span 2}
   }
 
   /* ── Global keyframes ── */
@@ -669,6 +670,13 @@
       <div><div style="font-size:.66rem;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,194,0,.88);margin-bottom:.18rem;font-weight:700">Volunteer & RSVP</div><div style="font-family:'DM Sans',sans-serif;font-size:1.04rem;font-weight:800;color:var(--gilt);display:flex;align-items:center;gap:.4rem">🤝 Volunteer Sign-Up</div></div>
       <div style="font-size:.78rem;color:rgba(255,237,200,.88);line-height:1.55">Help with ghat setup, prasad, decoration & cultural events!</div>
       <span style="display:inline-flex;align-items:center;gap:.4rem;font-size:.68rem;font-weight:700;color:var(--gold);letter-spacing:.07em;text-transform:uppercase;border-top:1px solid rgba(255,194,0,.14);padding-top:.65rem;transition:color .2s">Sign Up →</span>
+    </a>
+
+    <a class="tile t-cmte" href="pages/committee.html" style="padding:1.45rem;background:linear-gradient(145deg,#2d0800,#5a1800,#3d1000);border:1px solid rgba(255,194,0,.2);box-shadow:0 8px 30px rgba(93,30,0,.25)">
+      <div style="font-size:2.3rem;margin-bottom:.55rem;animation:float 3.5s ease-in-out infinite">🪔</div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:1.06rem;font-weight:800;color:#ffe680;margin-bottom:.32rem">Committee</div>
+      <div style="font-size:.78rem;color:rgba(255,237,200,.88);line-height:1.55;margin-bottom:.85rem">Meet the people behind Chhath Puja at PSOTS.</div>
+      <span style="font-size:.68rem;font-weight:700;color:#ffc200;letter-spacing:.07em;text-transform:uppercase">Meet the Team →</span>
     </a>
 
     <a class="tile t-gallery" href="pages/gallery.html" style="padding:1.45rem">

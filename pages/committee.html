@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="google-site-verification" content="Zs-4PgHfIPCHXtvDE1ZvyLV3vXpAnrrE_VPXhVZ5Pzg" />
+  <title>Committee — PSOTS Chhath</title>
+  <link href="https://fonts.googleapis.com/css2?family=Yatra+One&family=Playfair+Display:ital,wght@0,700;0,900&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="../css/style.css"/>
+  <script src="../js/config.js"></script>
+  <!-- Shared navigation — injects global nav bar -->
+  <script src="../js/nav-component.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-app-check-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.14.1/firebase-analytics-compat.js"></script>
+  <script src="../js/firebase-config.js"></script>
+  <script src="../js/db.js"></script>
+  <style>
+  /* ── Year tabs ── */
+  .year-tabs{display:flex;gap:.5rem;flex-wrap:wrap;margin-bottom:1.5rem}
+  .year-tab{padding:.48rem 1.1rem;border:1.5px solid #f0d5b8;border-radius:50px;background:var(--warm);cursor:pointer;font-family:'DM Sans',sans-serif;font-size:.82rem;font-weight:600;color:var(--br);transition:all .2s}
+  .year-tab:hover{border-color:var(--or);color:var(--or)}
+  .year-tab.active{background:linear-gradient(135deg,#3d1000,#2d0800);color:#ffc200;border-color:#3d1000}
+
+  /* ── Member card ── */
+  .member-card{display:flex;align-items:center;gap:.9rem;padding:.85rem 1rem;background:#fff8f2;border:1px solid #f0d5b8;border-radius:14px;transition:box-shadow .25s,transform .25s}
+  .member-card:hover{box-shadow:0 6px 24px rgba(93,30,0,.12);transform:translateY(-2px)}
+  .member-avatar{width:52px;height:52px;border-radius:50%;background:linear-gradient(135deg,#3d1000,#2d0800);color:#ffc200;font-size:1.3rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .member-name{font-family:'DM Sans',sans-serif;font-weight:700;font-size:.96rem;color:var(--ink);margin-bottom:.12rem}
+  .member-role{font-size:.78rem;color:var(--lbr);margin-bottom:.18rem}
+  .member-phone{font-size:.76rem;color:var(--or);font-weight:600;text-decoration:none}
+  .member-phone:hover{text-decoration:underline}
+  .member-list{display:flex;flex-direction:column;gap:.7rem}
+
+  /* ── Volunteer wall chips ── */
+  .vol-chip{background:#fff0e0;border:1px solid #f0d5b8;border-radius:50px;padding:.3rem .75rem;font-size:.8rem;font-weight:600;color:#7a3800;display:inline-block}
+  .vol-task-chip{background:#ffecd0;border:1px solid #f5c89a;border-radius:50px;padding:.15rem .5rem;font-size:.7rem;color:#8a4200;display:inline-block;margin:.1rem .15rem 0 0}
+  </style>
+  <link rel="icon" href="../images/logo-hindi.png" type="image/png">
+  <link rel="apple-touch-icon" href="../images/logo-main.png">
+  <meta name="description" content="Meet the PSOTS Chhath Puja Committee — the dedicated people who organise Chhath Mahaparv every year.">
+  <link rel="canonical" href="https://chhath.psots.in/pages/committee.html">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="PSOTS Chhath Puja">
+  <meta property="og:url" content="https://chhath.psots.in/pages/committee.html">
+  <meta property="og:title" content="Committee — PSOTS Chhath">
+  <meta property="og:description" content="Meet the PSOTS Chhath Puja Committee — the dedicated people who organise Chhath Mahaparv every year.">
+  <meta property="og:image" content="https://chhath.psots.in/images/logo-main.png">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="Committee — PSOTS Chhath">
+  <meta name="twitter:description" content="Meet the PSOTS Chhath Puja Committee — the dedicated people who organise Chhath Mahaparv every year.">
+  <meta name="twitter:image" content="https://chhath.psots.in/images/logo-main.png">
+</head>
+<body>
+<nav class="page-nav">
+  <a class="page-nav-back" href="../index.html"><span class="page-nav-back-icon">←</span> Home</a>
+  <div class="page-nav-title">🪔 Committee</div>
+  <div><img src="../images/logo-main.png" alt="PSOTS" width="36" height="36" style="display:block;object-fit:contain;opacity:.95"></div>
+</nav>
+<div class="page-hero">
+  <span class="ph-icon">🪔</span>
+  <div class="ph-title">Committee</div>
+  <div class="ph-sub">Meet the people who make Chhath happen</div>
+</div>
+<div class="page-content">
+
+  <!-- Year tabs -->
+  <div class="year-tabs" id="yearTabs"></div>
+
+  <!-- Committee members section -->
+  <div class="card" id="committeeCard">
+    <div class="card-title" id="committeeTitle">🪔 Committee <span id="committeeYearLabel"></span></div>
+    <div class="card-sub" id="committeeSub">Organising committee members and their roles</div>
+    <div id="memberList" class="member-list" style="margin-top:1rem">
+      <div style="text-align:center;padding:2rem 1rem;font-size:.85rem;color:var(--lbr)">Loading committee…</div>
+    </div>
+  </div>
+
+  <!-- Volunteer wall section -->
+  <div class="section-divider" style="display:flex;align-items:center;gap:.8rem;margin:2rem 0 1.5rem">
+    <span style="flex:1;height:1px;background:#f0d5b8;display:block"></span>
+    <span style="font-family:'Yatra One',serif;font-size:1rem;color:var(--or);white-space:nowrap" id="volWallTitle">🤝 Our Volunteers</span>
+    <span style="flex:1;height:1px;background:#f0d5b8;display:block"></span>
+  </div>
+  <div class="card" id="volWallCard">
+    <div class="card-title" id="volWallCardTitle">🤝 Volunteers</div>
+    <div class="card-sub">Everyone who signed up to help make Chhath happen. Thank you! 🙏</div>
+    <div id="volWall" style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.85rem;min-height:60px">
+      <span style="font-size:.8rem;color:#a07850">Loading volunteers…</span>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = type ? 'show ' + type : 'show';
+  setTimeout(() => { el.className = ''; }, 3000);
+}
+
+const ACTIVE_YEAR = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
+let _currentYear = ACTIVE_YEAR;
+
+/* ── Build year tabs ── */
+function _buildYearTabs() {
+  const container = document.getElementById('yearTabs');
+  if (!container) return;
+  container.innerHTML = '';
+  for (let y = ACTIVE_YEAR; y >= ACTIVE_YEAR - 4; y--) {
+    const btn = document.createElement('button');
+    btn.className = 'year-tab' + (y === _currentYear ? ' active' : '');
+    btn.textContent = y === ACTIVE_YEAR ? y + ' (Current)' : String(y);
+    btn.onclick = () => _loadYear(y);
+    container.appendChild(btn);
+  }
+}
+
+/* ── Render committee members ── */
+function _renderCommittee(members, year) {
+  const list = document.getElementById('memberList');
+  const title = document.getElementById('committeeYearLabel');
+  if (title) title.textContent = year;
+  if (!list) return;
+
+  if (!members || members.length === 0) {
+    list.innerHTML = '<div style="text-align:center;padding:2rem 1rem;font-size:.85rem;color:var(--lbr)">Committee for ' + year + ' will be announced soon 🙏</div>';
+    return;
+  }
+
+  list.innerHTML = members.map(function(m) {
+    var initial = (m.name || '?').charAt(0).toUpperCase();
+    var phoneHtml = '';
+    if (m.phone) {
+      var digits = m.phone.replace(/\D/g, '');
+      var href = 'tel:+' + (digits.length >= 10 ? (digits.length === 10 ? '91' + digits : digits) : digits);
+      phoneHtml = '<a class="member-phone" href="' + href + '">📞 ' + m.phone + '</a>';
+    }
+    return '<div class="member-card">'
+      + '<div class="member-avatar">' + initial + '</div>'
+      + '<div style="flex:1">'
+      +   '<div class="member-name">' + _esc(m.name) + '</div>'
+      +   '<div class="member-role">' + _esc(m.role || m.title || '') + '</div>'
+      +   phoneHtml
+      + '</div>'
+      + '</div>';
+  }).join('');
+}
+
+/* ── Render volunteer wall ── */
+function _renderVolWall(vols, year) {
+  const wall = document.getElementById('volWall');
+  const wallTitle = document.getElementById('volWallCardTitle');
+  const sectionTitle = document.getElementById('volWallTitle');
+  if (wallTitle) wallTitle.textContent = '🤝 Volunteers for Chhath ' + year;
+  if (sectionTitle) sectionTitle.textContent = '🤝 Our Volunteers ' + year;
+  if (!wall) return;
+
+  if (!vols || vols.length === 0) {
+    wall.innerHTML = '<span style="font-size:.8rem;color:#a07850">Be the first to volunteer! <a href="volunteer.html" style="color:var(--or);font-weight:600">Sign up here →</a></span>';
+    return;
+  }
+
+  wall.innerHTML = vols.map(function(v) {
+    var wa = v.mobile ? 'https://wa.me/91' + String(v.mobile).replace(/\D/g,'').replace(/^0/,'') : '';
+    var waBtn = wa
+      ? '<a href="' + wa + '" target="_blank" rel="noopener"'
+        + ' style="display:inline-flex;align-items:center;gap:.28rem;background:#25d366;color:#fff;border-radius:50px;padding:.18rem .6rem;font-size:.68rem;font-weight:700;text-decoration:none;margin-left:.35rem;vertical-align:middle">'
+        + '<svg width="11" height="11" viewBox="0 0 24 24" fill="#fff" style="flex-shrink:0"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.554 4.122 1.523 5.862L.057 23.886a.5.5 0 0 0 .611.64l6.249-1.637A11.94 11.94 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22a9.94 9.94 0 0 1-5.14-1.428l-.368-.22-3.812 1 .963-3.7-.24-.381A9.96 9.96 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>'
+        + 'Connect</a>'
+      : '';
+    var tasksHtml = '';
+    if (v.tasks) {
+      tasksHtml = '<div style="margin-top:.25rem">'
+        + v.tasks.split(',').map(function(t) {
+            return '<span class="vol-task-chip">' + _esc(t.trim()) + '</span>';
+          }).join('')
+        + '</div>';
+    }
+    return '<div style="display:flex;flex-direction:column;max-width:240px">'
+      + '<div class="vol-chip" style="display:inline-flex;align-items:center">🤝 ' + _esc(v.name) + ' · Flat ' + _esc(v.flat) + waBtn + '</div>'
+      + tasksHtml
+      + '</div>';
+  }).join('');
+}
+
+function _esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Load a year's data ── */
+async function _loadYear(year) {
+  _currentYear = year;
+
+  // Update tab active states
+  document.querySelectorAll('.year-tab').forEach(function(btn) {
+    var y = parseInt(btn.textContent);
+    btn.classList.toggle('active', y === year);
+  });
+
+  // Update labels
+  var titleEl = document.getElementById('committeeYearLabel');
+  if (titleEl) titleEl.textContent = year;
+
+  // Show loading state
+  var list = document.getElementById('memberList');
+  if (list) list.innerHTML = '<div style="text-align:center;padding:2rem 1rem;font-size:.85rem;color:var(--lbr)">Loading…</div>';
+
+  var wall = document.getElementById('volWall');
+  if (wall) wall.innerHTML = '<span style="font-size:.8rem;color:#a07850">Loading volunteers…</span>';
+
+  // Seed committee from window.PSOTS for active year immediately
+  if (year === ACTIVE_YEAR && window.PSOTS && window.PSOTS.committee && window.PSOTS.committee.length) {
+    _renderCommittee(window.PSOTS.committee, year);
+  }
+
+  // Load from Firestore
+  if (typeof PSOTS_DB !== 'undefined') {
+    try {
+      var data = await PSOTS_DB.getCommitteeByYear(year);
+      if (data && Array.isArray(data.members)) {
+        _renderCommittee(data.members, year);
+      } else if (year === ACTIVE_YEAR && window.PSOTS && window.PSOTS.committee) {
+        _renderCommittee(window.PSOTS.committee, year);
+      } else {
+        _renderCommittee([], year);
+      }
+    } catch(e) {
+      if (year === ACTIVE_YEAR && window.PSOTS && window.PSOTS.committee) {
+        _renderCommittee(window.PSOTS.committee, year);
+      } else {
+        _renderCommittee([], year);
+      }
+    }
+
+    // Load volunteers for this year
+    try {
+      var vols = await PSOTS_DB.getPublicVolunteers(year);
+      _renderVolWall(vols, year);
+    } catch(e) {
+      _renderVolWall([], year);
+    }
+  } else {
+    // No DB — show config committee for active year
+    if (year === ACTIVE_YEAR && window.PSOTS && window.PSOTS.committee) {
+      _renderCommittee(window.PSOTS.committee, year);
+    } else {
+      _renderCommittee([], year);
+    }
+    _renderVolWall([], year);
+  }
+}
+
+/* ── Boot ── */
+_buildYearTabs();
+_loadYear(ACTIVE_YEAR);
+</script>
+<script src="../js/footer-component.js"></script>
+</body>
+</html>
