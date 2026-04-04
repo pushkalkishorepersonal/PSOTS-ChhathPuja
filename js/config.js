@@ -98,6 +98,8 @@ window.PSOTS = {
     if (live.arghyaEvening) Object.assign(window.PSOTS.arghyaEvening, live.arghyaEvening);
     if (live.arghyaMorning) Object.assign(window.PSOTS.arghyaMorning, live.arghyaMorning);
     if (live.kharnaTime)    Object.assign(window.PSOTS.kharnaTime,    live.kharnaTime);
+    // Replace committee array if admin has saved one
+    if (Array.isArray(live.committee) && live.committee.length) window.PSOTS.committee = live.committee;
   } catch(e) {}
 })();
 

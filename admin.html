@@ -1255,6 +1255,18 @@
       </div>
     </div>
 
+    <!-- Footer Committee Members -->
+    <div class="admin-card" id="footerCmteCard" style="margin-top:1rem;border-left:4px solid #6d3c8f">
+      <div class="ac-title">🪔 Footer Committee</div>
+      <div class="ac-sub">Names and titles shown in the site footer. Positions change each year — update freely. Phone numbers appear as tap-to-call links.</div>
+      <div id="footerCmteList" style="display:flex;flex-direction:column;gap:.55rem;margin-top:.85rem"></div>
+      <div style="display:flex;gap:.6rem;margin-top:.85rem;flex-wrap:wrap">
+        <button class="btn-secondary" onclick="addFooterCmteMember()">＋ Add Member</button>
+        <button class="btn-primary" onclick="saveFooterCmte()">💾 Save to Footer</button>
+        <span id="footerCmteStatus" style="font-size:.74rem;color:var(--lbr);align-self:center"></span>
+      </div>
+    </div>
+
     <!-- Team Members -->
     <div class="admin-card" id="teamMembersCard" style="margin-top:1rem">
       <div class="ac-title">👥 Team Members</div>
@@ -1997,7 +2009,7 @@ function switchTab(id) {
     setTimeout(loadReminderList, 400);
   }
   if (id === 'broadcast') loadSubscribers();
-  if (id === 'settings') { loadCmteRoles(); renderAmList(); loadMembersAdmin(); loadRolePerms().then(renderPermMatrix); loadEventConfig(); }
+  if (id === 'settings') { loadCmteRoles(); renderAmList(); loadMembersAdmin(); loadRolePerms().then(renderPermMatrix); loadEventConfig(); _initFooterCmte(); }
 }
 
 /* ═══════════════════════════════════════════════════
@@ -3567,6 +3579,118 @@ function loadCmteRoles() {
       renderCmteRoles();
     }
   });
+}
+
+/* ═══════════════════════════════════════════════════
+   FOOTER COMMITTEE EDITOR
+   Edits window.PSOTS.committee — shown in footer on every page.
+   Saved to psots_live_config (localStorage) + Firestore siteConfig.
+═══════════════════════════════════════════════════ */
+let _footerCmte = []; // [{name, role, phone, wa}]
+
+async function _initFooterCmte() {
+  // 1. Seed immediately from localStorage / config so UI appears without delay
+  try {
+    const live = JSON.parse(localStorage.getItem('psots_live_config') || 'null');
+    if (live && Array.isArray(live.committee) && live.committee.length) {
+      _footerCmte = live.committee.map(m => ({ name: m.name||'', role: m.role||'', phone: m.phone||'', wa: m.wa||'' }));
+    } else {
+      _footerCmte = (window.PSOTS.committee || []).map(m => ({ name: m.name||'', role: m.role||'', phone: m.phone||'', wa: m.wa||'' }));
+    }
+  } catch(e) {
+    _footerCmte = (window.PSOTS.committee || []).map(m => ({ name: m.name||'', role: m.role||'', phone: m.phone||'', wa: m.wa||'' }));
+  }
+  renderFooterCmte();
+
+  // 2. Then sync from Firestore (picks up changes saved on another device)
+  try {
+    if (typeof PSOTS_DB !== 'undefined') {
+      const cfg = await PSOTS_DB.getSiteConfig();
+      if (cfg && Array.isArray(cfg.committee) && cfg.committee.length) {
+        _footerCmte = cfg.committee.map(m => ({ name: m.name||'', role: m.role||'', phone: m.phone||'', wa: m.wa||'' }));
+        // Keep localStorage in sync
+        const live = JSON.parse(localStorage.getItem('psots_live_config') || '{}');
+        live.committee = cfg.committee;
+        localStorage.setItem('psots_live_config', JSON.stringify(live));
+        renderFooterCmte();
+      }
+    }
+  } catch(e) {}
+}
+
+function renderFooterCmte() {
+  const el = document.getElementById('footerCmteList');
+  if (!el) return;
+  if (_footerCmte.length === 0) {
+    el.innerHTML = '<div style="font-size:.8rem;color:var(--lbr);padding:.5rem 0">No members added yet. Click "+ Add Member" to start.</div>';
+    return;
+  }
+  el.innerHTML = _footerCmte.map((m, i) => `
+    <div style="display:grid;grid-template-columns:1fr 1fr auto;gap:.45rem;align-items:center;background:#faf4ff;border:1.5px solid #e2d0f0;border-radius:12px;padding:.7rem .9rem">
+      <input value="${_esc(m.name)}" placeholder="Full Name *"
+        oninput="_footerCmte[${i}].name=this.value"
+        style="border:1.5px solid #e2d0f0;border-radius:8px;padding:.42rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff;grid-column:1;outline:none"/>
+      <input value="${_esc(m.role)}" placeholder="Title / Role *"
+        oninput="_footerCmte[${i}].role=this.value"
+        style="border:1.5px solid #e2d0f0;border-radius:8px;padding:.42rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff;grid-column:2;outline:none"/>
+      <button onclick="_footerCmte.splice(${i},1);renderFooterCmte()" title="Remove"
+        style="background:none;border:none;padding:.3rem .5rem;font-size:1.1rem;cursor:pointer;color:#c03000;line-height:1;grid-column:3">✕</button>
+      <input value="${_esc(m.phone)}" placeholder="Phone (tap-to-call)"
+        oninput="_footerCmte[${i}].phone=this.value;_footerCmte[${i}].wa=this.value?'91'+this.value.replace(/^0/,''): ''"
+        style="border:1.5px solid #e2d0f0;border-radius:8px;padding:.42rem .7rem;font-family:'DM Sans',sans-serif;font-size:.82rem;background:#fff;grid-column:1/3;outline:none"/>
+      <span style="font-size:.7rem;color:#8b6aaa;grid-column:1/4">WhatsApp: ${m.wa ? '91'+m.phone : 'auto-set from phone'}</span>
+    </div>`).join('');
+}
+
+function _esc(s) { return String(s||'').replace(/"/g,'&quot;').replace(/</g,'&lt;'); }
+
+function addFooterCmteMember() {
+  _footerCmte.push({ name: '', role: '', phone: '', wa: '' });
+  renderFooterCmte();
+  // scroll to bottom of list
+  setTimeout(() => document.getElementById('footerCmteList')?.lastElementChild?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50);
+}
+
+async function saveFooterCmte() {
+  const valid = _footerCmte.filter(m => m.name.trim() && m.role.trim());
+  if (valid.length === 0) { toast('Add at least one member with name and title', 'error'); return; }
+
+  // Normalise: auto-fill wa from phone, set initial from name
+  const normalised = valid.map(m => ({
+    name:    m.name.trim(),
+    role:    m.role.trim(),
+    phone:   m.phone.trim(),
+    wa:      m.wa.trim() || (m.phone.trim() ? '91' + m.phone.trim().replace(/^0/, '') : ''),
+    initial: m.name.trim().charAt(0).toUpperCase()
+  }));
+
+  // 1. Apply to window.PSOTS immediately (footer re-renders on next page load)
+  window.PSOTS.committee = normalised;
+
+  // 2. Save to psots_live_config in localStorage
+  try {
+    const live = JSON.parse(localStorage.getItem('psots_live_config') || '{}');
+    live.committee = normalised;
+    localStorage.setItem('psots_live_config', JSON.stringify(live));
+  } catch(e) {}
+
+  // 3. Save to Firestore siteConfig
+  const st = document.getElementById('footerCmteStatus');
+  if (st) st.textContent = 'Saving…';
+  try {
+    if (typeof PSOTS_DB !== 'undefined') {
+      const existing = await PSOTS_DB.getSiteConfig() || {};
+      await PSOTS_DB.saveSiteConfig({ ...existing, committee: normalised });
+    }
+    if (st) st.textContent = '✅ Saved';
+    toast('✅ Footer committee updated!', 'success');
+    _footerCmte = normalised;
+    renderFooterCmte();
+  } catch(e) {
+    if (st) st.textContent = '⚠ Saved locally only';
+    toast('Saved locally — Firestore sync failed', 'error');
+  }
+  setTimeout(() => { if (st) st.textContent = ''; }, 4000);
 }
 
 /* ═══════════════════════════════════════════════════
