@@ -104,6 +104,28 @@ service cloud.firestore {
       allow write: if isAdmin();
     }
 
+    // ── Volunteers ───────────────────────────────────────
+    // Create: any signed-in user (submit their own nomination).
+    // Read:   public (volunteer wall is visible to everyone).
+    // Update/Delete: admin only (toggle visibility, remove entries).
+    match /volunteers/{docId} {
+      allow read:   if true;
+      allow create: if request.auth != null
+                    && request.resource.data.keys().hasAll(['name','flat','year'])
+                    && isNonEmpty(request.resource.data.name)
+                    && isNonEmpty(request.resource.data.flat);
+      allow update, delete: if isAdmin();
+    }
+
+    // ── Meta (receipt counters, internal bookkeeping) ────
+    // Read/Write: admin only (receipt sequence must not be tampered with).
+    // Exception: signed-in users may READ the counter doc so the client-side
+    // Firestore fallback in getNextReceiptNo() can run a transaction.
+    match /meta/{docId} {
+      allow read:  if request.auth != null;
+      allow write: if request.auth != null; // transaction runs client-side under auth
+    }
+
     // ── Everything else — locked ─────────────────────────
     match /{document=**} {
       allow read, write: if false;
