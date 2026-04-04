@@ -456,6 +456,48 @@ function volResetUpload() {
   document.getElementById('volUploadBtn').disabled = true;
   document.getElementById('volUploadBtn').textContent = '📸 Submit Photo';
 }
+
+// ── VOLUNTEER WALL ────────────────────────────────────
+const ACTIVE_YEAR = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
+
+function _renderVolWall(vols) {
+  const wall = document.getElementById('volWall');
+  if (!wall) return;
+  if (!vols || vols.length === 0) {
+    wall.innerHTML = '<span style="font-size:.8rem;color:#a07850">Be the first to volunteer! Sign up above.</span>';
+    return;
+  }
+  wall.innerHTML = vols.map(v =>
+    `<span style="background:#fff0e0;border:1px solid #f0d5b8;border-radius:50px;padding:.3rem .75rem;font-size:.8rem;font-weight:600;color:#7a3800">🤝 ${v.name} · Flat ${v.flat}</span>`
+  ).join('');
+}
+
+function _addVolToWall(v) {
+  const wall = document.getElementById('volWall');
+  if (!wall) return;
+  // Remove "loading" or "be first" placeholder if present
+  const placeholder = wall.querySelector('span:only-child');
+  if (placeholder && (placeholder.textContent.includes('Loading') || placeholder.textContent.includes('Be the first'))) {
+    wall.innerHTML = '';
+  }
+  const chip = document.createElement('span');
+  chip.style.cssText = 'background:#fff0e0;border:1px solid #f0d5b8;border-radius:50px;padding:.3rem .75rem;font-size:.8rem;font-weight:600;color:#7a3800';
+  chip.textContent = `🤝 ${v.name} · Flat ${v.flat}`;
+  wall.appendChild(chip);
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (typeof PSOTS_DB !== 'undefined') {
+    try {
+      const vols = await PSOTS_DB.getPublicVolunteers(ACTIVE_YEAR);
+      _renderVolWall(vols);
+    } catch(e) {
+      _renderVolWall([]);
+    }
+  } else {
+    _renderVolWall([]);
+  }
+});
 </script>
 <!-- Shared footer injected from config -->
 <script src="../js/footer-component.js"></script>
