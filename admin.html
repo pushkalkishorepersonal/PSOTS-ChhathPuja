@@ -1258,11 +1258,18 @@
     <!-- Footer Committee Members -->
     <div class="admin-card" id="footerCmteCard" style="margin-top:1rem;border-left:4px solid #6d3c8f">
       <div class="ac-title">🪔 Footer Committee</div>
-      <div class="ac-sub">Names and titles shown in the site footer. Positions change each year — update freely. Phone numbers appear as tap-to-call links.</div>
-      <div id="footerCmteList" style="display:flex;flex-direction:column;gap:.55rem;margin-top:.85rem"></div>
+      <div class="ac-sub">Names and titles shown in the site footer and the public committee page. Positions change each year — update freely. Phone numbers appear as tap-to-call links.</div>
+      <div style="display:flex;align-items:center;gap:.7rem;margin-top:.85rem;margin-bottom:.55rem;flex-wrap:wrap">
+        <label style="font-size:.75rem;font-weight:600;color:var(--br);white-space:nowrap">Year:</label>
+        <select id="cmteYearSel"
+          style="padding:.42rem .85rem;border:1.5px solid #e2d0f0;border-radius:9px;font-family:'DM Sans',sans-serif;font-size:.85rem;outline:none;background:#faf4ff;color:var(--ink)"
+          onchange="_onCmteYearChange(this.value)"></select>
+        <span id="cmteYearLoading" style="font-size:.75rem;color:var(--lbr);display:none">Loading…</span>
+      </div>
+      <div id="footerCmteList" style="display:flex;flex-direction:column;gap:.55rem"></div>
       <div style="display:flex;gap:.6rem;margin-top:.85rem;flex-wrap:wrap">
         <button class="btn-secondary" onclick="addFooterCmteMember()">＋ Add Member</button>
-        <button class="btn-primary" onclick="saveFooterCmte()">💾 Save to Footer</button>
+        <button class="btn-primary" onclick="saveFooterCmte()">💾 Save</button>
         <span id="footerCmteStatus" style="font-size:.74rem;color:var(--lbr);align-self:center"></span>
       </div>
     </div>
@@ -3583,13 +3590,51 @@ function loadCmteRoles() {
 
 /* ═══════════════════════════════════════════════════
    FOOTER COMMITTEE EDITOR
-   Edits window.PSOTS.committee — shown in footer on every page.
-   Saved to psots_live_config (localStorage) + Firestore siteConfig.
+   Year-aware: stores per-year committee in Firestore config/committee_YEAR.
+   Active year also updates psots_live_config + window.PSOTS.committee.
 ═══════════════════════════════════════════════════ */
-let _footerCmte = []; // [{name, role, phone, wa}]
+let _footerCmte    = []; // [{name, role, phone, wa}]
+let _currentCmteYear = null;
+
+function _buildCmteYearSelector() {
+  const sel = document.getElementById('cmteYearSel');
+  if (!sel) return;
+  const activeYear = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
+  sel.innerHTML = '';
+  for (let y = activeYear; y >= activeYear - 4; y--) {
+    const opt = document.createElement('option');
+    opt.value = y;
+    opt.textContent = y === activeYear ? y + ' (Active)' : y;
+    sel.appendChild(opt);
+  }
+  sel.value = _currentCmteYear || activeYear;
+}
+
+async function _onCmteYearChange(year) {
+  _currentCmteYear = Number(year);
+  const loading = document.getElementById('cmteYearLoading');
+  if (loading) loading.style.display = 'inline';
+  _footerCmte = [];
+  renderFooterCmte();
+  try {
+    if (typeof PSOTS_DB !== 'undefined') {
+      const data = await PSOTS_DB.getCommitteeByYear(_currentCmteYear);
+      if (data && Array.isArray(data.members) && data.members.length) {
+        _footerCmte = data.members.map(m => ({ name: m.name||'', role: m.role||'', phone: m.phone||'', wa: m.wa||'' }));
+      }
+    }
+  } catch(e) {}
+  if (loading) loading.style.display = 'none';
+  renderFooterCmte();
+}
 
 async function _initFooterCmte() {
-  // 1. Seed immediately from localStorage / config so UI appears without delay
+  const activeYear = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
+  _currentCmteYear = activeYear;
+
+  _buildCmteYearSelector();
+
+  // 1. Seed immediately from localStorage / config for active year
   try {
     const live = JSON.parse(localStorage.getItem('psots_live_config') || 'null');
     if (live && Array.isArray(live.committee) && live.committee.length) {
@@ -3602,17 +3647,23 @@ async function _initFooterCmte() {
   }
   renderFooterCmte();
 
-  // 2. Then sync from Firestore (picks up changes saved on another device)
+  // 2. Then sync from Firestore year-specific doc
   try {
     if (typeof PSOTS_DB !== 'undefined') {
-      const cfg = await PSOTS_DB.getSiteConfig();
-      if (cfg && Array.isArray(cfg.committee) && cfg.committee.length) {
-        _footerCmte = cfg.committee.map(m => ({ name: m.name||'', role: m.role||'', phone: m.phone||'', wa: m.wa||'' }));
-        // Keep localStorage in sync
-        const live = JSON.parse(localStorage.getItem('psots_live_config') || '{}');
-        live.committee = cfg.committee;
-        localStorage.setItem('psots_live_config', JSON.stringify(live));
+      const data = await PSOTS_DB.getCommitteeByYear(activeYear);
+      if (data && Array.isArray(data.members) && data.members.length) {
+        _footerCmte = data.members.map(m => ({ name: m.name||'', role: m.role||'', phone: m.phone||'', wa: m.wa||'' }));
         renderFooterCmte();
+      } else {
+        // Fall back to site config for legacy data
+        const cfg = await PSOTS_DB.getSiteConfig();
+        if (cfg && Array.isArray(cfg.committee) && cfg.committee.length) {
+          _footerCmte = cfg.committee.map(m => ({ name: m.name||'', role: m.role||'', phone: m.phone||'', wa: m.wa||'' }));
+          const live = JSON.parse(localStorage.getItem('psots_live_config') || '{}');
+          live.committee = cfg.committee;
+          localStorage.setItem('psots_live_config', JSON.stringify(live));
+          renderFooterCmte();
+        }
       }
     }
   } catch(e) {}
@@ -3664,26 +3715,33 @@ async function saveFooterCmte() {
     initial: m.name.trim().charAt(0).toUpperCase()
   }));
 
-  // 1. Apply to window.PSOTS immediately (footer re-renders on next page load)
-  window.PSOTS.committee = normalised;
+  const activeYear = (window.PSOTS && window.PSOTS.activeYear) || new Date().getFullYear();
+  const isActiveYear = (_currentCmteYear === activeYear);
 
-  // 2. Save to psots_live_config in localStorage
-  try {
-    const live = JSON.parse(localStorage.getItem('psots_live_config') || '{}');
-    live.committee = normalised;
-    localStorage.setItem('psots_live_config', JSON.stringify(live));
-  } catch(e) {}
+  // If editing active year, also update window.PSOTS + localStorage immediately
+  if (isActiveYear) {
+    window.PSOTS.committee = normalised;
+    try {
+      const live = JSON.parse(localStorage.getItem('psots_live_config') || '{}');
+      live.committee = normalised;
+      localStorage.setItem('psots_live_config', JSON.stringify(live));
+    } catch(e) {}
+  }
 
-  // 3. Save to Firestore siteConfig
   const st = document.getElementById('footerCmteStatus');
   if (st) st.textContent = 'Saving…';
   try {
     if (typeof PSOTS_DB !== 'undefined') {
-      const existing = await PSOTS_DB.getSiteConfig() || {};
-      await PSOTS_DB.saveSiteConfig({ ...existing, committee: normalised });
+      // Save to year-specific Firestore doc
+      await PSOTS_DB.saveCommitteeByYear(_currentCmteYear, normalised);
+      // If active year, also save to siteConfig for legacy footer reads
+      if (isActiveYear) {
+        const existing = await PSOTS_DB.getSiteConfig() || {};
+        await PSOTS_DB.saveSiteConfig({ ...existing, committee: normalised });
+      }
     }
     if (st) st.textContent = '✅ Saved';
-    toast('✅ Footer committee updated!', 'success');
+    toast('✅ Committee saved for ' + _currentCmteYear + '!', 'success');
     _footerCmte = normalised;
     renderFooterCmte();
   } catch(e) {

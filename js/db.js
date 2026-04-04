@@ -889,9 +889,98 @@ const PSOTS_DB = (() => {
     }
   }
 
+  /* ════════════════════════════════════════════════════
+     COMMITTEE API
+  ════════════════════════════════════════════════════ */
+
+  /**
+   * getCommitteeByYear(year) → { members: [...] } or null
+   *
+   * Reads the committee document for a specific year from Firestore.
+   * Document path: config/committee_{year}
+   */
+  async function getCommitteeByYear(year) {
+    if (!_db || !year) return null;
+    try {
+      const snap = await _db.collection('config').doc('committee_' + year).get();
+      return snap.exists ? snap.data() : null;
+    } catch (e) {
+      console.warn('[PSOTS_DB] getCommitteeByYear failed:', e.message);
+      return null;
+    }
+  }
+
+  /**
+   * saveCommitteeByYear(year, members) → { ok }
+   *
+   * Writes committee members for a specific year to Firestore.
+   * Document path: config/committee_{year}
+   */
+  async function saveCommitteeByYear(year, members) {
+    if (!_db || !year) return { ok: false, error: 'Firestore not ready or no year' };
+    try {
+      await _db.collection('config').doc('committee_' + year).set(
+        { year: Number(year), members, updatedAt: Date.now() },
+        { merge: true }
+      );
+      return { ok: true };
+    } catch (e) {
+      console.warn('[PSOTS_DB] saveCommitteeByYear failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /* ════════════════════════════════════════════════════
+     VOLUNTEER API
+  ════════════════════════════════════════════════════ */
+
+  /**
+   * saveVolunteer(data) → { ok, id }
+   *
+   * Saves a volunteer sign-up to the volunteers collection with auto-ID.
+   * Adds year (current year) and visible: true to the record.
+   */
+  async function saveVolunteer(data) {
+    if (!_db) return { ok: false, error: 'Firestore not ready' };
+    try {
+      const docRef = await _db.collection('volunteers').add({
+        ...data,
+        year: new Date().getFullYear(),
+        visible: true,
+        submittedAt: Date.now(),
+      });
+      return { ok: true, id: docRef.id };
+    } catch (e) {
+      console.warn('[PSOTS_DB] saveVolunteer failed:', e.message);
+      return { ok: false, error: e.message };
+    }
+  }
+
+  /**
+   * getPublicVolunteers(year) → array of volunteer objects
+   *
+   * Fetches visible volunteers for a given year from Firestore,
+   * sorted by submittedAt timestamp ascending.
+   */
+  async function getPublicVolunteers(year) {
+    if (!_db || !year) return [];
+    try {
+      const snap = await _db.collection('volunteers')
+        .where('year', '==', Number(year))
+        .where('visible', '==', true)
+        .get();
+      return snap.docs
+        .map(d => ({ _id: d.id, ...d.data() }))
+        .sort((a, b) => (a.submittedAt || 0) - (b.submittedAt || 0));
+    } catch (e) {
+      console.warn('[PSOTS_DB] getPublicVolunteers failed:', e.message);
+      return [];
+    }
+  }
+
   _init();
 
-  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, getPendingContributions, getCurrentYearContributions, deleteContribution, deleteContributionsByYear, syncContributions, savePendingContribution, updateContributionStatus, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig, getNextReceiptNo };
+  const api = { getProfile, saveProfile, patchProfile, invalidateProfile, getContributions, getAllContributions, getPendingContributions, getCurrentYearContributions, deleteContribution, deleteContributionsByYear, syncContributions, savePendingContribution, updateContributionStatus, getResident, upsertResident, syncResidents, getAnnouncements, saveAnnouncement, deleteAnnouncement, bulkSaveAnnouncements, getFinance, saveFinance, getReceipts, saveReceipts, archiveYear, getFinanceHistory, getSiteConfig, saveSiteConfig, getNextReceiptNo, getCommitteeByYear, saveCommitteeByYear, saveVolunteer, getPublicVolunteers };
   Object.defineProperty(api, 'isFirestoreReady', { get: () => _ready });
   return api;
 })();

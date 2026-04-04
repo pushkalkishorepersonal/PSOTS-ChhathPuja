@@ -158,6 +158,17 @@
     </div>
   </div>
 
+  <!-- ═══ VOLUNTEER WALL ═══ -->
+  <div class="section-divider"><span>🤝 Our Volunteers</span></div>
+  <div class="card" id="volWallCard">
+    <div class="card-title">🤝 Volunteers for Chhath 2026</div>
+    <div class="card-sub">Everyone who signed up to help make Chhath happen. Thank you! 🙏</div>
+    <div id="volWall" style="display:flex;flex-wrap:wrap;gap:.5rem;margin-top:.85rem;min-height:60px">
+      <span style="font-size:.8rem;color:#a07850">Loading volunteers…</span>
+    </div>
+    <div style="font-size:.72rem;color:#a07850;margin-top:.6rem">Be part of this — sign up above ↑</div>
+  </div>
+
   <!-- ═══ PHOTO UPLOAD ═══ -->
   <div class="section-divider"><span>📸 Share Photos</span></div>
   <div class="card" id="volUploadCard">
@@ -332,10 +343,19 @@ async function submitVolunteer() {
   vols.push(data);
   localStorage.setItem('psots_volunteers', JSON.stringify(vols));
 
+  // Save to Firestore (non-blocking)
+  const volDbData = { name, flat, mobile, days: days.join(', '), tasks: tasks.join(', '), note, status: 'Registered', timestamp: new Date().toISOString() };
+  if (typeof PSOTS_DB !== 'undefined') {
+    try { PSOTS_DB.saveVolunteer(volDbData).catch(() => {}); } catch(e) {}
+  }
+
   btn.textContent = '✅ Signed Up!';
   document.getElementById('volSuccess').style.display = 'block';
   document.getElementById('volSuccessMsg').textContent = `Thank you ${name}! You're signed up for ${days.join(', ')}. The committee will WhatsApp you at ${mobile} with your task assignment.`;
   toast('🤝 Volunteer registered!', 'success');
+
+  // Add the new volunteer to the wall immediately
+  _addVolToWall({ name, flat, tasks: tasks.join(', ') });
 
   // Open WhatsApp confirmation
   setTimeout(() => {
