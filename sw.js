@@ -13,7 +13,7 @@
  * ════════════════════════════════════════════════════
  */
 
-const CACHE_VERSION = 'psots-v1';
+const CACHE_VERSION = 'psots-v3';
 
 // Core assets to pre-cache on install
 const PRECACHE = [
@@ -26,6 +26,10 @@ const PRECACHE = [
   '/js/auth-gate.js',
   '/js/db.js',
   '/js/firebase-config.js',
+  '/js/receipt.js',
+  '/js/notifications.js',
+  '/js/nav-component.js',
+  '/js/footer-component.js',
   '/images/favicon.svg',
   '/images/logo-main.png',
   '/images/chhath-logo-sugarcane-v2.png',
@@ -36,6 +40,10 @@ const PRECACHE = [
   '/pages/schedule.html',
   '/pages/gallery.html',
   '/pages/finance.html',
+  '/pages/volunteer.html',
+  '/pages/subscribe.html',
+  '/pages/faq.html',
+  '/pages/committee.html',
 ];
 
 // ── Install: pre-cache core assets ─────────────────────────────────────────

@@ -54,6 +54,15 @@
       "fields": [
         { "fieldPath": "flat",        "order": "ASCENDING"  }
       ]
+    },
+    {
+      "collectionGroup": "volunteers",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "year",      "order": "ASCENDING"  },
+        { "fieldPath": "visible",   "order": "ASCENDING"  },
+        { "fieldPath": "timestamp", "order": "ASCENDING"  }
+      ]
     }
   ],
   "fieldOverrides": []
