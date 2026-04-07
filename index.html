@@ -937,30 +937,35 @@ async function loadPrev(){
 if(_li) loadPrev();
 
 /* ── Finance tile (stale-while-revalidate) ── */
+let _finRows = null, _finMeta = null;
 function applyFinanceData(rows2026, finance) {
-  if (rows2026 !== null) {
-    const col = rows2026.reduce((s,c)=>s+(parseFloat(c.amount)||0),0);
-    const cnt = rows2026.length;
+  if (rows2026 !== null) _finRows = rows2026;
+  if (finance !== null) _finMeta = finance;
+
+  const carry = (_finMeta && parseInt(_finMeta.carry) > 0) ? parseInt(_finMeta.carry) : 104670;
+  const bgt   = (_finMeta && parseInt(_finMeta.budget) > 0) ? parseInt(_finMeta.budget) : 600000;
+
+  if (_finRows !== null) {
+    const col = _finRows.reduce((s,c)=>s+(parseFloat(c.amount)||0),0);
+    const cnt = _finRows.length;
     document.getElementById('tf-collected').textContent='₹'+col.toLocaleString('en-IN');
     document.getElementById('tf-count').textContent=cnt||'0';
-    const openBal=104670, bgt=600000;
-    const need=Math.max(0,bgt-openBal-col);
-    const pct=Math.min(100,Math.round((openBal+col)/bgt*100));
+    const need=Math.max(0,bgt-carry-col);
+    const pct=Math.min(100,Math.round((carry+col)/bgt*100));
     const needEl=document.getElementById('tf-need');if(needEl)needEl.textContent='₹'+need.toLocaleString('en-IN');
-    const needLbl=document.getElementById('tf-need-lbl');if(needLbl)needLbl.textContent=(need>0?'₹'+need.toLocaleString('en-IN')+' more to reach ₹6L goal':'🎉 Goal reached!');
+    const goalFmt=bgt>=100000?'₹'+(bgt/100000)+'L':'₹'+bgt.toLocaleString('en-IN');
+    const needLbl=document.getElementById('tf-need-lbl');if(needLbl)needLbl.textContent=(need>0?'₹'+need.toLocaleString('en-IN')+' more to reach '+goalFmt+' goal':'🎉 Goal reached!');
     const pctEl=document.getElementById('tf-pct');if(pctEl)pctEl.textContent=pct+'%';
     const tfBar=document.getElementById('tfBar');if(tfBar){tfBar.dataset.pct=pct;setTimeout(()=>{tfBar.style.width=pct+'%';},400);}
   }
-  if (finance) {
-    const bgt=finance.budget&&Number(finance.budget)>0?parseInt(finance.budget):600000;
+  if (_finMeta) {
     if(_li) document.getElementById('tf-budget').textContent='₹'+bgt.toLocaleString('en-IN');
-    const tfBar=document.getElementById('tfBar');if(tfBar&&_li)tfBar.style.width='0%';
     function fmtTime(t){if(!t)return null;const[h,m]=t.split(':');const hr=parseInt(h);return(hr>12?hr-12:hr||12)+':'+(m||'00')+' '+(hr>=12?'PM':'AM');}
     function fmtDate(dd,loc){if(!dd)return null;const dt=new Date(dd);const mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];return mo[dt.getMonth()]+' '+(dt.getDate())+', '+(dt.getFullYear())+(loc?' · '+loc:'');}
-    if(finance.timEveTime){const t=fmtTime(finance.timEveTime);if(t){document.getElementById('eve-time').textContent=t;const el=document.getElementById('sch-eve-time');if(el)el.textContent=t+' 🌇';}}
-    if(finance.timEveDate||finance.timEveLoc){const s=fmtDate(finance.timEveDate,finance.timEveLoc);if(s)document.getElementById('eve-date').textContent=s;}
-    if(finance.timMornTime){const t=fmtTime(finance.timMornTime);if(t){document.getElementById('morn-time').textContent=t;const el=document.getElementById('sch-morn-time');if(el)el.textContent=t+' 🌅';}}
-    if(finance.timMornDate||finance.timMornLoc){const s=fmtDate(finance.timMornDate,finance.timMornLoc);if(s)document.getElementById('morn-date').textContent=s;}
+    if(_finMeta.timEveTime){const t=fmtTime(_finMeta.timEveTime);if(t){document.getElementById('eve-time').textContent=t;const el=document.getElementById('sch-eve-time');if(el)el.textContent=t+' 🌇';}}
+    if(_finMeta.timEveDate||_finMeta.timEveLoc){const s=fmtDate(_finMeta.timEveDate,_finMeta.timEveLoc);if(s)document.getElementById('eve-date').textContent=s;}
+    if(_finMeta.timMornTime){const t=fmtTime(_finMeta.timMornTime);if(t){document.getElementById('morn-time').textContent=t;const el=document.getElementById('sch-morn-time');if(el)el.textContent=t+' 🌅';}}
+    if(_finMeta.timMornDate||_finMeta.timMornLoc){const s=fmtDate(_finMeta.timMornDate,_finMeta.timMornLoc);if(s)document.getElementById('morn-date').textContent=s;}
   }
 }
 
